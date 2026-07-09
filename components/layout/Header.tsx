@@ -264,22 +264,24 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
         <div className="p-2 space-y-0.5 max-h-[60vh] overflow-y-auto">
           
           <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            {isTeacher ? "Quản lý giảng dạy" : "Góc học tập"}
+            {isTeacher ? "Góc quản lý" : "Góc học tập"}
           </div>
           
           <Link href={isTeacher ? "/dashboard/teacher" : "/dashboard/student"} onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
             <BookOpen className="h-4 w-4 text-primary" />
-            <span>{isTeacher ? "Lớp học của tôi" : "Lớp đang tham gia"}</span>
+            <span>Lớp học của tôi</span>
           </Link>
 
-          <Link href="/classes/saved" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-            <Bookmark className="h-4 w-4 text-primary" />
-            <span>Lớp học yêu thích</span>
-          </Link>
+          {!isTeacher && (
+            <Link href="/classrooms/stored" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
+              <Bookmark className="h-4 w-4 text-primary" />
+              <span>Lớp học đã lưu</span>
+            </Link>
+          )}
 
           <Link href={isTeacher ? "/exams/manage" : "/exams/history"} onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
             <FileText className="h-4 w-4 text-primary" />
-            <span>{isTeacher ? "Ngân hàng đề thi" : "Lịch sử làm bài"}</span>
+            <span>{isTeacher ? "Tài liệu của tôi" : "Bài tập của tôi"}</span>
           </Link>
 
           <div className="border-t border-border/60 my-1 pt-1" />
@@ -322,7 +324,7 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [classesDropdown, setClassesDropdown] = useState(false);
+  const [classroomsDropdown, setclassroomsDropdown] = useState(false);
   const [teachersDropdown, setTeachersDropdown] = useState(false);
   const [examsDropdown, setExamsDropdown] = useState(false);
   const [desktopUserMenuOpen, setDesktopUserMenuOpen] = useState(false);
@@ -334,7 +336,7 @@ export function Header() {
 
   useEffect(() => {
     setMobileOpen(false);
-    setClassesDropdown(false);
+    setclassroomsDropdown(false);
     setTeachersDropdown(false);
     setExamsDropdown(false);
     setDesktopUserMenuOpen(false);
@@ -355,7 +357,7 @@ export function Header() {
     toast.success("Đăng xuất thành công!");
   };
 
-  const isClassesActive = pathname?.startsWith("/classes") || pathname?.startsWith("/lop-hoc");
+  const isclassroomsActive = pathname?.startsWith("/classrooms") || pathname?.startsWith("/lop-hoc");
   const isTeachersActive = pathname?.startsWith("/teachers") || pathname?.startsWith("/giao-vien");
   const isExamsActive = pathname?.startsWith("/exams") || pathname?.startsWith("/de-thi");
 
@@ -390,22 +392,22 @@ export function Header() {
         <nav className="hidden lg:flex items-center gap-1 h-full">
           <div
             className="relative h-full flex items-center"
-            onMouseEnter={() => setClassesDropdown(true)}
-            onMouseLeave={() => setClassesDropdown(false)}
-            onClick={() => setClassesDropdown(false)}
+            onMouseEnter={() => setclassroomsDropdown(true)}
+            onMouseLeave={() => setclassroomsDropdown(false)}
+            onClick={() => setclassroomsDropdown(false)}
           >
             <Link
-              href="/classes"
+              href="/classrooms"
               className={Cn(
                 "flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-xl",
-                isClassesActive ? "text-primary font-bold bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"
+                isclassroomsActive ? "text-primary font-bold bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"
               )}
             >
               Lớp học
-              <ChevronDown className={Cn("h-4 w-4 text-muted-foreground transition-transform duration-200", classesDropdown && "rotate-180")} />
+              <ChevronDown className={Cn("h-4 w-4 text-muted-foreground transition-transform duration-200", classroomsDropdown && "rotate-180")} />
             </Link>
 
-            {classesDropdown && (
+            {classroomsDropdown && (
               <div className="fixed left-0 right-0 top-16 z-[60] flex justify-center cursor-default pointer-events-none">
                 <div className="w-fit mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="w-full rounded-3xl bg-card/95 backdrop-blur-2xl shadow-2xl border border-border p-8 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150">
@@ -416,10 +418,10 @@ export function Header() {
                         <div>
                           <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Khám phá</h3>
                           <div className="space-y-4">
-                            <Link href="/classes" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/classrooms" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <BookOpen className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tất cả lớp học
                             </Link>
-                            <Link href="/classes?type=live" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/classrooms?type=live" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Monitor className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Lớp trực tuyến
                             </Link>
                           </div>
@@ -431,7 +433,7 @@ export function Header() {
                             <Link href="/dashboard/student" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Users className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Lớp học của tôi
                             </Link>
-                            <Link href="/classes/saved" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/classrooms/stored" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Lớp học đã lưu
                             </Link>
                           </div>
@@ -443,7 +445,7 @@ export function Header() {
                         <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Môn học</h3>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                           {["Toán học", "Vật lý", "Hóa học", "Tiếng Anh", "Ngữ văn", "Tin học", "Sinh học", "Lịch sử", "Địa lý", "IELTS / TOEIC"].map((sub) => (
-                            <Link key={sub} href={`/classes?subject=${sub}`} className="block truncate text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link key={sub} href={`/classrooms?subject=${sub}`} className="block truncate text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               {sub}
                             </Link>
                           ))}
@@ -455,7 +457,7 @@ export function Header() {
                         <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Cấp học</h3>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                           {["Lớp 6", "Lớp 7", "Lớp 8", "Lớp 9", "Lớp 10", "Lớp 11", "Lớp 12", "Đại học"].map((lvl) => (
-                            <Link key={lvl} href={`/classes?level=${lvl}`} className="block truncate text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link key={lvl} href={`/classrooms?level=${lvl}`} className="block truncate text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               {lvl}
                             </Link>
                           ))}
@@ -510,7 +512,7 @@ export function Header() {
                             <Link href="/dashboard/student/teachers" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Users className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Giáo viên của tôi
                             </Link>
-                            <Link href="/teachers/saved" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/teachers/stored" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Giáo viên đã lưu
                             </Link>
                           </div>
@@ -705,13 +707,13 @@ export function Header() {
             <div>
               <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2 px-2">Lớp học trực tuyến</p>
               <div className="space-y-1">
-                <Link href="/classes" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl font-bold text-primary bg-primary/10">
+                <Link href="/classrooms" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl font-bold text-primary bg-primary/10">
                   Tất cả lớp học
                 </Link>
-                <Link href="/classes?type=live" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
+                <Link href="/classrooms?type=live" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
                   Lớp học tương tác (Live)
                 </Link>
-                <Link href="/classes/saved" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
+                <Link href="/classrooms/stored" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
                   Lớp học yêu thích
                 </Link>
               </div>

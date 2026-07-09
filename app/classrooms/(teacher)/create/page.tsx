@@ -1,8 +1,13 @@
+// * Accept * //
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller, type SubmitHandler, type Resolver } from "react-hook-form";
+import { 
+  useForm, Controller, type SubmitHandler, type Resolver 
+} from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
@@ -23,23 +28,24 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/Select";
+
 import { FormatMoney, SanitizeCode } from "@/lib/utils";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
-import { classroomSchema, GRADE, type ClassroomFormData } from "@/lib/validations/classrooms";
+import { 
+  classroomSchema, GRADE, type ClassroomFormData 
+} from "@/lib/validations/classrooms";
 
-// ============ PAGE ============
 export default function CreateClassroomPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
+  
+  // Khởi tạo form với giá trị mặc định và quy tắc kiểm tra dữ liệu.
+  const { watch, control, register, handleSubmit,
     formState: { errors },
   } = useForm<ClassroomFormData>({
+
     resolver: zodResolver(classroomSchema) as Resolver<ClassroomFormData>,
+    
     defaultValues: {
       name: "",
       code: "",
@@ -53,16 +59,19 @@ export default function CreateClassroomPage() {
 
   const values = watch();
 
-  const onSubmit: SubmitHandler<ClassroomFormData> = async (data) => {
+  const submit: SubmitHandler<ClassroomFormData> = async (data) => {
     setSubmitting(true);
+    
     try {
-      let numericGrade = parseInt(data.grade.replace(/\D/g, ""));
-      if (isNaN(numericGrade)) numericGrade = 13;
+      // Chuyển giá trị cấp học thành số, mặc định là 13 nếu không tìm thấy
+      let numeric = parseInt(data.grade.replace(/\D/g, ""));
+      if (isNaN(numeric)) numeric = 13;
 
+      // Gọi API
       const res = await ClassroomsAPI.createClass({
         name: data.name,
         code: data.code,
-        grade: numericGrade,
+        grade: numeric,
         fee: Number(data.fee),
         capacity: Number(data.capacity),
         description: data.description || "",
@@ -70,7 +79,7 @@ export default function CreateClassroomPage() {
 
       if (res && res.status === "SUCCESS") {
         toast.success("Tạo lớp học thành công!");
-        router.push("/dashboard/teacher");
+        router.push("/classrooms");
       } else {
         toast.error(res?.message || "Không thể tạo lớp học, vui lòng thử lại.");
       }
@@ -96,7 +105,7 @@ export default function CreateClassroomPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <form onSubmit={handleSubmit(submit)} className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7 space-y-6">
             <Card className="!p-4 sm:!p-6 !rounded-3xl space-y-5">
 
@@ -107,7 +116,7 @@ export default function CreateClassroomPage() {
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Ví dụ: Lớp học Learnix"
+                  placeholder="Lớp học Learnix"
                   className={errors.name ? "border-rose-500 focus-visible:ring-rose-500" : ""}
                   {...register("name")}
                 />
@@ -127,7 +136,7 @@ export default function CreateClassroomPage() {
                   render={({ field }) => (
                     <Input
                       id="code"
-                      placeholder="Ví dụ: MON-HOC-LEARNIX"
+                      placeholder="XXX-XXX-LEARNIX"
                       className={errors.code ? "border-rose-500 focus-visible:ring-rose-500" : ""}
                       value={field.value}
                       onChange={(e) => field.onChange(SanitizeCode(e.target.value))}
@@ -153,7 +162,7 @@ export default function CreateClassroomPage() {
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className={errors.grade ? "border-rose-500" : ""}>
-                        <SelectValue placeholder="Khối lớp học" />
+                        <SelectValue/>
                         <ChevronDown className="hidden" />
                       </SelectTrigger>
                       <SelectContent>
@@ -288,10 +297,10 @@ export default function CreateClassroomPage() {
                     Mã lớp: {values.code?.trim() || "MA-LOP"}
                   </p>
                 </div>
-
+                
                 {values.description?.trim() && (
                   <p className="m-0 line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">
-                    {values.description}
+                    Mô tả: {values.description}
                   </p>
                 )}
 

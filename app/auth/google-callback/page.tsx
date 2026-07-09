@@ -1,3 +1,5 @@
+// * Accept * //
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -8,19 +10,19 @@ import { toast } from "sonner";
 
 export default function GoogleCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const search = useSearchParams();
   const loginViaGoogle = useAuth((s: any) => s.loginViaGoogle);
   const [error, setError] = useState<string | null>(null);
-  const calledRef = useRef(false);
+  const call = useRef(false);
 
   useEffect(() => {
-    if (calledRef.current) return;
-    calledRef.current = true;
+    if (call.current) return;
+    call.current = true;
 
-    const code = searchParams.get("code");
-    const errorParam = searchParams.get("error");
+    const code = search.get("code");
+    const error = search.get("error");
 
-    if (errorParam) {
+    if (error) {
       setError("Đăng nhập Google bị từ chối");
       setTimeout(() => router.replace(LOGIN_PATH), 2000);
       return;
@@ -43,7 +45,7 @@ export default function GoogleCallbackPage() {
         setError(msg);
         setTimeout(() => router.replace(LOGIN_PATH), 2000);
       });
-  }, [searchParams, loginViaGoogle, router]);
+  }, [search, loginViaGoogle, router]);
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">

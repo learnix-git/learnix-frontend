@@ -4,6 +4,7 @@ import type { ApiResponse, Classroom } from "./types";
 export type Payload = Pick<Classroom, "name" | "code" | "fee" | "grade" | "description" | "capacity">;
 
 export const ClassroomsAPI = {
+  // ! In use
   getAll: async (): Promise<ApiResponse<Classroom[]>> => {
     const res = await client.get<ApiResponse<Classroom[]>>("/classrooms");
     return res.data;
@@ -14,6 +15,7 @@ export const ClassroomsAPI = {
     return res.data;
   },
 
+  // ! In use
   createClass: async (data: Payload): Promise<ApiResponse<Classroom>> => {
     const res = await client.post<ApiResponse<Classroom>>("/classrooms", data);
     return res.data;
@@ -21,26 +23,6 @@ export const ClassroomsAPI = {
 
   updateClass: async (id: string, data: Payload): Promise<ApiResponse<Classroom>> => {
     const res = await client.put<ApiResponse<Classroom>>(`/classrooms/${id}`, data);
-    return res.data;
-  },
-
-  getMembers: async (id: string): Promise<ApiResponse<any>> => {
-    const res = await client.get<ApiResponse<any>>(`/classrooms/${id}/members`);
-    return res.data;
-  },
-
-  getExams: async (id: string): Promise<ApiResponse<any>> => {
-    const res = await client.get<ApiResponse<any>>(`/classrooms/${id}/exams`);
-    return res.data;
-  },
-
-  getFeed: async (id: string): Promise<ApiResponse<any>> => {
-    const res = await client.get<ApiResponse<any>>(`/classrooms/${id}/feed`);
-    return res.data;
-  },
-
-  getResources: async (id: string): Promise<ApiResponse<any>> => {
-    const res = await client.get<ApiResponse<any>>(`/classrooms/${id}/resources`);
     return res.data;
   },
 

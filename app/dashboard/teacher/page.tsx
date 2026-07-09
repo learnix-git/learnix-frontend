@@ -1,3 +1,5 @@
+// * Accept * //
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -18,7 +20,8 @@ import { Classroom, Schedule } from "@/lib/api/types";
 import { DashboardTeacher } from "@/lib/api/dashboard";
 import { FormatMoney } from "@/lib/utils";
 
-function KpiCell({ label, value, icon }: { label: string; value: number | string; icon?: React.ReactNode }) {
+// Hiển thị thẻ KPI với nhãn, giá trị và icon
+function KPI({ label, value, icon }: { label: string; value: number | string; icon?: React.ReactNode }) {
   return (
     <div className="flex min-w-[140px] flex-1 items-center justify-between gap-3 rounded-xl border border-slate-200/70 bg-white/55 px-4 py-3 dark:border-white/10 dark:bg-white/5">
       <div className="space-y-0.5">
@@ -36,9 +39,11 @@ export default function TeacherDashboardPage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    // Fetch dữ liệu khi trang được load
     async function fetchData() {
       setLoading(true);
       try {
+        // Gọi đồng thời API lấy danh sách lớp học và lịch dạy
         const [resClasses, resSchedule] = await Promise.all([
           DashboardTeacher.getClasses(),
           DashboardTeacher.getSchedule(),
@@ -60,17 +65,23 @@ export default function TeacherDashboardPage() {
     fetchData();
   }, []);
 
-  // Tính toán KPI
-  const activeCount = classes.filter((c) => c.status === "active" || c.active).length;
-  const totalStudents = classes.reduce((sum, c) => sum + (c.count || 0), 0);
-  const totalRevenue = classes.reduce((sum, c) => {
+  // Đếm số lớp học đang hoạt động
+  const active = classes.filter((c) => c.status === "active" || c.active).length;
+  
+  // Tính tổng số học sinh của tất cả lớp học
+  const student = classes.reduce((sum, c) => sum + (c.count || 0), 0);
+
+  // Tính tổng doanh thu từ học phí của các lớp học
+  const revenue = classes.reduce((sum, c) => {
     const classFee = c.fee || 0;
     const studentsCount = c.count || 0;
     return sum + (classFee * studentsCount);
   }, 0);
-  const ratedClasses = classes.filter((c) => (c.rating || 0) > 0);
-  const avgRating = ratedClasses.length > 0 
-    ? (ratedClasses.reduce((sum, c) => sum + (c.rating || 0), 0) / ratedClasses.length).toFixed(1) + " ⭐"
+
+  // Tính điểm đánh giá trung bình của các lớp đã có đánh giá
+  const rating = classes.filter((c) => (c.rating || 0) > 0);
+  const avg = rating.length > 0 
+    ? (rating.reduce((sum, c) => sum + (c.rating || 0), 0) / rating.length).toFixed(1) + " ⭐"
     : "Chưa có đánh giá";
 
   if (loading) {
@@ -78,7 +89,7 @@ export default function TeacherDashboardPage() {
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm font-bold text-muted-foreground animate-pulse">Đang tải dữ liệu giảng viên...</p>
+          <p className="text-sm font-bold text-muted-foreground animate-pulse">Đang tải dữ liệu...</p>
         </div>
       </div>
     );
@@ -94,7 +105,7 @@ export default function TeacherDashboardPage() {
         </div>
 
         <div className="space-y-6">
-          {/* HERO / WELCOME CARD */}
+          {/* WELCOME CARD */}
           <Card className="!p-4 sm:!p-5 !rounded-3xl">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-2xl space-y-3">
@@ -115,10 +126,10 @@ export default function TeacherDashboardPage() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3 border-t border-slate-200/70 pt-5 dark:border-white/10">
-              <KpiCell label="Lớp học đang hoạt động" value={activeCount} icon={<BookOpen className="h-4 w-4 text-primary" />} />
-              <KpiCell label="Học viên đang theo học" value={totalStudents} icon={<Users className="h-4 w-4 text-emerald-500" />} />
-              <KpiCell label="Đánh giá trung bình" value={avgRating} icon={<Star className="h-4 w-4 text-amber-500" />} />
-              <KpiCell label="Thu nhập trung bình" value={FormatMoney(totalRevenue)} icon={<Wallet className="h-4 w-4 text-purple-500" />} />
+              <KPI label="Lớp học đang hoạt động" value={active} icon={<BookOpen className="h-4 w-4 text-primary" />} />
+              <KPI label="Học viên đang theo học" value={student} icon={<Users className="h-4 w-4 text-emerald-500" />} />
+              <KPI label="Đánh giá trung bình" value={avg} icon={<Star className="h-4 w-4 text-amber-500" />} />
+              <KPI label="Thu nhập trung bình" value={FormatMoney(revenue)} icon={<Wallet className="h-4 w-4 text-purple-500" />} />
             </div>
           </Card>
 

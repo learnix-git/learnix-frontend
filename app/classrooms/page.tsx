@@ -1,12 +1,14 @@
+// * Accept * //
+
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Search, X, Plus, CalendarClock, Star, Users,
+  Search, X, Bookmark, Star, Users,
   GraduationCap, Wallet, ArrowUpRight, LogIn,
-  SlidersHorizontal, BookX,
+  SlidersHorizontal, BookX, Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -19,7 +21,9 @@ import { Empty } from "@/components/ui/Empty";
 
 import type { Classroom } from "@/lib/api/types";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
-import { FormatMoney } from "@/lib/utils";
+import { NormalizeString, FormatMoney } from "@/lib/utils";
+import { GetToken } from "@/lib/auth/session";
+import { jwtDecode } from "jwt-decode";
 
 const  GRADE = [
   { key: "all", label: "Tất cả" },
@@ -39,18 +43,24 @@ const STATUS = [
   { key: "inactive", label: "Tạm đóng" },
 ] as const;
 
-type GradeFilterKey = (typeof  GRADE)[number]["key"];
-type StatusFilterKey = (typeof STATUS)[number]["key"];
+// Chuyển thành kiểu map
+type GradeMap = (typeof  GRADE)[number]["key"];
+type StatusMap = (typeof STATUS)[number]["key"];
 
-function matchesGrade(grade: string | number, filter: GradeFilterKey) {
-  if (filter === "all") return true;
-  const gStr = String(grade || "");
-  if (filter === "other") return !["10", "11", "12"].some((g) => gStr.includes(g));
-  return gStr.includes(filter);
+// Hàm lọc lớp học theo cấp học đã chọn.
+function FilterGrade(grade: string | number, map: GradeMap) {
+  if (map === "all") 
+      return true;
+  
+  const str = String(grade || "");
+
+  if (map === "other") 
+    return !["6", "7", "8", "9", "10", "11", "12"].some((g) => str.includes(g));
+  return str.includes(map);
 }
 
-// ============ SMALL PARTS ============
-function EnrollProgressBar({ enrolled, capacity }: { enrolled: number; capacity: number }) {
+// Thanh tiến trình về số lượng học sinh tham gia
+function ProgressBar({ enrolled, capacity }: { enrolled: number; capacity: number }) {
   const percent = capacity > 0 ? Math.min(100, Math.round((enrolled / capacity) * 100)) : 0;
   return (
     <div className="space-y-1.5">
@@ -65,7 +75,8 @@ function EnrollProgressBar({ enrolled, capacity }: { enrolled: number; capacity:
   );
 }
 
-function ClassroomCardSkeleton() {
+// Khung xương cho thẻ lớp học
+function SkeletionCard() {
   return (
     <Card className="!p-4 sm:!p-5 !rounded-3xl space-y-4">
       <div className="flex items-center justify-between">
@@ -84,17 +95,20 @@ function ClassroomCardSkeleton() {
   );
 }
 
-export default function ClassroomsListPage() {
-  const [classrooms, setClassrooms] = useState<(Classroom & Record<string, any>)[]>([]);
+export default function ClassroomsPage() {
   const [loading, setLoading] = useState<boolean>(true);
+  const [classrooms, setClassrooms] = useState<(Classroom & Record<string, any>)[]>([]);
 
   const [search, setSearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState<GradeFilterKey>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("all");
+  const [gradeFilter, setGradeFilter] = useState<GradeMap>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusMap>("all");
 
-  const fetchClassrooms = useCallback(async () => {
+  // Fetch danh sách lớp học từ BE
+  const fetchData = useCallback(async () => {
+    // Trạng thái load
     setLoading(true);
     try {
+      // Gọi API
       const res = await ClassroomsAPI.getAll();
       if (res.status === "SUCCESS" && res.data) {
         setClassrooms(res.data as any);
@@ -102,7 +116,6 @@ export default function ClassroomsListPage() {
         toast.error("Không thể tải danh sách lớp học, vui lòng thử lại.");
       }
     } catch (error) {
-      console.error("Lỗi tải danh sách lớp học:", error);
       toast.error("Đã xảy ra lỗi khi tải danh sách lớp học.");
     } finally {
       setLoading(false);
@@ -110,34 +123,92 @@ export default function ClassroomsListPage() {
   }, []);
 
   useEffect(() => {
-    fetchClassrooms();
-  }, [fetchClassrooms]);
+    fetchData();
+  }, [fetchData]);
 
-  const hasActiveFilters = search.trim() !== "" || gradeFilter !== "all" || statusFilter !== "all";
+  // Kiểm tra xem người dùng có đang áp dụng bộ lọc nào hay không
+  const hasFilter = search.trim() !== "" || gradeFilter !== "all" || statusFilter !== "all";
 
-  const handleResetFilters = () => {
+  // Đặt lại bộ lọc hay xóa bộ lọc
+  const reset = () => {
     setSearch("");
     setGradeFilter("all");
     setStatusFilter("all");
   };
 
-  const filteredClassrooms = useMemo(() => {
+  // Ghi nhớ kết quả lọc để chỉ tính toán lại khi dữ liệu hoặc bộ lọc thay đổi
+  const results = useMemo(() => {
+    // Xử lý từ khóa
     const keyword = search.trim().toLowerCase();
 
+    // Trả về danh sách thỏa điều kiện
     return classrooms.filter((cls) => {
-      const matchesSearch =
-        keyword === "" ||
-        cls.name.toLowerCase().includes(keyword) ||
-        cls.code.toLowerCase().includes(keyword);
+      const text = [
+        cls.name,
+        cls.code,
+        cls.grade,
+        cls.description,
+      ]
+        .filter(Boolean)
+        .join(" "); 
 
-      const matchesStatus =
+      const tokens = NormalizeString(keyword).split(/\s+/).filter(Boolean);
+      const matches_search = tokens.length === 0 || tokens.some((token) => NormalizeString(text).includes(token));
+
+      // Danh sách phù hợp với trạng thái
+      const matches_status =
         statusFilter === "all" ||
         (statusFilter === "active" && cls.active) ||
         (statusFilter === "inactive" && !cls.active);
 
-      return matchesSearch && matchesGrade(cls.grade, gradeFilter) && matchesStatus;
+      return matches_search && FilterGrade(cls.grade, gradeFilter) && matches_status;
     });
   }, [classrooms, search, gradeFilter, statusFilter]);
+
+  // Lấy token
+  const user = useMemo(() => {
+    if (typeof window === "undefined") 
+      return null;
+    const token = GetToken();
+    if (!token) return null;
+    try {
+      // Giải mã token
+      return jwtDecode<{ role: string; name?: string; id?: string }>(token);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [modal, setModal] = useState(false);
+  const [code, setCode] = useState("");
+
+  const EnrollCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) {
+      toast.error("Vui lòng nhập mã lớp học!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Gọi API
+      const res = await ClassroomsAPI.joinClass(code.trim());
+      
+      if (res && res.status === "SUCCESS") {
+        toast.success("Tham gia lớp học thành công!");
+        setModal(false);
+        setCode("");
+        fetchData(); 
+      } else {
+        toast.error(res?.message || "Mã lớp học không chính xác hoặc lớp đã đóng!");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Không thể tham gia lớp học lúc này.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-transparent pb-24">
@@ -149,16 +220,37 @@ export default function ClassroomsListPage() {
             <div className="h-8 w-1.5 rounded-full bg-primary" />
             <div>
               <h1 className="m-0 text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">Khám Phá Lớp Học</h1>
-              <p className="m-0 mt-1.5 text-sm text-muted-foreground">Tìm lớp học phù hợp và bắt đầu hành trình chinh phục mục tiêu của bạn.</p>
+              <p className="m-0 mt-1.5 text-sm text-muted-foreground">Tìm lớp học phù hợp và bắt đầu hành trình học tập của bạn.</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Button nativeButton={false} variant="outline" render={<Link href="/classrooms/schedule" />} className="h-11 rounded-2xl px-5 text-[13px]">
-              <CalendarClock className="h-4 w-4" /> Lịch học chung
-            </Button>
-            <Button nativeButton={false} render={<Link href="/classrooms/create" />} className="h-11 rounded-2xl px-5 text-[13px] shadow-lg shadow-primary/20">
-              <Plus className="h-4 w-4" /> Tạo lớp học mới
+          <div className="grid grid-cols-2 gap-2 ml-auto w-fit">
+            {user?.role === "TEACHER" ? (
+              <Button 
+                nativeButton={false} 
+                render={<Link href="/classrooms/create" />} 
+                className="h-11 w-full rounded-2xl text-[13px] gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10"
+              >
+                <Plus className="h-4 w-4" /> Tạo lớp học mới
+              </Button>
+            ) : (
+              <Button 
+                nativeButton={false} 
+                variant="outline" 
+                onClick={() => setModal(true)}
+                className="h-11 w-full rounded-2xl text-[13px] gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10"
+              >
+                <LogIn className="h-4 w-4" /> Tham gia lớp học bằng mã
+              </Button>
+            )}
+
+            <Button 
+              nativeButton={false} 
+              variant="secondary"
+              render={<Link href="/classrooms/stored" />} 
+              className="h-11 rounded-2xl px-5 text-[13px] shadow-lg shadow-primary/20"
+            >
+              <Bookmark className="h-4 w-4" /> Lớp học đã lưu
             </Button>
           </div>
         </div>
@@ -169,7 +261,7 @@ export default function ClassroomsListPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tên lớp học hoặc mã lớp..."
+            placeholder="Nhập lớp học bạn muốn tìm kiếm..."
             leftAdornment={<Search className="h-4 w-4" />}
             rightAdornment={
               search ? (
@@ -229,17 +321,17 @@ export default function ClassroomsListPage() {
         {/* ═══ GRID ═══ */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => <ClassroomCardSkeleton key={i} />)}
+            {Array.from({ length: 6 }).map((_, i) => <SkeletionCard key={i} />)}
           </div>
-        ) : filteredClassrooms.length === 0 ? (
+        ) : results.length === 0 ? (
           <Empty
             variant="search"
             icon={<BookX className="h-10 w-10 text-primary" />}
             title="Không tìm thấy lớp học nào phù hợp"
             description="Hãy thử điều chỉnh từ khóa tìm kiếm hoặc bộ lọc để xem thêm kết quả khác."
             action={
-              hasActiveFilters ? (
-                <Button variant="outline" onClick={handleResetFilters} className="h-11 rounded-2xl px-6 text-[13px]">
+              hasFilter ? (
+                <Button variant="outline" onClick={reset} className="h-11 rounded-2xl px-6 text-[13px]">
                   <X className="h-4 w-4" /> Xóa bộ lọc
                 </Button>
               ) : undefined
@@ -247,7 +339,7 @@ export default function ClassroomsListPage() {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredClassrooms.map((cls) => (
+            {results.map((cls) => (
               <Card key={cls.id} hover className="!p-4 sm:!p-5 !rounded-3xl flex flex-col gap-4">
                 {/* Badges */}
                 <div className="flex items-center justify-between">
@@ -291,17 +383,17 @@ export default function ClassroomsListPage() {
                 </div>
 
                 {/* Enroll progress */}
-                <EnrollProgressBar enrolled={cls.enrolled || 0} capacity={cls.capacity || 50} />
+                <ProgressBar enrolled={cls.enrolled || 0} capacity={cls.capacity || 50} />
 
                 {/* Action */}
                 <div className="mt-auto pt-1">
                   {cls.isEnrolled ? (
-                    <Button nativeButton={false} render={<Link href={`/classrooms/${cls.id}`} />} className="h-10 w-full rounded-xl text-[13px]">
+                    <Button nativeButton={false} render={<Link href={`/classrooms/?id=${cls.id}`} />} className="h-10 w-full rounded-xl text-[13px]">
                       <LogIn className="h-4 w-4" /> Vào lớp học
                     </Button>
                   ) : (
                     <Button nativeButton={false} variant="outline" render={<Link href={`/classrooms/${cls.id}`} />} className="h-10 w-full rounded-xl gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10">
-                      Tham gia lớp học <ArrowUpRight className="h-4 w-4" />
+                      Xem lớp học <ArrowUpRight className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
@@ -310,6 +402,66 @@ export default function ClassroomsListPage() {
           </div>
         )}
       </div>
+      {modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-md !p-6 !rounded-3xl shadow-2xl border border-white/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl relative">
+            
+            <button 
+              onClick={() => { setModal(false); setCode(""); }}
+              className="absolute top-5 right-5 p-1.5 rounded-full text-muted-foreground hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Đóng"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Nội dung */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                  <LogIn className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="m-0 text-lg font-black text-foreground leading-tight tracking-tight">Tham gia lớp học</h3>
+                  <p className="m-0 text-xs text-muted-foreground">Nhập mã lớp học</p>
+                </div>
+              </div>
+
+              <form onSubmit={EnrollCode} className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <Input
+                    autoFocus
+                    placeholder="XXX-XXX-XXX"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    className="!rounded-2xl uppercase font-bold text-center tracking-wider text-base h-12 bg-slate-100/50 dark:bg-white/5 border-slate-200/70 dark:border-white/10"
+                  />
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Mã lớp chỉ gồm chữ hoa, số và dấu gạch ngang
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { setModal(false); setCode(""); }}
+                    className="flex-1 h-11 rounded-xl text-[13px] cursor-pointer"
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    type="submit"
+                    loading={loading}
+                    className="flex-1 h-11 rounded-xl text-[13px] shadow-lg shadow-primary/20 cursor-pointer"
+                  >
+                    Tham gia ngay
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
