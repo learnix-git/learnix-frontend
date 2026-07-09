@@ -159,3 +159,27 @@ export function TruncateText(
   // Thêm dấu cắt vào cuối chuỗi
   return truncated + ellipsis;
 }
+
+
+/**
+ * Chuẩn hóa mã (code)
+ * - Chuyển khoảng trắng thành dấu '-'
+ * - Loại bỏ dấu tiếng Việt
+ * - Chuyển 'đ' thành 'd'
+ * - Chuyển toàn bộ thành chữ in hoa
+ * - Chỉ giữ lại A-Z, 0-9 và dấu '-'
+ * - Gộp nhiều dấu '-' liên tiếp thành một dấu '-'
+ *
+ * @param value Chuỗi cần chuẩn hóa
+ * @returns Chuỗi mã đã được chuẩn hóa
+ */
+export function SanitizeCode(value: string) {
+  return value
+    .replace(/\s+/g, "-")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, "")
+    .replace(/-+/g, "-");
+}

@@ -21,25 +21,27 @@ import type { Classroom } from "@/lib/api/types";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
 import { FormatMoney } from "@/lib/utils";
 
-// ============ FILTER OPTIONS ============
-const GRADE_FILTERS = [
+const  GRADE = [
   { key: "all", label: "Tất cả" },
+  { key: "6", label: "Khối 6" },
+  { key: "7", label: "Khối 7" },
+  { key: "8", label: "Khối 8" },
+  { key: "9", label: "Khối 9" },
   { key: "10", label: "Khối 10" },
   { key: "11", label: "Khối 11" },
   { key: "12", label: "Khối 12" },
-  { key: "other", label: "Đại học / Khác" },
+  { key: "other", label: "Đại học" },
 ] as const;
 
-const STATUS_FILTERS = [
+const STATUS = [
   { key: "all", label: "Tất cả" },
   { key: "active", label: "Đang mở" },
   { key: "inactive", label: "Tạm đóng" },
 ] as const;
 
-type GradeFilterKey = (typeof GRADE_FILTERS)[number]["key"];
-type StatusFilterKey = (typeof STATUS_FILTERS)[number]["key"];
+type GradeFilterKey = (typeof  GRADE)[number]["key"];
+type StatusFilterKey = (typeof STATUS)[number]["key"];
 
-// ============ HELPERS (ĐÃ FIX NHẬN CẢ STRING LẪN NUMBER CHỐNG LỖI DB) ============
 function matchesGrade(grade: string | number, filter: GradeFilterKey) {
   if (filter === "all") return true;
   const gStr = String(grade || "");
@@ -82,9 +84,7 @@ function ClassroomCardSkeleton() {
   );
 }
 
-// ============ PAGE ============
 export default function ClassroomsListPage() {
-  // 🚀 BÍ QUYẾT: Dùng & Record<string, any> để vừa giữ chuẩn DB gốc, vừa chấp nhận các cột phụ từ API
   const [classrooms, setClassrooms] = useState<(Classroom & Record<string, any>)[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -187,7 +187,7 @@ export default function ClassroomsListPage() {
               <GraduationCap className="h-3.5 w-3.5" /> Khối lớp
             </div>
             <div className="flex flex-wrap gap-2">
-              {GRADE_FILTERS.map((g) => (
+              { GRADE.map((g) => (
                 <button
                   key={g.key}
                   onClick={() => setGradeFilter(g.key)}
@@ -209,7 +209,7 @@ export default function ClassroomsListPage() {
               <SlidersHorizontal className="h-3.5 w-3.5" /> Trạng thái
             </div>
             <div className="flex flex-wrap gap-2">
-              {STATUS_FILTERS.map((s) => (
+              {STATUS.map((s) => (
                 <button
                   key={s.key}
                   onClick={() => setStatusFilter(s.key)}
@@ -270,8 +270,8 @@ export default function ClassroomsListPage() {
                 {/* Teacher & Rating */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <Avatar alt={cls.teacherName || cls.teacher || "GV"} size="sm" />
-                    <span className="truncate text-[13px] font-medium text-muted-foreground">{cls.teacherName || cls.teacher || "Giảng viên Learnix"}</span>
+                    <Avatar alt={cls.name} size="sm" />
+                    <span className="truncate text-[13px] font-medium text-muted-foreground">{cls.name}</span>
                   </div>
                   <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-amber-500">
                     <Star className="h-3.5 w-3.5 fill-amber-500" /> {(cls.rating || 0).toFixed(1)}
@@ -300,8 +300,8 @@ export default function ClassroomsListPage() {
                       <LogIn className="h-4 w-4" /> Vào lớp học
                     </Button>
                   ) : (
-                    <Button nativeButton={false} variant="outline" render={<Link href={`/classrooms/${cls.id}`} />} className="h-10 w-full rounded-xl text-[13px]">
-                      Xem chi tiết / Tham gia <ArrowUpRight className="h-4 w-4" />
+                    <Button nativeButton={false} variant="outline" render={<Link href={`/classrooms/${cls.id}`} />} className="h-10 w-full rounded-xl gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10">
+                      Tham gia lớp học <ArrowUpRight className="h-4 w-4" />
                     </Button>
                   )}
                 </div>

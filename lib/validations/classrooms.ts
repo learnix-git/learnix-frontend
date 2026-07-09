@@ -13,7 +13,7 @@ export const classroomSchema = z
       .string()
       .min(1, "Vui lòng nhập mã lớp học")
       .min(3, "Mã lớp học phải có ít nhất 3 ký tự")
-      .regex(/^[A-Z0-9_]+$/, "Mã lớp chỉ gồm chữ hoa, số và dấu gạch dưới"),
+      .regex(/^[A-Z0-9-]+$/, "Mã lớp chỉ gồm chữ hoa, số và dấu gạch ngang"),
     grade: z
       .enum(GRADE)
       .optional()

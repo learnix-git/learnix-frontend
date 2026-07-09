@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, type SubmitHandler, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,21 +23,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/Select";
-import { FormatMoney } from "@/lib/utils";
+import { FormatMoney, SanitizeCode } from "@/lib/utils";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
 import { classroomSchema, GRADE, type ClassroomFormData } from "@/lib/validations/classrooms";
-
-// ============ HELPERS ============
-function sanitizeCode(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/gi, "d")
-    .toUpperCase()
-    .replace(/[^A-Z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 // ============ PAGE ============
 export default function CreateClassroomPage() {
@@ -86,9 +74,10 @@ export default function CreateClassroomPage() {
       } else {
         toast.error(res?.message || "Không thể tạo lớp học, vui lòng thử lại.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Đã xảy ra lỗi khi tạo lớp học, vui lòng thử lại.";
       console.error("Lỗi tạo lớp học:", error);
-      toast.error(error.message || "Đã xảy ra lỗi khi tạo lớp học, vui lòng thử lại.");
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -141,7 +130,7 @@ export default function CreateClassroomPage() {
                       placeholder="Ví dụ: MON-HOC-LEARNIX"
                       className={errors.code ? "border-rose-500 focus-visible:ring-rose-500" : ""}
                       value={field.value}
-                      onChange={(e) => field.onChange(sanitizeCode(e.target.value))}
+                      onChange={(e) => field.onChange(SanitizeCode(e.target.value))}
                       onBlur={field.onBlur}
                     />
                   )}
@@ -192,7 +181,7 @@ export default function CreateClassroomPage() {
                     id="fee"
                     type="number"
                     min={0}
-                    step={10000}
+                    step="any"
                     placeholder="0"
                     className={errors.fee ? "border-rose-500 focus-visible:ring-rose-500" : ""}
                     {...register("fee", {
@@ -292,11 +281,11 @@ export default function CreateClassroomPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="m-0 line-clamp-2 text-base font-black leading-snug tracking-tight text-foreground">
+                  <h3 className="m-0 mb-1 line-clamp-2 text-base font-black leading-snug tracking-tight text-foreground">
                     {values.name?.trim() || "Tên lớp học của bạn sẽ hiện ở đây"}
                   </h3>
                   <p className="m-0 text-[12px] font-bold text-primary">
-                    Mã lớp: {values.code?.trim() || "MA_LOP"}
+                    Mã lớp: {values.code?.trim() || "MA-LOP"}
                   </p>
                 </div>
 
@@ -309,7 +298,7 @@ export default function CreateClassroomPage() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <Avatar alt="Giảng viên" size="sm" />
-                    <span className="truncate text-[13px] font-medium text-muted-foreground">Bạn (Giảng viên phụ trách)</span>
+                    <span className="truncate text-[13px] font-medium text-muted-foreground">Tên của bạn sẽ hiện ở đây</span>
                   </div>
                   <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-amber-500">
                     <Star className="h-3.5 w-3.5 fill-amber-500" /> Mới
