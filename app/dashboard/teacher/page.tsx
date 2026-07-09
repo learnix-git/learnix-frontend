@@ -68,6 +68,10 @@ export default function TeacherDashboardPage() {
     const studentsCount = c.count || 0;
     return sum + (classFee * studentsCount);
   }, 0);
+  const ratedClasses = classes.filter((c) => (c.rating || 0) > 0);
+  const avgRating = ratedClasses.length > 0 
+    ? (ratedClasses.reduce((sum, c) => sum + (c.rating || 0), 0) / ratedClasses.length).toFixed(1) + " ⭐"
+    : "Chưa có đánh giá";
 
   if (loading) {
     return (
@@ -113,7 +117,7 @@ export default function TeacherDashboardPage() {
             <div className="mt-5 flex flex-wrap gap-3 border-t border-slate-200/70 pt-5 dark:border-white/10">
               <KpiCell label="Lớp học đang hoạt động" value={activeCount} icon={<BookOpen className="h-4 w-4 text-primary" />} />
               <KpiCell label="Học viên đang theo học" value={totalStudents} icon={<Users className="h-4 w-4 text-emerald-500" />} />
-              <KpiCell label="Đánh giá trung bình" value="4.9 ⭐" icon={<Star className="h-4 w-4 text-amber-500" />} />
+              <KpiCell label="Đánh giá trung bình" value={avgRating} icon={<Star className="h-4 w-4 text-amber-500" />} />
               <KpiCell label="Thu nhập trung bình" value={FormatMoney(totalRevenue)} icon={<Wallet className="h-4 w-4 text-purple-500" />} />
             </div>
           </Card>
@@ -125,7 +129,7 @@ export default function TeacherDashboardPage() {
             <div className="xl:col-span-2 space-y-3 flex flex-col">
               <div className="flex items-center justify-between px-1">
                 <h3 className="m-0 text-[13px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Lớp học của bạn</h3>
-                <Link href="/dashboard/teacher/classes" className="flex items-center gap-1 text-[13px] font-bold text-primary hover:underline">
+                <Link href="/classrooms" className="flex items-center gap-1 text-[13px] font-bold text-primary hover:underline">
                   Xem tất cả <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -160,7 +164,7 @@ export default function TeacherDashboardPage() {
                               <Badge variant="secondary" className="gap-1.5"><Layers className="h-3.5 w-3.5" /> {cls.lessons || 0} bài giảng</Badge>
                             </div>
 
-                            <Link href={`/dashboard/teacher/classes/${cls.id}`} className="block w-fit max-w-full">
+                            <Link href={`/classrooms/${cls.id}`} className="block w-fit max-w-full">
                               <h3 className="m-0 line-clamp-2 text-lg font-black leading-snug tracking-tight text-foreground transition-colors hover:text-primary sm:text-xl">
                                 {cls.name}
                               </h3>
@@ -209,7 +213,7 @@ export default function TeacherDashboardPage() {
               </div>
 
               <Card className="!p-4 sm:!p-5 !rounded-3xl space-y-4 flex-1 flex flex-col">
-                <p className="m-0 text-[12px] font-medium text-muted-foreground">
+                <p className="m-0 mb-2 text-[12px] font-medium text-muted-foreground">
                   {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
 

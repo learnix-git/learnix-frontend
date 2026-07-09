@@ -31,6 +31,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     const result = loginSchema.safeParse(formData);
     if (!result.success) {

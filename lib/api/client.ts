@@ -41,7 +41,6 @@ async function doRefresh(): Promise<string> {
     if (!newToken) throw new RefreshFailedError("Refresh returned empty token");
     return newToken;
   } catch (err: any) {
-    // 404 = BE chưa implement endpoint. Không clear session oan.
     if (err?.response?.status === 404) {
       throw new RefreshEndpointMissingError();
     }
@@ -100,15 +99,10 @@ client.interceptors.response.use(
             // Refresh succeeded — replay all queued requests
             PendingRequests.forEach((entry) => entry.resolve(newToken));
             PendingRequests.length = 0;
-            // Lưu token mới vào cookie (CHỈ cookie — không ghi localStorage
-            // theo chính sách bảo mật hiện hành). Cookie là nguồn chính
-            // cho `GetToken()`, các request sau sẽ tự đọc được token mới.
             try {
               document.cookie = `auth_token=${encodeURIComponent(
                 newToken,
               )}; path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax`;
-              // Dọn entry localStorage cũ (nếu có từ session migrate) để
-              // tránh "shadow" token stale tồn tại song song cookie.
               localStorage.removeItem("auth_token");
             } catch {
               /* noop */
@@ -118,10 +112,6 @@ client.interceptors.response.use(
             const queue = PendingRequests.slice();
             PendingRequests.length = 0;
 
-            // Phân biệt 3 trường hợp:
-            // 1. BE chưa có endpoint refresh → KHÔNG xoá session, chỉ
-            //    reject request gốc. Có thể token hiện tại vẫn dùng được
-            //    cho endpoint khác.
             if (refreshErr instanceof RefreshEndpointMissingError) {
               console.warn(
                 "[auth] refresh endpoint chưa có — giữ session, reject",
@@ -132,7 +122,6 @@ client.interceptors.response.use(
               return;
             }
 
-            // 2. Refresh fail thực sự (401, 5xx) → xoá session + redirect.
             if (refreshErr instanceof RefreshFailedError) {
               queue.forEach((entry) => entry.reject(refreshErr));
               ClearSession();
@@ -140,7 +129,6 @@ client.interceptors.response.use(
               return;
             }
 
-            // 3. Lỗi khác (network, ...) → reject, KHÔNG clear session.
             console.warn(
               "[auth] refresh lỗi không xác định — giữ session, reject",
               queue.length,
@@ -154,9 +142,6 @@ client.interceptors.response.use(
           });
       }
 
-      // If refresh is in-flight, queue this request.
-      // If refresh already completed (success or fail), the promise
-      // resolves/rejects immediately so this doesn't block.
       return new Promise((resolve, reject) => {
         PendingRequests.push({
           resolve: (token: string) => {
@@ -177,7 +162,7 @@ client.interceptors.response.use(
     }
 
     const msg =
-      error.response?.data?.msg || error.message || "Có lỗi xảy ra";
+      error.response?.data?.message || error.message || "Có lỗi xảy ra";
     return Promise.reject(new Error(msg));
   },
 );

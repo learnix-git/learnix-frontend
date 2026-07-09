@@ -253,7 +253,7 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
             <p className="text-xs text-muted-foreground">{user.email}</p>
             <span className={Cn(
               "mt-2 inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider",
-              isTeacher ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20" : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+              isTeacher ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20" : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
             )}>
               {isTeacher ? "Giáo viên" : "Học sinh"}
             </span>

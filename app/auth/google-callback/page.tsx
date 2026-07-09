@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LOGIN_PATH } from "@/lib/auth/session";
 import { useAuth } from "@/lib/stores/auth";
@@ -9,13 +9,13 @@ import { toast } from "sonner";
 export default function GoogleCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const loginViaGoogle = useAuth((s : any) => s.loginViaGoogle);
+  const loginViaGoogle = useAuth((s: any) => s.loginViaGoogle);
   const [error, setError] = useState<string | null>(null);
-  const [called, setCalled] = useState(false);
+  const calledRef = useRef(false);
 
   useEffect(() => {
-    if (called) return;
-    setCalled(true);
+    if (calledRef.current) return;
+    calledRef.current = true;
 
     const code = searchParams.get("code");
     const errorParam = searchParams.get("error");
@@ -37,7 +37,7 @@ export default function GoogleCallbackPage() {
         toast.success("Đăng nhập Google thành công!");
         router.replace("/");
       })
-      .catch((err : any) => {
+      .catch((err: any) => {
         const msg = err instanceof Error ? err.message : "Đăng nhập Google thất bại";
         toast.error(msg);
         setError(msg);

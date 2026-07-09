@@ -20,27 +20,29 @@ const STATIC_ROUTES: MetadataRoute.Sitemap = [
   { url: `${BASE_URL}/dashboard/student`, changeFrequency: "daily", priority: 0.8 }, 
 
   { url: `${BASE_URL}/classrooms`, changeFrequency: "daily", priority: 0.9 }, 
-  { url: `${BASE_URL}/classrooms/update`, changeFrequency: "weekly", priority: 0.7 },
-  { url: `${BASE_URL}/classrooms/create`, changeFrequency: "weekly", priority: 0.7 },   
+  { url: `${BASE_URL}/classrooms/edit`, changeFrequency: "weekly", priority: 0.7 },
+  { url: `${BASE_URL}/classrooms/detail`, changeFrequency: "daily", priority: 0.7 },
+  { url: `${BASE_URL}/classrooms/create`, changeFrequency: "weekly", priority: 0.7 },
+  { url: `${BASE_URL}/classrooms/schedule`, changeFrequency: "daily", priority: 0.7 }, 
 
   { url: `${BASE_URL}/banks`, changeFrequency: "daily", priority: 0.8 },            
   { url: `${BASE_URL}/banks/create`, changeFrequency: "monthly", priority: 0.6 },  
-  { url: `${BASE_URL}/banks/update`, changeFrequency: "monthly", priority: 0.6 },   
+  { url: `${BASE_URL}/banks/edit`, changeFrequency: "monthly", priority: 0.6 },   
 
   { url: `${BASE_URL}/exams`, changeFrequency: "daily", priority: 0.8 },             
   { url: `${BASE_URL}/exams/create`, changeFrequency: "weekly", priority: 0.7 },  
-  { url: `${BASE_URL}/exams/update`, changeFrequency: "weekly", priority: 0.7 },   
+  { url: `${BASE_URL}/exams/edit`, changeFrequency: "weekly", priority: 0.7 },   
 
   { url: `${BASE_URL}/scores`, changeFrequency: "daily", priority: 0.7 },
   { url: `${BASE_URL}/submissions`, changeFrequency: "daily", priority: 0.8 },                 
 
   { url: `${BASE_URL}/plans`, changeFrequency: "daily", priority: 0.7 },            
   { url: `${BASE_URL}/plans/create`, changeFrequency: "weekly", priority: 0.6 },  
-  { url: `${BASE_URL}/plans/update`, changeFrequency: "weekly", priority: 0.6 },  
+  { url: `${BASE_URL}/plans/edit`, changeFrequency: "weekly", priority: 0.6 },  
 
   { url: `${BASE_URL}/profile`, changeFrequency: "weekly", priority: 0.7 },         
   { url: `${BASE_URL}/profile/create`, changeFrequency: "monthly", priority: 0.5 }, 
-  { url: `${BASE_URL}/profile/update`, changeFrequency: "monthly", priority: 0.5 }, 
+  { url: `${BASE_URL}/profile/edit`, changeFrequency: "monthly", priority: 0.5 }, 
 
   { url: `${BASE_URL}/messages`, changeFrequency: "daily", priority: 0.8 }, 
   { url: `${BASE_URL}/notifications`, changeFrequency: "daily", priority: 0.6 },     

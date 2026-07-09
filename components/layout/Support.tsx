@@ -253,12 +253,7 @@ export function Support() {
                 <img
                   src="/images/logo/logo.png"
                   alt="Learnix Logo"
-                  className="block h-10 w-10 object-contain dark:hidden"
-                />
-                <img
-                  src="/images/logo/logo.png"
-                  alt="Learnix Logo"
-                  className="hidden h-10 w-10 object-contain dark:block"
+                  className="block h-10 w-10 object-contain"
                 />
               </div>
               <div>
@@ -323,8 +318,12 @@ export function Support() {
             </button>
 
             <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-white shadow-inner shrink-0">
-                <MessageSquare className="h-7 w-7" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-white shadow-inner shrink-0">
+                <img
+                  src="/images/logo/logo.png"
+                  alt="Learnix Logo"
+                  className="block h-10 w-10 object-contain"
+                />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-white">Góp ý với Learnix</h3>
