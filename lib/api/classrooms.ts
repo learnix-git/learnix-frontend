@@ -15,7 +15,7 @@ export const ClassroomsAPI = {
   },
 
   createClass: async (data: Payload): Promise<ApiResponse<Classroom>> => {
-    const res = await client.post<ApiResponse<Classroom>>("/classrooms", data);
+    const res = await client.post<ApiResponse<Classroom>>("/classrooms/create", data);
     return res.data;
   },
 

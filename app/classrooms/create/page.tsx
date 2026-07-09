@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type SubmitHandler, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/Select";
 import { FormatMoney } from "@/lib/utils";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
-import { classroomSchema, GRADE, type ClassroomFormValues } from "@/lib/validations/classrooms";
+import { classroomSchema, GRADE, type ClassroomFormData } from "@/lib/validations/classrooms";
 
 // ============ HELPERS ============
 function sanitizeCode(value: string) {
@@ -34,7 +34,9 @@ function sanitizeCode(value: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/gi, "d")
     .toUpperCase()
-    .replace(/[^A-Z0-9_]/g, "");
+    .replace(/[^A-Z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 // ============ PAGE ============
@@ -48,12 +50,12 @@ export default function CreateClassroomPage() {
     control,
     watch,
     formState: { errors },
-  } = useForm<ClassroomFormValues>({
-    resolver: zodResolver(classroomSchema),
+  } = useForm<ClassroomFormData>({
+    resolver: zodResolver(classroomSchema) as Resolver<ClassroomFormData>,
     defaultValues: {
       name: "",
       code: "",
-      grade: GRADE[2],
+      grade: GRADE[0],
       fee: 0,
       capacity: 50,
       description: "",
@@ -63,30 +65,30 @@ export default function CreateClassroomPage() {
 
   const values = watch();
 
-  const onSubmit = async (data: ClassroomFormValues) => {
+  const onSubmit: SubmitHandler<ClassroomFormData> = async (data) => {
     setSubmitting(true);
     try {
+      let numericGrade = parseInt(data.grade.replace(/\D/g, ""));
+      if (isNaN(numericGrade)) numericGrade = 13;
+
       const res = await ClassroomsAPI.createClass({
         name: data.name,
         code: data.code,
-        grade: data.grade,
+        grade: numericGrade,
         fee: Number(data.fee),
         capacity: Number(data.capacity),
         description: data.description || "",
       });
 
-      if (res && (res.status === "SUCCESS" || res.id || res.data)) {
-        toast.success("Tạo lớp học thành công!", {
-          description: `Lớp "${data.name}" đã được tạo.`,
-        });
+      if (res && res.status === "SUCCESS") {
+        toast.success("Tạo lớp học thành công!");
         router.push("/dashboard/teacher");
       } else {
-        toast.error((res as { message?: string }).message || "Không thể tạo lớp học, vui lòng thử lại.");
+        toast.error(res?.message || "Không thể tạo lớp học, vui lòng thử lại.");
       }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Đã xảy ra lỗi khi tạo lớp học, vui lòng thử lại.";
+    } catch (error: any) {
       console.error("Lỗi tạo lớp học:", error);
-      toast.error(message);
+      toast.error(error.message || "Đã xảy ra lỗi khi tạo lớp học, vui lòng thử lại.");
     } finally {
       setSubmitting(false);
     }
@@ -101,13 +103,14 @@ export default function CreateClassroomPage() {
           <div className="h-8 w-1.5 rounded-full bg-primary" />
           <div>
             <h1 className="m-0 text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">Tạo lớp học mới</h1>
+            <p className="m-0 mt-1.5 text-sm text-muted-foreground">Vui lòng điền đầy đủ thông tin bên dưới để tạo lớp học trên Learnix.</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* ═══ CỘT TRÁI: FORM (7/12) ═══ */}
           <div className="lg:col-span-7 space-y-6">
             <Card className="!p-4 sm:!p-6 !rounded-3xl space-y-5">
+
               {/* Tên lớp học */}
               <div className="space-y-1.5">
                 <Label htmlFor="name">
@@ -115,7 +118,7 @@ export default function CreateClassroomPage() {
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Ví dụ: Toán 12"
+                  placeholder="Ví dụ: Lớp học Learnix"
                   className={errors.name ? "border-rose-500 focus-visible:ring-rose-500" : ""}
                   {...register("name")}
                 />
@@ -135,7 +138,7 @@ export default function CreateClassroomPage() {
                   render={({ field }) => (
                     <Input
                       id="code"
-                      placeholder="Ví dụ: MA-12"
+                      placeholder="Ví dụ: MON-HOC-LEARNIX"
                       className={errors.code ? "border-rose-500 focus-visible:ring-rose-500" : ""}
                       value={field.value}
                       onChange={(e) => field.onChange(sanitizeCode(e.target.value))}
@@ -146,7 +149,7 @@ export default function CreateClassroomPage() {
                 {errors.code ? (
                   <p className="text-xs font-medium text-rose-500">{errors.code.message}</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Mã lớp được viết liền, chỉ gồm chữ, số và dấu gạch ngang.</p>
+                  <p className="text-xs text-muted-foreground">Tự động viết hoa, chỉ gồm chữ, số và dấu gạch dưới.</p>
                 )}
               </div>
 
@@ -161,7 +164,7 @@ export default function CreateClassroomPage() {
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className={errors.grade ? "border-rose-500" : ""}>
-                        <SelectValue placeholder="Chọn khối lớp" />
+                        <SelectValue placeholder="Khối lớp học" />
                         <ChevronDown className="hidden" />
                       </SelectTrigger>
                       <SelectContent>
@@ -192,7 +195,11 @@ export default function CreateClassroomPage() {
                     step={10000}
                     placeholder="0"
                     className={errors.fee ? "border-rose-500 focus-visible:ring-rose-500" : ""}
-                    {...register("fee")}
+                    {...register("fee", {
+                      onChange: (e) => {
+                        e.target.value = e.target.value.replace(/^0+(?=\d)/, "");
+                      }
+                    })}
                   />
                   {errors.fee && (
                     <p className="text-xs font-medium text-rose-500">{errors.fee.message}</p>
@@ -210,7 +217,11 @@ export default function CreateClassroomPage() {
                     max={500}
                     placeholder="50"
                     className={errors.capacity ? "border-rose-500 focus-visible:ring-rose-500" : ""}
-                    {...register("capacity")}
+                    {...register("capacity", {
+                      onChange: (e) => {
+                        e.target.value = e.target.value.replace(/^0+(?=\d)/, "");
+                      }
+                    })}
                   />
                   {errors.capacity && (
                     <p className="text-xs font-medium text-rose-500">{errors.capacity.message}</p>
@@ -226,7 +237,7 @@ export default function CreateClassroomPage() {
                 <textarea
                   id="description"
                   rows={5}
-                  placeholder="Giới thiệu ngắn gọn về lớp học của bạn..."
+                  placeholder="Giới thiệu ngắn gọn về khóa học của bạn..."
                   className={`w-full rounded-2xl border bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/80 outline-none transition-all focus:bg-white/60 dark:focus:bg-slate-900/60 focus:ring-2 resize-none ${
                     errors.description ? "border-rose-500 focus:ring-rose-500/20" : "border-white/60 dark:border-white/10 focus:border-primary/40 focus:ring-primary/20"
                   }`}
@@ -239,15 +250,17 @@ export default function CreateClassroomPage() {
             </Card>
 
             {/* ═══ ACTION BAR ═══ */}
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <div className="grid grid-cols-2 gap-2 ml-auto w-fit">
               <Button
                 type="button"
+                nativeButton={false}
                 variant="outline"
                 onClick={() => router.back()}
                 disabled={submitting}
-                className="h-11 rounded-2xl px-6 text-[13px]"
+                className="h-10 w-full rounded-xl gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10"
               >
-                <ArrowLeft className="h-4 w-4" /> Hủy bỏ
+                <ArrowLeft className="h-4 w-4" />
+                Hủy bỏ
               </Button>
               <Button
                 type="submit"
@@ -265,7 +278,7 @@ export default function CreateClassroomPage() {
             </div>
           </div>
 
-          {/* ═══ CỘT PHẢI: LIVE PREVIEW (5/12) ═══ */}
+          {/* ═══ LIVE PREVIEW ═══ */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-6 space-y-3">
               <h3 className="m-0 mb-2 px-1 text-[13px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Xem trước lớp học</h3>
@@ -296,7 +309,7 @@ export default function CreateClassroomPage() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <Avatar alt="Giảng viên" size="sm" />
-                    <span className="truncate text-[13px] font-medium text-muted-foreground">Bạn</span>
+                    <span className="truncate text-[13px] font-medium text-muted-foreground">Bạn (Giảng viên phụ trách)</span>
                   </div>
                   <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-amber-500">
                     <Star className="h-3.5 w-3.5 fill-amber-500" /> Mới
@@ -324,10 +337,14 @@ export default function CreateClassroomPage() {
                   </div>
                 </div>
 
-                <Button type="button" className="h-10 w-full rounded-xl text-[13px]">
+                <Button type="button" className="h-10 w-full rounded-xl text-[13px]" disabled>
                   Tham gia lớp học
                 </Button>
               </Card>
+
+              <p className="px-1 text-xs leading-relaxed text-muted-foreground">
+                Đây là bản xem trước thẻ lớp học sẽ trông như thế này trên trang danh sách lớp học sau khi bạn tạo thành công.
+              </p>
             </div>
           </div>
         </form>
