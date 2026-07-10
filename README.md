@@ -120,7 +120,7 @@ $$R_{online} = V_{inflow} - E_{teacher} = (P_{course} \times 100\%) - (P_{course
 
 Từ hai mô hình toán học trên, tổng doanh thu thuần của toàn bộ hệ thống Learnix tại một thời điểm bất kỳ được xác định bằng hàm tổng hợp sau:
 
-$$\text{Total Net Revenue} = \sum_{i=1}^{n} (H_i \times 30\%) + \sum_{j=1}^{m} (P_{course\_j} \times 30\%)$$
+$$\text{Total Net Revenue} = \sum_{i=1}^{n} (H_i \times 30\text{\%}) + \sum_{j=1}^{m} (P_{\text{course}\_j} \times 30\text{\%})$$
 
 Trong đó:
 * $n$ là tổng số lớp học Gia sư Offline chốt hợp đồng thành công trong kỳ đối soát.
