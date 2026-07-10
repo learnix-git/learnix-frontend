@@ -113,10 +113,10 @@ export default function ClassroomsPage() {
       if (res.status === "SUCCESS" && res.data) {
         setClassrooms(res.data as any);
       } else {
-        toast.error("Không thể tải danh sách lớp học, vui lòng thử lại.");
+        toast.error("Không thể tải danh sách lớp học, vui lòng thử lại");
       }
     } catch (error) {
-      toast.error("Đã xảy ra lỗi khi tải danh sách lớp học.");
+      toast.error("Đã xảy ra lỗi khi tải danh sách lớp học");
     } finally {
       setLoading(false);
     }
@@ -124,7 +124,7 @@ export default function ClassroomsPage() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   // Kiểm tra xem người dùng có đang áp dụng bộ lọc nào hay không
   const hasFilter = search.trim() !== "" || gradeFilter !== "all" || statusFilter !== "all";

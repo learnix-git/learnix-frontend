@@ -29,7 +29,7 @@ import {
   SelectItem,
 } from "@/components/ui/Select";
 
-import { FormatMoney, SanitizeCode } from "@/lib/utils";
+import { FormatMoney } from "@/lib/utils";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
 import { 
   classroomSchema, GRADE, type ClassroomFormData 
@@ -48,7 +48,6 @@ export default function CreateClassroomPage() {
     
     defaultValues: {
       name: "",
-      code: "",
       grade: GRADE[0],
       fee: 0,
       capacity: 50,
@@ -70,7 +69,6 @@ export default function CreateClassroomPage() {
       // Gọi API
       const res = await ClassroomsAPI.createClass({
         name: data.name,
-        code: data.code,
         grade: numeric,
         fee: Number(data.fee),
         capacity: Number(data.capacity),
@@ -122,32 +120,6 @@ export default function CreateClassroomPage() {
                 />
                 {errors.name && (
                   <p className="text-xs font-medium text-rose-500">{errors.name.message}</p>
-                )}
-              </div>
-
-              {/* Mã lớp học */}
-              <div className="space-y-1.5">
-                <Label htmlFor="code">
-                  <Hash className="h-3.5 w-3.5 text-primary" /> Mã lớp học <span className="text-rose-500">*</span>
-                </Label>
-                <Controller
-                  name="code"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="code"
-                      placeholder="XXX-XXX-LEARNIX"
-                      className={errors.code ? "border-rose-500 focus-visible:ring-rose-500" : ""}
-                      value={field.value}
-                      onChange={(e) => field.onChange(SanitizeCode(e.target.value))}
-                      onBlur={field.onBlur}
-                    />
-                  )}
-                />
-                {errors.code ? (
-                  <p className="text-xs font-medium text-rose-500">{errors.code.message}</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Tự động viết hoa, chỉ gồm chữ, số và dấu gạch dưới.</p>
                 )}
               </div>
 
@@ -294,7 +266,7 @@ export default function CreateClassroomPage() {
                     {values.name?.trim() || "Tên lớp học của bạn sẽ hiện ở đây"}
                   </h3>
                   <p className="m-0 text-[12px] font-bold text-primary">
-                    Mã lớp: {values.code?.trim() || "MA-LOP"}
+                    Mã lớp: Dữ liệu được tạo tự động
                   </p>
                 </div>
                 

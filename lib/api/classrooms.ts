@@ -1,7 +1,7 @@
 import client from "./client";
 import type { ApiResponse, Classroom } from "./types";
 
-export type Payload = Pick<Classroom, "name" | "code" | "fee" | "grade" | "description" | "capacity">;
+export type Payload = Pick<Classroom, "name" | "fee" | "grade" | "description" | "capacity">;
 
 export const ClassroomsAPI = {
   // ! In use
@@ -10,8 +10,9 @@ export const ClassroomsAPI = {
     return res.data;
   },
 
-  getById: async (id: string): Promise<ApiResponse<Classroom>> => {
-    const res = await client.get<ApiResponse<Classroom>>(`/classrooms/${id}`);
+  // ! In use
+  getById: async (id: string): Promise<ApiResponse<any>> => {
+    const res = await client.get<ApiResponse<any>>(`/classrooms/${id}`);
     return res.data;
   },
 

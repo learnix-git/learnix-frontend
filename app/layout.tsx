@@ -21,7 +21,7 @@ const BASE_URL =
 
 export const metadata: Metadata = {
   title: {
-    default: "Learnix — Nền tảng dạy & học trực tuyến",
+    default: "Learnix ",
     template: "%s — Learnix",
   },
   description:
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Learnix",
-    title: "Learnix — Nền tảng dạy & học trực tuyến",
+    title: "Learnix",
     description:
       "Hệ thống quản lý lớp học và học tập đỉnh cao dành cho giáo viên và học sinh.",
     url: BASE_URL,
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Learnix — Nền tảng dạy & học trực tuyến",
+    title: "Learnix",
     description:
       "Hệ thống quản lý lớp học và học tập đỉnh cao dành cho giáo viên và học sinh.",
     images: ["/images/og-default.png"],
@@ -102,21 +102,21 @@ export default function RootLayout({
                 <Header />
                   <main className="relative min-h-[calc(100vh-64px)] bg-slate-50 dark:bg-background font-sans">
                     
-                    {/* Glow Effects - Aura Gradient */}
-                    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                      <div className="absolute top-[-15%] left-[-15%] w-[65%] h-[60%] bg-blue-500/25 rounded-full blur-[var(--glow-blur)] opacity-50 dark:bg-primary/30 dark:opacity-60 animate-blob" />
-                      <div className="absolute top-[10%] right-[-10%] w-[60%] h-[55%] bg-sky-400/20 rounded-full blur-[var(--glow-blur)] opacity-40 dark:bg-purple-600/20 dark:opacity-50 animate-blob animation-delay-2000" />
-                      <div className="absolute bottom-[-15%] left-[5%] w-[60%] h-[60%] bg-cyan-400/20 rounded-full blur-[var(--glow-blur)] opacity-40 dark:bg-blue-600/20 dark:opacity-50 animate-blob animation-delay-4000" />
-                    </div>
+                  {/* Glow Effects - Aura Gradient */}
+                  <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div className="absolute top-[-15%] left-[-15%] w-[65%] h-[60%] bg-blue-500/25 rounded-full blur-[var(--glow-blur)] opacity-50 dark:bg-primary/30 dark:opacity-60 animate-blob" />
+                    <div className="absolute top-[10%] right-[-10%] w-[60%] h-[55%] bg-sky-400/20 rounded-full blur-[var(--glow-blur)] opacity-40 dark:bg-purple-600/20 dark:opacity-50 animate-blob animation-delay-2000" />
+                    <div className="absolute bottom-[-15%] left-[5%] w-[60%] h-[60%] bg-cyan-400/20 rounded-full blur-[var(--glow-blur)] opacity-40 dark:bg-blue-600/20 dark:opacity-50 animate-blob animation-delay-4000" />
+                  </div>
 
-                    <div className="relative z-10">
-                      {children}
-                    </div>
-                    <div className="relative z-20">
-                      <Support />
-                    </div>
-                  </main>
-                <Footer />
+                  <div className="relative z-10">
+                    {children}
+                  </div>
+                  <div className="relative z-20">
+                    <Support />
+                  </div>
+                </main>
+              <Footer />
             </ChatProvider>
           </Hydrate>
         </ThemeProvider>

@@ -9,11 +9,6 @@ export const classroomSchema = z
       .min(1, "Vui lòng nhập tên lớp học")
       .min(5, "Tên lớp học phải có ít nhất 5 ký tự")
       .max(255, "Tên lớp học quá dài"),
-    code: z
-      .string()
-      .min(1, "Vui lòng nhập mã lớp học")
-      .min(3, "Mã lớp học phải có ít nhất 3 ký tự")
-      .regex(/^[A-Z0-9-]+$/, "Mã lớp chỉ gồm chữ hoa, số và dấu gạch ngang"),
     grade: z
       .enum(GRADE)
       .optional()
