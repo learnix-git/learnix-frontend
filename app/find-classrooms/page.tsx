@@ -6,24 +6,24 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Search, X, Bookmark, Star, Users,
-  GraduationCap, Wallet, ArrowUpRight, LogIn,
+  Search, X, Bookmark,
+  GraduationCap, LogIn,
   SlidersHorizontal, BookX, Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Avatar } from "@/components/ui/Avatar";
 import { Input } from "@/components/ui/Input";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { Empty } from "@/components/ui/Empty";
 
 import type { Classroom } from "@/lib/api/types";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
-import { NormalizeString, FormatMoney } from "@/lib/utils";
+import { NormalizeString } from "@/lib/utils";
 import { GetToken } from "@/lib/auth/session";
 import { jwtDecode } from "jwt-decode";
+import ClassroomsCard from "@/components/classrooms/ClassroomsCard"; 
+import ClassroomsSkeleton from "@/components/classrooms/ClassroomsSkeleton"; 
+import { useRouter } from "next/navigation";
 
 const  GRADE = [
   { key: "all", label: "Tất cả" },
@@ -59,43 +59,8 @@ function FilterGrade(grade: string | number, map: GradeMap) {
   return str.includes(map);
 }
 
-// Thanh tiến trình về số lượng học sinh tham gia
-function ProgressBar({ enrolled, capacity }: { enrolled: number; capacity: number }) {
-  const percent = capacity > 0 ? Math.min(100, Math.round((enrolled / capacity) * 100)) : 0;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground">
-        <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Sĩ số</span>
-        <span className="text-foreground">{enrolled}/{capacity}</span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
-        <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  );
-}
-
-// Khung xương cho thẻ lớp học
-function SkeletionCard() {
-  return (
-    <Card className="!p-4 sm:!p-5 !rounded-3xl space-y-4">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-5 w-24 !rounded-full" />
-        <Skeleton className="h-5 w-16 !rounded-full" />
-      </div>
-      <Skeleton className="h-5 w-full" />
-      <Skeleton className="h-4 w-2/3" />
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-8 w-8 !rounded-full" />
-        <Skeleton className="h-4 w-32" />
-      </div>
-      <Skeleton className="h-2 w-full" />
-      <Skeleton className="h-10 w-full !rounded-xl" />
-    </Card>
-  );
-}
-
-export default function ClassroomsPage() {
+export default function FindClassroomsPage() {
+  const router = useRouter(); 
   const [loading, setLoading] = useState<boolean>(true);
   const [classrooms, setClassrooms] = useState<(Classroom & Record<string, any>)[]>([]);
 
@@ -228,7 +193,7 @@ export default function ClassroomsPage() {
             {user?.role === "TEACHER" ? (
               <Button 
                 nativeButton={false} 
-                render={<Link href="/classrooms/create" />} 
+                render={<Link href="/post-classrooms" />} 
                 className="h-11 w-full rounded-2xl text-[13px] gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10"
               >
                 <Plus className="h-4 w-4" /> Tạo lớp học mới
@@ -246,8 +211,8 @@ export default function ClassroomsPage() {
 
             <Button 
               nativeButton={false} 
-              variant="secondary"
-              render={<Link href="/classrooms/stored" />} 
+              variant="default"
+              render={<Link href="/" />} 
               className="h-11 rounded-2xl px-5 text-[13px] shadow-lg shadow-primary/20"
             >
               <Bookmark className="h-4 w-4" /> Lớp học đã lưu
@@ -321,7 +286,7 @@ export default function ClassroomsPage() {
         {/* ═══ GRID ═══ */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => <SkeletionCard key={i} />)}
+            {Array.from({ length: 6 }).map((_, i) => <ClassroomsSkeleton key={i} />)} 
           </div>
         ) : results.length === 0 ? (
           <Empty
@@ -340,65 +305,12 @@ export default function ClassroomsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {results.map((cls) => (
-              <Card key={cls.id} hover className="!p-4 sm:!p-5 !rounded-3xl flex flex-col gap-4">
-                {/* Badges */}
-                <div className="flex items-center justify-between">
-                  <Badge variant={cls.active ? "success" : "warning"}>
-                    {cls.active ? "Đang mở" : "Tạm đóng"}
-                  </Badge>
-                  <Badge variant="secondary" className="gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5" /> Khối {cls.grade}
-                  </Badge>
-                </div>
-
-                {/* Title & Code */}
-                <div className="space-y-1">
-                  <h3 className="m-0 line-clamp-2 text-base font-black leading-snug tracking-tight text-foreground">
-                    {cls.name}
-                  </h3>
-                  <p className="m-0 text-[12px] font-bold text-primary">Mã lớp: {cls.code}</p>
-                </div>
-
-                {/* Teacher & Rating */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Avatar alt={cls.name} size="sm" />
-                    <span className="truncate text-[13px] font-medium text-muted-foreground">{cls.name}</span>
-                  </div>
-                  <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-amber-500">
-                    <Star className="h-3.5 w-3.5 fill-amber-500" /> {(cls.rating || 0).toFixed(1)}
-                  </span>
-                </div>
-
-                {/* Fee */}
-                <div className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/55 px-3 py-2.5 dark:border-white/10 dark:bg-white/5">
-                  <span className="flex items-center gap-1.5 text-[12px] font-bold text-muted-foreground">
-                    <Wallet className="h-3.5 w-3.5 text-emerald-500" /> Học phí
-                  </span>
-                  {!cls.fee || cls.fee === 0 ? (
-                    <Badge variant="success">Miễn phí</Badge>
-                  ) : (
-                    <span className="text-[13px] font-black text-foreground">{FormatMoney(cls.fee)}</span>
-                  )}
-                </div>
-
-                {/* Enroll progress */}
-                <ProgressBar enrolled={cls.enrolled || 0} capacity={cls.capacity || 50} />
-
-                {/* Action */}
-                <div className="mt-auto pt-1">
-                  {cls.isEnrolled ? (
-                    <Button nativeButton={false} render={<Link href={`/classrooms/?id=${cls.id}`} />} className="h-10 w-full rounded-xl text-[13px]">
-                      <LogIn className="h-4 w-4" /> Vào lớp học
-                    </Button>
-                  ) : (
-                    <Button nativeButton={false} variant="outline" render={<Link href={`/classrooms/${cls.id}`} />} className="h-10 w-full rounded-xl gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10">
-                      Xem lớp học <ArrowUpRight className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
+              <ClassroomsCard 
+                key={cls.id}
+                classroom={{ ...cls, count: cls.enrolled || 0, teacher: cls.teacher || cls.name }}
+                onAction={(id) => router.push(cls.status ? `/my-classrooms/?id=${id}` : `/my-classrooms/${id}`)}
+              />
+            ))} 
           </div>
         )}
       </div>

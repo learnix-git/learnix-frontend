@@ -11,16 +11,14 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
-  BookOpen, Hash, GraduationCap, Wallet, Users,
-  AlignLeft, ArrowLeft, Sparkles, Star, ChevronDown,
+  BookOpen, GraduationCap, Wallet, Users,
+  AlignLeft, ArrowLeft, Sparkles, ChevronDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { Avatar } from "@/components/ui/Avatar";
 import {
   Select,
   SelectTrigger,
@@ -29,13 +27,13 @@ import {
   SelectItem,
 } from "@/components/ui/Select";
 
-import { FormatMoney } from "@/lib/utils";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
 import { 
   classroomSchema, GRADE, type ClassroomFormData 
 } from "@/lib/validations/classrooms";
+import ClassroomsCard from "@/components/classrooms/ClassroomsCard";
 
-export default function CreateClassroomPage() {
+export default function PostClassroomPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   
@@ -253,64 +251,18 @@ export default function CreateClassroomPage() {
             <div className="lg:sticky lg:top-6 space-y-3">
               <h3 className="m-0 mb-2 px-1 text-[13px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Xem trước lớp học</h3>
 
-              <Card className="!p-4 sm:!p-5 !rounded-3xl flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <Badge variant="success">Đang mở</Badge>
-                  <Badge variant="secondary" className="gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5" /> {values.grade || "Chưa chọn"}
-                  </Badge>
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className="m-0 mb-1 line-clamp-2 text-base font-black leading-snug tracking-tight text-foreground">
-                    {values.name?.trim() || "Tên lớp học của bạn sẽ hiện ở đây"}
-                  </h3>
-                  <p className="m-0 text-[12px] font-bold text-primary">
-                    Mã lớp: Dữ liệu được tạo tự động
-                  </p>
-                </div>
-                
-                {values.description?.trim() && (
-                  <p className="m-0 line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">
-                    Mô tả: {values.description}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Avatar alt="Giảng viên" size="sm" />
-                    <span className="truncate text-[13px] font-medium text-muted-foreground">Tên của bạn sẽ hiện ở đây</span>
-                  </div>
-                  <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-amber-500">
-                    <Star className="h-3.5 w-3.5 fill-amber-500" /> Mới
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-white/55 px-3 py-2.5 dark:border-white/10 dark:bg-white/5">
-                  <span className="flex items-center gap-1.5 text-[12px] font-bold text-muted-foreground">
-                    <Wallet className="h-3.5 w-3.5 text-emerald-500" /> Học phí
-                  </span>
-                  {!values.fee || Number(values.fee) === 0 ? (
-                    <Badge variant="success">Miễn phí</Badge>
-                  ) : (
-                    <span className="text-[13px] font-black text-foreground">{FormatMoney(Number(values.fee))}</span>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Sĩ số</span>
-                    <span className="text-foreground">0/{values.capacity || 50}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
-                    <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: "0%" }} />
-                  </div>
-                </div>
-
-                <Button type="button" className="h-10 w-full rounded-xl text-[13px]" disabled>
-                  Tham gia lớp học
-                </Button>
-              </Card>
+              <ClassroomsCard 
+                classroom={{ 
+                  name: values.name || "", 
+                  grade: values.grade as any, 
+                  fee: values.fee || 0,
+                  capacity: values.capacity as any || 50, 
+                  description: values.description || "", 
+                  count: 0, 
+                  active: true,
+                }}
+                isPreview={true} 
+              /> 
 
               <p className="px-1 text-xs leading-relaxed text-muted-foreground">
                 Đây là bản xem trước thẻ lớp học sẽ trông như thế này trên trang danh sách lớp học sau khi bạn tạo thành công.

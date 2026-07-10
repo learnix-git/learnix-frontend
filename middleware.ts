@@ -4,16 +4,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtDecode } from 'jwt-decode';
 
+// TODO: Làm xong nhớ kiểm tra lại
+
 const TEACHER_ROUTES = [
-  '/classrooms/create',
-  '/dashboard/teacher',
-  '/classrooms/settings',      
+  '/post-classrooms',  
+  '/dashboard-teacher'    
 ];
 
 const STUDENT_ROUTES = [
-  '/classrooms/enroll',
-  '/dashboard/student',
-  '/classrooms/stored',
+  '/dashboard-student',
 ];
 
 export function middleware(request: NextRequest) {

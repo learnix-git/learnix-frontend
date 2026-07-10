@@ -267,7 +267,7 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
             {isTeacher ? "Góc quản lý" : "Góc học tập"}
           </div>
           
-          <Link href={isTeacher ? "/dashboard/teacher" : "/dashboard/student"} onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
+          <Link href="/my-classrooms" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
             <BookOpen className="h-4 w-4 text-primary" />
             <span>Lớp học của tôi</span>
           </Link>
@@ -397,7 +397,7 @@ export function Header() {
             onClick={() => setclassroomsDropdown(false)}
           >
             <Link
-              href="/classrooms"
+              href="/find-classrooms"
               className={Cn(
                 "flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-xl",
                 isclassroomsActive ? "text-primary font-bold bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"
@@ -711,7 +711,7 @@ export function Header() {
                   Tất cả lớp học
                 </Link>
                 <Link href="/classrooms?type=live" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
-                  Lớp học tương tác (Live)
+                  Lớp học trực tuyến
                 </Link>
                 <Link href="/classrooms/stored" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
                   Lớp học yêu thích

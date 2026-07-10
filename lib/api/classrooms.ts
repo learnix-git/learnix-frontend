@@ -6,13 +6,19 @@ export type Payload = Pick<Classroom, "name" | "fee" | "grade" | "description" |
 export const ClassroomsAPI = {
   // ! In use
   getAll: async (): Promise<ApiResponse<Classroom[]>> => {
-    const res = await client.get<ApiResponse<Classroom[]>>("/classrooms");
+    const res = await client.get<ApiResponse<Classroom[]>>("/find-classrooms");
     return res.data;
   },
 
   // ! In use
   getById: async (id: string): Promise<ApiResponse<any>> => {
-    const res = await client.get<ApiResponse<any>>(`/classrooms/${id}`);
+    const res = await client.get<ApiResponse<any>>(`/my-classrooms/${id}`);
+    return res.data;
+  },
+
+  // ! In use
+  getMy: async (): Promise<ApiResponse<any>> => {
+    const res = await client.get<ApiResponse<any>>('/classrooms');
     return res.data;
   },
 

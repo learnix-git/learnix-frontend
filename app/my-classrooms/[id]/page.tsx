@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Empty } from "@/components/ui/Empty";
+import ClassroomsProgress from "@/components/classrooms/ClassroomsProgress";
 
 import type { Classroom, Exam, Member } from "@/lib/api/types";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
@@ -37,22 +38,6 @@ const TABS = [
 ] as const;
 
 type TabMap = (typeof TABS)[number]["key"];
-
-// Thanh tiến trình
-function ProgressBar({ enrolled, capacity }: { enrolled: number; capacity: number }) {
-  const percent = capacity > 0 ? Math.min(100, Math.round((enrolled / capacity) * 100)) : 0;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground">
-        <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Sĩ số</span>
-        <span className="text-foreground">{enrolled}/{capacity}</span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
-        <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  );
-}
 
 // Khung xương
 function SkeletonCard() {
@@ -413,7 +398,8 @@ export default function DetailClassroomPage() {
                     <span className="font-bold text-foreground">{classroom.grade}</span>
                   </div>
 
-                  <ProgressBar enrolled={enrolled} capacity={capacity} />
+                  {/* ! Gemini: Đã sử dụng component ClassroomsProgress ở đây */}
+                  <ClassroomsProgress current={enrolled} capacity={capacity} />
 
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="flex items-center gap-1.5 font-bold text-muted-foreground">
