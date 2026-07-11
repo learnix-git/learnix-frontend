@@ -1,5 +1,3 @@
-// * Accept * //
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -49,10 +47,10 @@ export default function TeacherDashboardPage() {
           DashboardTeacher.getSchedule(),
         ]);
 
-        if (resClasses.status === "SUCCESS" && resClasses.data) {
+        if (resClasses.success === true && resClasses.data) {
           setClasses(resClasses.data);
         }
-        if (resSchedule.status === "SUCCESS" && resSchedule.data) {
+        if (resSchedule.success === true && resSchedule.data) {
           setSchedule(resSchedule.data);
         }
       } catch (error) {

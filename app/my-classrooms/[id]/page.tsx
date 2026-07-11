@@ -1,5 +1,3 @@
-// * Accept * //
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -40,29 +38,74 @@ const TABS = [
 type TabMap = (typeof TABS)[number]["key"];
 
 // Khung xương
+// ! Claude: đồng bộ lại skeleton theo hero kính mờ (rounded-[2.5rem]) và sidebar kính mờ (rounded-[2rem])
+// mới, để không bị lệch/nhảy layout lúc chuyển từ loading sang dữ liệu thật.
 function SkeletonCard() {
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-8 space-y-6">
-      <Card className="!p-4 sm:!p-6 !rounded-3xl space-y-4">
-        <Skeleton className="h-5 w-32 !rounded-full" />
-        <Skeleton className="h-9 w-2/3" />
-        <Skeleton className="h-4 w-1/2" />
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-9 w-9 !rounded-full" />
-          <Skeleton className="h-4 w-40" />
+      {/* Hero banner */}
+      <div className="rounded-[2.5rem] border border-white/60 bg-white/50 p-6 backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/40 sm:p-8">
+        <div className="flex flex-wrap items-center gap-2">
+          <Skeleton className="h-6 w-20 !rounded-full" />
+          <Skeleton className="h-6 w-24 !rounded-full" />
         </div>
-      </Card>
+        <div className="mt-4 flex items-start gap-3">
+          <Skeleton className="mt-1.5 h-8 w-1.5 shrink-0 !rounded-full sm:h-9" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-8 w-2/3 sm:h-9" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-200/70 pt-4 dark:border-white/10">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-9 !rounded-full" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <Skeleton className="h-6 w-16 !rounded-full" />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Main content */}
         <div className="lg:col-span-8 space-y-4">
-          <Skeleton className="h-11 w-full !rounded-2xl" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-        <div className="lg:col-span-4">
-          <Card className="!p-5 !rounded-3xl space-y-4">
-            <Skeleton className="h-8 w-1/2" />
-            <Skeleton className="h-11 w-full !rounded-xl" />
-            <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-11 w-full !rounded-[1.75rem]" />
+          <Card className="!p-4 sm:!p-6 !rounded-[2rem] space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
           </Card>
+        </div>
+
+        {/* Sticky sidebar */}
+        <div className="lg:col-span-4">
+          <div className="space-y-5 rounded-[2rem] border border-white/60 bg-white/50 p-5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-8 w-1/2" />
+            </div>
+            <Skeleton className="h-12 w-full !rounded-2xl" />
+            <div className="space-y-3 border-t border-slate-200/70 pt-4 dark:border-white/10">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-12" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+                <Skeleton className="h-1.5 w-full !rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-5 w-16 !rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -91,7 +134,7 @@ export default function DetailClassroomPage() {
     try {
       const res = await ClassroomsAPI.getById(ID);
       
-      if (res && res.status === "SUCCESS" && res.data) {
+      if (res && res.success === true && res.data) {
         const classData = res.data;
         
         setFeed(classData.feed || []);
@@ -126,7 +169,7 @@ export default function DetailClassroomPage() {
     setJoining(true);
     try {
       const res = await ClassroomsAPI.joinClass(id);
-      if (res && res.status === "SUCCESS") {
+      if (res && res.success === true) {
         toast.success("Đăng ký tham gia lớp học thành công!");
         setClassroom((prev) =>
           prev ? { ...prev, isEnrolled: true, enrolled: (prev.enrolled || 0) + 1 } : prev
@@ -179,40 +222,58 @@ export default function DetailClassroomPage() {
       <div className="max-w-[1280px] mx-auto px-4 py-8 space-y-6">
 
         {/* ═══ HERO BANNER ═══ */}
-        <Card className="!p-4 sm:!p-6 !rounded-3xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={classroom.active ? "success" : "warning"}>
-              {classroom.active ? "Đang mở" : "Tạm đóng"}
-            </Badge>
+        {/* ! Claude: đổi Card phẳng sang kính mờ (glass) + bo góc 2.5rem + quầng sáng nền mờ phía sau,
+            đồng bộ với hero của trang "Khám Phá Lớp Học" (FindClassroomsPage) làm chuẩn */}
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/60 bg-white/50 p-6 shadow-sm backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/40 sm:p-8">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+
+          <div className="relative flex flex-wrap items-center gap-2">
+            {/* ! Claude: thêm chấm tròn cho badge trạng thái, đồng bộ với ClassroomsCard */}
+            {classroom.active ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-600 dark:text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Đang mở
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs font-black text-rose-600 dark:text-rose-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> Tạm đóng
+              </span>
+            )}
             <Badge variant="secondary" className="gap-1.5">
               <GraduationCap className="h-3.5 w-3.5" /> {classroom.grade === 13 ? "Đại học" : `Khối ${classroom.grade}`}
             </Badge>
           </div>
 
-          <h1 className="m-0 mt-3 text-2xl font-black leading-snug tracking-tight text-foreground sm:text-3xl">
-            {classroom.name}
-          </h1>
-          <p className="m-0 mt-1.5 text-[13px] font-bold text-primary">Mã lớp: {classroom.code}</p>
+          {/* ! Claude: thêm thanh accent dọc bên trái tiêu đề, lấy theo signature "h-9 w-2 rounded-full bg-primary" của hero trang danh sách */}
+          <div className="relative mt-4 flex items-start gap-3">
+            <div className="mt-1.5 h-8 w-1.5 shrink-0 rounded-full bg-primary sm:h-9" />
+            <div className="min-w-0">
+              <h1 className="m-0 text-2xl font-black leading-snug tracking-tight text-foreground sm:text-3xl">
+                {classroom.name}
+              </h1>
+              <p className="m-0 mt-1.5 text-[13px] font-bold text-primary">Mã lớp: {classroom.code}</p>
+            </div>
+          </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-200/70 pt-4 dark:border-white/10">
+          <div className="relative mt-5 flex flex-wrap items-center gap-4 border-t border-slate-200/70 pt-4 dark:border-white/10">
             <div className="flex items-center gap-2">
-              <Avatar alt={classroom.teacherAvatar} size="sm" />
+              <Avatar alt={classroom.teacherRef?.name || "GV"} src={classroom.teacherRef?.avatar} size="sm" className="ring-2 ring-white dark:ring-slate-900" />
               <span className="text-[13px] font-medium text-muted-foreground">
-                Giáo viên: <span className="font-bold text-foreground">{classroom.teacherName || classroom.teacher}</span>
+                Giáo viên: <span className="font-bold text-foreground">{classroom.teacherRef?.name}</span>
               </span>
             </div>
-            <span className="flex items-center gap-1.5 text-sm font-bold text-amber-500">
-              <Star className="h-4 w-4 fill-amber-500" /> {(classroom.rating || 0).toFixed(1)}
+            <span className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-500">
+              <Star className="h-4 w-4 fill-amber-500" /> {(classroom.rating || "Mới")}
             </span>
           </div>
-        </Card>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
           {/* ═══ MAIN CONTENT ═══ */}
           <div className="lg:col-span-8 space-y-4">
             {/* Tab navigation */}
-            <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200/70 bg-white/55 p-1.5 dark:border-white/10 dark:bg-white/5">
+            {/* ! Claude: đổi rounded-2xl -> rounded-[1.75rem] để mềm mại hơn, thêm hiệu ứng chuyển tab mượt hơn */}
+            <div className="flex flex-wrap gap-2 rounded-[1.75rem] border border-slate-200/70 bg-white/55 p-1.5 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = active === tab.key;
@@ -220,9 +281,9 @@ export default function DetailClassroomPage() {
                   <button
                     key={tab.key}
                     onClick={() => setActive(tab.key)}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold transition-all cursor-pointer sm:flex-none ${
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] font-bold transition-all duration-200 cursor-pointer sm:flex-none ${
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-[1.02]"
                         : "text-muted-foreground hover:bg-white/60 dark:hover:bg-white/10"
                     }`}
                   >
@@ -234,8 +295,9 @@ export default function DetailClassroomPage() {
             </div>
 
             {/* Tab content */}
+            {/* ! Claude: thêm animate-in fade-in cho nội dung tab, đồng bộ với hiệu ứng chip filter ở FindClassroomsPage */}
             {active === "overview" && (
-              <Card className="!p-4 sm:!p-6 !rounded-3xl">
+              <Card className="!p-4 sm:!p-6 !rounded-[2rem] animate-in fade-in duration-200">
                 {classroom.description?.trim() ? (
                   <p className="m-0 whitespace-pre-line text-[14px] leading-relaxed text-muted-foreground">
                     {classroom.description}
@@ -247,17 +309,18 @@ export default function DetailClassroomPage() {
             )}
 
             {active === "feed" && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-in fade-in duration-200">
                 {feed.length === 0 ? (
                   <Empty variant="default" icon={<Megaphone className="h-8 w-8" />} title="Chưa có thông báo nào" description="Giáo viên chưa đăng thông báo nào trong lớp học này " />
                 ) : (
                   feed.map((post) => (
-                    <Card key={post.id} className="!p-4 sm:!p-5 !rounded-3xl">
+                    // ! Claude: thêm hover lift nhẹ, đồng bộ với hiệu ứng hover của ClassroomsCard trong danh sách lớp học
+                    <Card key={post.id} className="!p-4 sm:!p-5 !rounded-[2rem] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
                       <div className="flex items-start gap-3">
-                        <Avatar alt={post.author || classroom.teacherName || classroom.teacher} size="md" />
+                        <Avatar alt={post.author || classroom.teacherRef?.name} size="md" />
                         <div className="min-w-0 flex-1 space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-bold text-foreground">{post.author || classroom.teacherName || classroom.teacher}</span>
+                            <span className="text-sm font-bold text-foreground">{post.author || classroom.teacherRef?.name}</span>
                             <span className="text-xs text-muted-foreground">• {FormatTime(post.createdAt || post.created)}</span>
                           </div>
                           <p className="m-0 text-[14px] leading-relaxed text-muted-foreground">{post.content}</p>
@@ -270,12 +333,12 @@ export default function DetailClassroomPage() {
             )}
 
             {active === "exams" && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-in fade-in duration-200">
                 {exams.length === 0 ? (
                   <Empty variant="default" icon={<ClipboardList className="h-8 w-8" />} title="Chưa có bài thi nào" description="Chưa có bài tập nào" />
                 ) : (
                   exams.map((exam) => (
-                    <Card key={exam.id} className="!p-4 sm:!p-5 !rounded-3xl">
+                    <Card key={exam.id} className="!p-4 sm:!p-5 !rounded-[2rem] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 space-y-2.5">
                           <Badge variant={exam.status === "open" ? "success" : "warning"}>
@@ -289,7 +352,7 @@ export default function DetailClassroomPage() {
                         </div>
                         <div className="shrink-0">
                           {exam.status === "open" ? (
-                            <Button nativeButton={false} render={<Link href={`/exams/${exam.id}`} />} className="h-10 w-full rounded-xl px-6 text-[13px] sm:w-auto">
+                            <Button nativeButton={false} render={<Link href={`/exams/${exam.id}`} />} className="h-10 w-full rounded-xl px-6 text-[13px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:w-auto">
                               <PlayCircle className="h-4 w-4" /> Vào thi
                             </Button>
                           ) : exam.hasResult ? (
@@ -313,7 +376,7 @@ export default function DetailClassroomPage() {
             )}
 
             {active === "members" && (
-              <Card className="!p-4 sm:!p-5 !rounded-3xl space-y-4">
+              <Card className="!p-4 sm:!p-5 !rounded-[2rem] space-y-4 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/55 px-4 py-3 dark:border-white/10 dark:bg-white/5">
                   <span className="flex items-center gap-2 text-[13px] font-bold text-muted-foreground">
                     <Users className="h-4 w-4 text-primary" /> Sĩ số lớp học
@@ -326,9 +389,10 @@ export default function DetailClassroomPage() {
                 ) : (
                   <div className="space-y-2.5">
                     {members.map((member) => (
+                      // ! Claude: thêm hover đổi nền nhẹ cho từng dòng thành viên, đồng bộ cảm giác tương tác với chuẩn
                       <div
                         key={member.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/55 p-3.5 dark:border-white/10 dark:bg-white/5"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/55 p-3.5 transition-colors dark:border-white/10 dark:bg-white/5 hover:bg-slate-100/70 dark:hover:bg-white/10"
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <Avatar alt={member.name} src={member.avatar} size="md" />
@@ -351,7 +415,8 @@ export default function DetailClassroomPage() {
           {/* ═══ STICKY SIDEBAR ═══ */}
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-6 space-y-4">
-              <Card className="!p-5 !rounded-3xl space-y-5">
+              {/* ! Claude: đổi Card phẳng sang kính mờ, đồng bộ với sidebar bộ lọc của FindClassroomsPage */}
+              <div className="space-y-5 rounded-[2rem] border border-white/60 bg-white/50 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 dark:shadow-none">
                 {/* Học phí */}
                 <div>
                   <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
@@ -369,12 +434,13 @@ export default function DetailClassroomPage() {
                 </div>
 
                 {/* Action button */}
+                {/* ! Claude: thêm hover:-translate-y-0.5 + hover:shadow-xl, đồng bộ chuẩn CTA của FindClassroomsPage */}
                 {classroom.isEnrolled ? (
                   <Button
                     nativeButton={false}
                     variant="outline"
                     render={<Link href={`/classrooms/${classroom.id}`} />}
-                    className="h-12 w-full rounded-2xl text-[13px] border-primary/30 text-primary hover:bg-primary/10"
+                    className="h-12 w-full rounded-2xl text-[13px] border-primary/30 text-primary transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/10 hover:shadow-lg"
                   >
                     <LogIn className="h-4 w-4" /> Vào không gian học
                   </Button>
@@ -383,7 +449,7 @@ export default function DetailClassroomPage() {
                     onClick={handleJoin}
                     loading={joining}
                     disabled={!classroom.active}
-                    className="h-12 w-full rounded-2xl text-[13px] bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/30"
+                    className="h-12 w-full rounded-2xl text-[13px] bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40"
                   >
                     {joining ? "Đang đăng ký..." : classroom.active ? "Đăng ký tham gia" : "Lớp học đang tạm đóng"}
                   </Button>
@@ -398,7 +464,6 @@ export default function DetailClassroomPage() {
                     <span className="font-bold text-foreground">{classroom.grade}</span>
                   </div>
 
-                  {/* ! Gemini: Đã sử dụng component ClassroomsProgress ở đây */}
                   <ClassroomsProgress current={enrolled} capacity={capacity} />
 
                   <div className="flex items-center justify-between text-[13px]">
@@ -418,7 +483,7 @@ export default function DetailClassroomPage() {
                     <span className="font-bold text-foreground">{FormatTime(classroom.created)}</span>
                   </div>
                 </div>
-              </Card>
+              </div>
             </div>
           </div>
         </div>

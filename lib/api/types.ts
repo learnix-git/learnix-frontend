@@ -3,7 +3,7 @@
 // !==========================================
 
 export interface ApiResponse<T = any> {
-  status: "SUCCESS" | "ERROR";
+  success: true | false;
   message: string;
   data?: T;
   errors?: any;
@@ -63,6 +63,7 @@ export interface Classroom {
   deleted?: string | null;
   fee: number;
   grade: number;
+  address?: string;
 
   // ! Tham số cho giao diện
   price?: string;

@@ -1,5 +1,3 @@
-// * Accept * //
-
 "use client";
 
 import { useState } from "react";
@@ -73,7 +71,7 @@ export default function PostClassroomPage() {
         description: data.description || "",
       });
 
-      if (res && res.status === "SUCCESS") {
+      if (res && res.success === true) {
         toast.success("Tạo lớp học thành công!");
         router.push("/classrooms");
       } else {

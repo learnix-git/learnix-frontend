@@ -1,5 +1,3 @@
-// * Accept * //
-
 import type { ReactNode } from 'react';
 
 interface StatCardProps {

@@ -1,31 +1,55 @@
-// * Accept * //
-
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Search, X, Bookmark,
+  Search, X, Bookmark, Filter,
   GraduationCap, LogIn,
   SlidersHorizontal, BookX, Plus,
+  MapPin, Monitor, Wallet
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Empty } from "@/components/ui/Empty";
+import { Badge } from "@/components/ui/Badge";
+import { BreadcrumbComponent } from "@/components/ui/Breadcrumb";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from "@/components/ui/Pagination";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 
 import type { Classroom } from "@/lib/api/types";
 import { ClassroomsAPI } from "@/lib/api/classrooms";
-import { NormalizeString } from "@/lib/utils";
 import { GetToken } from "@/lib/auth/session";
 import { jwtDecode } from "jwt-decode";
-import ClassroomsCard from "@/components/classrooms/ClassroomsCard"; 
-import ClassroomsSkeleton from "@/components/classrooms/ClassroomsSkeleton"; 
+import ClassroomsCard from "@/components/classrooms/ClassroomsCard";
+import ClassroomsSkeleton from "@/components/classrooms/ClassroomsSkeleton";
 import { useRouter } from "next/navigation";
+import { FormatMoney } from "@/lib/utils";
 
-const  GRADE = [
+const SORT = [
+  { label: "Mặc định", value: "relevant" },
+  { label: "Học phí thấp nhất", value: "price-low" },
+  { label: "Học phí cao nhất", value: "price-high" },
+];
+
+const GRADE = [
   { key: "all", label: "Tất cả" },
   { key: "6", label: "Khối 6" },
   { key: "7", label: "Khối 7" },
@@ -43,40 +67,77 @@ const STATUS = [
   { key: "inactive", label: "Tạm đóng" },
 ] as const;
 
-// Chuyển thành kiểu map
-type GradeMap = (typeof  GRADE)[number]["key"];
+const PROVINCES = ["An Giang", "Bắc Ninh", "Cà Mau", "Cao Bằng", "Cần Thơ", "Đà Nẵng", "Đắk Lắk", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Nội", "Hà Tĩnh", "Hải Phòng", "Huế", "Hưng Yên", "Khánh Hòa", "Lai Châu", "Lâm Đồng", "Lạng Sơn", "Lào Cai", "Nghệ An", "Ninh Bình", "Phú Thọ", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sơn La", "Tây Ninh", "Thái Nguyên", "Thanh Hóa", "TP. Hồ Chí Minh", "Tuyên Quang", "Vĩnh Long"] as const;
+
+const MODE = [
+  { key: "all", label: "Tất cả" },
+  { key: "online", label: "Học Online" },
+  { key: "offline", label: "Học Offline" },
+] as const;
+
+const QUICK_FEE = [
+  { label: "Tất cả", max: 5000000 },
+  { label: "Miễn phí", max: 0 },
+  { label: "< 1 Triệu", max: 1000000 },
+  { label: "< 2 Triệu", max: 2000000 },
+  { label: "< 3 Triệu", max: 3000000 },
+  { label: "< 4 Triệu", max: 4000000 },
+];
+
+const LIMIT = 6;
+const FEE_LIMIT = 5000000;
+
+type GradeMap = (typeof GRADE)[number]["key"];
 type StatusMap = (typeof STATUS)[number]["key"];
+type ModeMap = (typeof MODE)[number]["key"];
 
-// Hàm lọc lớp học theo cấp học đã chọn.
 function FilterGrade(grade: string | number, map: GradeMap) {
-  if (map === "all") 
-      return true;
-  
+  if (map === "all") return true;
   const str = String(grade || "");
-
-  if (map === "other") 
+  if (map === "other")
     return !["6", "7", "8", "9", "10", "11", "12"].some((g) => str.includes(g));
   return str.includes(map);
 }
 
+function FilterPage(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  if (current > 3) pages.push("...");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
 export default function FindClassroomsPage() {
-  const router = useRouter(); 
+  const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
   const [classrooms, setClassrooms] = useState<(Classroom & Record<string, any>)[]>([]);
 
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState<GradeMap>("all");
   const [statusFilter, setStatusFilter] = useState<StatusMap>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
+  const [modeFilter, setModeFilter] = useState<ModeMap>("all");
+  const [maxFee, setMaxFee] = useState<number>(FEE_LIMIT);
+  const [sortBy, setSortBy] = useState("relevant");
 
-  // Fetch danh sách lớp học từ BE
-  const fetchData = useCallback(async () => {
-    // Trạng thái load
+  const [page, setPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(1);
+  const [showFilters, setShowFilters] = useState(false);
+  const isFirst = useRef(true);
+
+  // Hàm gọi API
+  const fetchData = useCallback(async (targetPage: number, keyword: string) => {
     setLoading(true);
     try {
-      // Gọi API
-      const res = await ClassroomsAPI.getAll();
-      if (res.status === "SUCCESS" && res.data) {
-        setClassrooms(res.data as any);
+      const res = await ClassroomsAPI.getAll({ search: keyword.trim(), page: targetPage, limit: LIMIT });
+      if (res && res.success === true && res.data) {
+        const data = res.data.classrooms || res.data;
+        setClassrooms(Array.isArray(data) ? data : []);
+        setTotal(res.data.pagination?.pages || res.data.pages || 1);
       } else {
         toast.error("Không thể tải danh sách lớp học, vui lòng thử lại");
       }
@@ -87,57 +148,99 @@ export default function FindClassroomsPage() {
     }
   }, []);
 
+  // Hàm tìm kiếm
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isFirst.current) {
+      isFirst.current = false;
+      fetchData(page, search);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      fetchData(page, search);
+    }, 350);
+    return () => clearTimeout(timeout);
+  }, [page, search]);
 
-  // Kiểm tra xem người dùng có đang áp dụng bộ lọc nào hay không
-  const hasFilter = search.trim() !== "" || gradeFilter !== "all" || statusFilter !== "all";
+  const hasFilter =
+    search.trim() !== "" ||
+    gradeFilter !== "all" ||
+    statusFilter !== "all" ||
+    cityFilter !== "all" ||
+    modeFilter !== "all" ||
+    maxFee < FEE_LIMIT;
 
-  // Đặt lại bộ lọc hay xóa bộ lọc
   const reset = () => {
     setSearch("");
     setGradeFilter("all");
     setStatusFilter("all");
+    setCityFilter("all");
+    setModeFilter("all");
+    setMaxFee(FEE_LIMIT);
+    setSortBy("relevant");
+    setPage(1);
   };
 
-  // Ghi nhớ kết quả lọc để chỉ tính toán lại khi dữ liệu hoặc bộ lọc thay đổi
+  // Hàm lưu kết quả tìm kiếm
   const results = useMemo(() => {
-    // Xử lý từ khóa
-    const keyword = search.trim().toLowerCase();
-
-    // Trả về danh sách thỏa điều kiện
-    return classrooms.filter((cls) => {
-      const text = [
-        cls.name,
-        cls.code,
-        cls.grade,
-        cls.description,
-      ]
-        .filter(Boolean)
-        .join(" "); 
-
-      const tokens = NormalizeString(keyword).split(/\s+/).filter(Boolean);
-      const matches_search = tokens.length === 0 || tokens.some((token) => NormalizeString(text).includes(token));
-
-      // Danh sách phù hợp với trạng thái
+    const filtered = classrooms.filter((cls) => {
+      const matches_grade = FilterGrade(cls.grade, gradeFilter);
       const matches_status =
         statusFilter === "all" ||
         (statusFilter === "active" && cls.active) ||
         (statusFilter === "inactive" && !cls.active);
+      const matches_city =
+        cityFilter === "all" || String(cls.address || "").toLowerCase().includes(cityFilter.toLowerCase());
+      const matches_mode =
+        modeFilter === "all" ||
+        (modeFilter === "offline" && Boolean(cls.address?.trim())) ||
+        (modeFilter === "online" && !cls.address?.trim());
+      const matches_fee = (Number(cls.fee) || 0) <= maxFee;
 
-      return matches_search && FilterGrade(cls.grade, gradeFilter) && matches_status;
+      return matches_grade && matches_status && matches_city && matches_mode && matches_fee;
     });
-  }, [classrooms, search, gradeFilter, statusFilter]);
 
-  // Lấy token
+    if (sortBy === "price-low") {
+      return [...filtered].sort((a, b) => (Number(a.fee) || 0) - (Number(b.fee) || 0));
+    }
+    if (sortBy === "price-high") {
+      return [...filtered].sort((a, b) => (Number(b.fee) || 0) - (Number(a.fee) || 0));
+    }
+    return filtered;
+  }, [classrooms, gradeFilter, statusFilter, cityFilter, modeFilter, maxFee, sortBy]);
+
+  const chips = useMemo(() => {
+    return [
+      gradeFilter !== "all" && {
+        label: `${GRADE.find((g) => g.key === gradeFilter)?.label}`,
+        onRemove: () => setGradeFilter("all"),
+      },
+      statusFilter !== "all" && {
+        label: `Trạng thái: ${STATUS.find((s) => s.key === statusFilter)?.label}`,
+        onRemove: () => setStatusFilter("all"),
+      },
+      cityFilter !== "all" && {
+        label: `${cityFilter}`,
+        onRemove: () => setCityFilter("all"),
+      },
+      modeFilter !== "all" && {
+        label: `Hình thức: ${MODE.find((m) => m.key === modeFilter)?.label}`,
+        onRemove: () => setModeFilter("all"),
+      },
+      maxFee < FEE_LIMIT && {
+        label: `Học phí ≤ ${FormatMoney(maxFee)}`,
+        onRemove: () => setMaxFee(FEE_LIMIT),
+      },
+    ].filter((item): item is { label: string; onRemove: () => void } => !!item);
+  }, [gradeFilter, statusFilter, cityFilter, modeFilter, maxFee]);
+
+  const activeBadge = chips.length;
+  const hasActive = activeBadge > 0;
+
   const user = useMemo(() => {
-    if (typeof window === "undefined") 
-      return null;
+    if (typeof window === "undefined") return null;
     const token = GetToken();
     if (!token) return null;
     try {
-      // Giải mã token
       return jwtDecode<{ role: string; name?: string; id?: string }>(token);
     } catch {
       return null;
@@ -147,24 +250,21 @@ export default function FindClassroomsPage() {
   const [modal, setModal] = useState(false);
   const [code, setCode] = useState("");
 
+  // Hàm tham gia lớp học
   const EnrollCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
       toast.error("Vui lòng nhập mã lớp học!");
       return;
     }
-
     setLoading(true);
-
     try {
-      // Gọi API
       const res = await ClassroomsAPI.joinClass(code.trim());
-      
-      if (res && res.status === "SUCCESS") {
+      if (res && res.success === true) {
         toast.success("Tham gia lớp học thành công!");
         setModal(false);
         setCode("");
-        fetchData(); 
+        fetchData(page, search);
       } else {
         toast.error(res?.message || "Mã lớp học không chính xác hoặc lớp đã đóng!");
       }
@@ -175,150 +275,493 @@ export default function FindClassroomsPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-transparent pb-24">
-      <div className="max-w-[1280px] mx-auto px-4 py-8 space-y-6">
+  const pageNumbers = useMemo(() => FilterPage(page, total), [page, total]);
 
-        {/* ═══ HEADER ═══ */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-1.5 rounded-full bg-primary" />
-            <div>
-              <h1 className="m-0 text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">Khám Phá Lớp Học</h1>
-              <p className="m-0 mt-1.5 text-sm text-muted-foreground">Tìm lớp học phù hợp và bắt đầu hành trình học tập của bạn.</p>
+  // ═══ BỘ LỌC ═══
+  const FilterContent = () => (
+    <div className="space-y-6 pr-1">
+      {/* Khối lớp */}
+      <div className="pb-5 border-b border-slate-100 dark:border-white/5">
+        <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] font-black text-slate-500 dark:text-slate-400 mb-2.5 select-none">
+          <GraduationCap size={16} className="text-primary" /> Khối lớp
+        </h3>
+
+        <Select
+          value={gradeFilter}
+          onValueChange={(val) => setGradeFilter((val as GradeMap) ?? "all")}
+        >
+          <SelectTrigger className="w-full h-11 px-3.5 rounded-xl bg-white/80 dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 text-xs font-bold text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm outline-none cursor-pointer">
+            <SelectValue placeholder="Tất cả khối lớp">
+              {GRADE.find((g) => g.key === gradeFilter)?.label || "Tất cả khối lớp"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-1.5 z-[100]">
+            {GRADE.map((g) => (
+              <SelectItem key={g.key} value={g.key} className="rounded-xl cursor-pointer text-xs font-bold py-2 px-3 my-0.5 focus:bg-primary/10 focus:text-primary outline-none transition-colors">
+                {g.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Tỉnh / Thành phố */}
+      <div className="pb-5 border-b border-slate-100 dark:border-white/5">
+        <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] font-black text-slate-500 dark:text-slate-400 mb-2.5 select-none">
+          <MapPin size={16} className="text-primary" /> Tỉnh / Thành phố
+        </h3>
+        
+        <Select 
+          value={cityFilter} 
+          onValueChange={(val) => setCityFilter(val ?? "all")}
+        >
+          <SelectTrigger className="w-full h-11 px-3.5 rounded-xl bg-white/80 dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 text-xs font-bold text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm outline-none cursor-pointer">
+            <SelectValue placeholder="Tất cả khu vực">
+              {cityFilter === "all" ? "Tất cả" : cityFilter}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-1.5 max-h-[260px] overflow-y-auto z-[100] !no-scrollbar">
+            <SelectItem value="all" className="rounded-xl cursor-pointer text-xs font-bold py-2 px-3 my-0.5 focus:bg-primary/10 focus:text-primary outline-none transition-colors">
+              Tất cả
+            </SelectItem>
+            {PROVINCES.map((province, idx) => (
+              <SelectItem key={idx} value={province} className="rounded-xl cursor-pointer text-xs font-bold py-2 px-3 my-0.5 focus:bg-primary/10 focus:text-primary outline-none transition-colors">
+                {province}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Hình thức học */}
+      <div className="pb-5 border-b border-slate-100 dark:border-white/5">
+        <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] font-black text-slate-500 dark:text-slate-400 mb-3 select-none">
+          <Monitor size={16} className="text-primary" /> Hình thức học
+        </h3>
+        <div className="flex flex-wrap gap-1.5">
+          {MODE.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => setModeFilter(m.key)}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border ${
+                modeFilter === m.key
+                  ? "bg-primary text-primary-foreground border-transparent shadow-sm shadow-primary/20"
+                  : "bg-white/60 dark:bg-white/5 border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-primary"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mức học phí */}
+      <div className="pb-5 border-b border-slate-100 dark:border-white/5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] font-black text-slate-500 dark:text-slate-400 select-none m-0">
+            <Wallet size={16} className="text-primary" /> Mức học phí
+          </h3>
+          <span className="text-xs font-black text-primary">
+            {maxFee >= FEE_LIMIT ? "Tất cả mức giá" : `≤ ${FormatMoney(maxFee)}`}
+          </span>
+        </div>
+
+        <input
+          type="range"
+          min={0}
+          max={FEE_LIMIT}
+          step="any"
+          value={maxFee}
+          onChange={(e) => setMaxFee(Number(e.target.value))}
+          className="w-full accent-primary cursor-pointer h-1.5 bg-slate-200 dark:bg-white/10 rounded-lg"
+        />
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <label className="col-span-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Tối đa (VNĐ)
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={maxFee.toLocaleString("vi-VN")}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/\D/g, "");
+              setMaxFee(raw ? Math.min(Number(raw), FEE_LIMIT) : 0);
+            }}
+            className="col-span-2 h-10 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/5 px-3 text-xs font-bold text-foreground outline-none transition-all focus:border-primary"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
+          {QUICK_FEE.map((q, idx) => {
+            const isActive = maxFee === q.max;
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setMaxFee(Number(q.max))}
+                className={`rounded-xl px-2.5 py-1 text-xs transition-all cursor-pointer border ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-transparent shadow-md shadow-primary/20 font-black scale-102"
+                    : "bg-white/60 dark:bg-white/5 border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-primary hover:text-primary font-bold"
+                }`}
+              >
+                {q.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Trạng thái */}
+      <div>
+        <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] font-black text-slate-500 dark:text-slate-400 mb-3 select-none">
+          <SlidersHorizontal size={16} className="text-primary" /> Trạng thái
+        </h3>
+        <div className="flex flex-wrap gap-1.5">
+          {STATUS.map((s) => {
+            const isInactiveButton = s.key === "inactive";
+            const isActiveButton = s.key === "active";
+            const isSelected = statusFilter === s.key;
+            
+            return (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setStatusFilter(s.key)}
+                className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-black transition-colors cursor-pointer ${
+                  isSelected
+                    ? isInactiveButton
+                      ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                      : isActiveButton
+                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "border-primary/20 bg-primary/10 text-primary"
+                    : "border-slate-200/80 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:border-primary/20 hover:bg-primary/5 hover:text-primary dark:border-white/10"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen transition-colors duration-300 pb-12 font-sans">
+      {/* ═══ BREADCRUMB ═══ */}
+      <div className="bg-white/40 dark:bg-slate-950/40 backdrop-blur-md border-b border-white/60 dark:border-white/5">
+        <div className="max-w-[1280px] mx-auto px-4 py-4">
+          <BreadcrumbComponent
+            pathList={[
+              { name: "Trang chủ", href: "/" },
+              { name: "Tìm kiếm lớp học", href: "/find-classrooms" },
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* ═══ HERO SECTION ═══ */}
+      <div className="relative overflow-hidden py-6 md:py-4">
+        <div className="max-w-[1280px] mx-auto px-4 relative z-10">
+          <div className="bg-white/50 dark:bg-slate-900/40 border border-white/60 dark:border-white/5 backdrop-blur-2xl rounded-[2.5rem] p-6 shadow-sm space-y-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-2 rounded-full bg-primary" />
+                <div>
+                  <h1 className="m-0 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
+                    Khám Phá Lớp Học
+                  </h1>
+                  <p className="m-0 mt-1.5 text-xs sm:text-sm font-medium text-muted-foreground">
+                    Tìm kiếm lớp học chất lượng cao theo đúng nhu cầu, khu vực và ngân sách của bạn
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {user?.role === "TEACHER" ? (
+                  <Button
+                    nativeButton={false}
+                    render={<Link href="/post-classrooms" />}
+                    className="h-11 rounded-2xl px-5 text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    <Plus className="h-4 w-4" /> Tạo lớp học mới
+                  </Button>
+                ) : (
+                  <Button
+                    nativeButton={false}
+                    onClick={() => setModal(true)}
+                    className="h-11 rounded-2xl px-5 text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                  >
+                    <LogIn className="h-4 w-4" /> Tham gia lớp bằng mã
+                  </Button>
+                )}
+
+                <Button
+                  nativeButton={false}
+                  variant="outline"
+                  render={<Link href="/" />}
+                  className="h-11 rounded-2xl px-5 text-xs font-bold !bg-white dark:!bg-white/10 !border-slate-200 dark:!border-white/15 !text-slate-700 dark:!text-white hover:!bg-slate-50 dark:hover:!bg-white/15 hover:!border-primary/40 hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <Bookmark className="h-4 w-4" /> Lớp học đã lưu
+                </Button>
+              </div>
+            </div>
+
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nhập tên lớp học, mã lớp, bạn muốn tìm kiếm..."
+              leftAdornment={<Search className="h-4.5 w-4.5 text-muted-foreground" />}
+              rightAdornment={
+                search ? (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="cursor-pointer rounded-full p-1 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                    aria-label="Xóa tìm kiếm"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                ) : undefined
+              }
+              className="!h-12 !rounded-2xl !bg-white/70 dark:!bg-white/5 !border-white/50 dark:!border-white/10 !text-sm !font-medium !shadow-inner"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ MAIN CONTENT ═══ */}
+      <div className="max-w-[1280px] mx-auto px-4">
+        <div className="flex flex-col gap-3 py-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+            <h2 className="m-0 text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              {loading ? "Đang tìm kiếm" : "Tìm thấy"}{" "}
+              {!loading && <span className="text-primary font-black">{results.length}</span>}{" "}
+              lớp học phù hợp{total > 1 ? ` · Trang ${page}/${total}` : ""}
+            </h2>
+
+            <div className="flex items-center gap-2.5 self-end sm:self-auto w-full sm:w-auto justify-end">
+              <button
+                onClick={() => setShowFilters(true)}
+                className="flex lg:hidden items-center justify-center gap-2 px-4 h-11 border border-slate-200 dark:border-white/5 rounded-2xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer hover:border-primary transition-all shadow-sm shrink-0 whitespace-nowrap"
+              >
+                <Filter className="h-4 w-4" />
+                <span>Bộ lọc</span>
+                {activeBadge > 0 && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-black text-white ml-0.5">
+                    {activeBadge}
+                  </span>
+                )}
+              </button>
+
+              <div className="min-w-[180px]">
+                <Select value={sortBy} onValueChange={(val) => setSortBy(val ?? "relevant")}>
+                  <SelectTrigger className="h-11 px-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm outline-none whitespace-nowrap w-full cursor-pointer">
+                    <SelectValue placeholder="Sắp xếp theo">
+                      {SORT.find((opt) => opt.value === sortBy)?.label || "Sắp xếp theo"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-slate-100 dark:border-slate-800 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-1.5 min-w-[200px] z-[100]">
+                    {SORT.map((opt) => (
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        className="rounded-xl cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300 focus:bg-primary/10 focus:text-primary transition-colors my-0.5 whitespace-nowrap"
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 ml-auto w-fit">
-            {user?.role === "TEACHER" ? (
-              <Button 
-                nativeButton={false} 
-                render={<Link href="/post-classrooms" />} 
-                className="h-11 w-full rounded-2xl text-[13px] gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10"
-              >
-                <Plus className="h-4 w-4" /> Tạo lớp học mới
-              </Button>
-            ) : (
-              <Button 
-                nativeButton={false} 
-                variant="outline" 
-                onClick={() => setModal(true)}
-                className="h-11 w-full rounded-2xl text-[13px] gap-2 dark:!bg-transparent dark:!text-white dark:hover:!bg-white/10"
-              >
-                <LogIn className="h-4 w-4" /> Tham gia lớp học bằng mã
-              </Button>
-            )}
+          {/* Chips */}
+          <div className="w-full min-h-[28px]">
+            {hasActive ? (
+              <div className="flex items-center gap-2 flex-wrap py-0.5">
+                {chips.map((item, i) => (
+                  <span
+                    key={i}
+                    className="cursor-pointer shrink-0 animate-in fade-in zoom-in-95 duration-150"
+                    onClick={item.onRemove}
+                  >
+                    <Badge
+                      variant="secondary"
+                      className="gap-1.5 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-black text-sky-600 transition-colors hover:border-sky-500/40 hover:bg-sky-500/20 dark:text-sky-400"
+                    >
+                      {item.label} <X className="h-4 w-4 opacity-70" />
+                    </Badge>
+                  </span>
+                ))}
 
-            <Button 
-              nativeButton={false} 
-              variant="default"
-              render={<Link href="/" />} 
-              className="h-11 rounded-2xl px-5 text-[13px] shadow-lg shadow-primary/20"
-            >
-              <Bookmark className="h-4 w-4" /> Lớp học đã lưu
-            </Button>
+                {hasFilter && (
+                  <button
+                    onClick={reset}
+                    className="whitespace-nowrap shrink-0 inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400"
+                  >
+                    <span>XÓA TẤT CẢ</span> <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
 
-        {/* ═══ SEARCH & FILTER BAR ═══ */}
-        <Card className="!p-4 sm:!p-5 !rounded-3xl space-y-4">
-          {/* Search */}
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nhập lớp học bạn muốn tìm kiếm..."
-            leftAdornment={<Search className="h-4 w-4" />}
-            rightAdornment={
-              search ? (
-                <button onClick={() => setSearch("")} className="cursor-pointer rounded-full p-0.5 hover:bg-muted transition-colors" aria-label="Xóa tìm kiếm">
-                  <X className="h-4 w-4" />
-                </button>
-              ) : undefined
-            }
-            className="!rounded-2xl"
-          />
+        {/* Layout Danh sách + Sidebar */}
+        <div className="flex gap-8 pb-10 mt-2">
+          <aside className="w-[320px] shrink-0 sticky top-[90px] h-fit p-6 bg-white/40 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none max-lg:hidden flex flex-col transition-all">
+            <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-slate-200/50 dark:border-white/10">
+              <span className="text-xs font-black text-foreground tracking-tight flex items-center gap-2">
+                <Filter className="h-4 w-4 text-primary" /> BỘ LỌC TÌM KIẾM
+              </span>
+            </div>
 
-          {/* Grade filter */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-              <GraduationCap className="h-3.5 w-3.5" /> Khối lớp
+            <div className="pr-1">
+              {FilterContent()}
             </div>
-            <div className="flex flex-wrap gap-2">
-              { GRADE.map((g) => (
-                <button
-                  key={g.key}
-                  onClick={() => setGradeFilter(g.key)}
-                  className={`rounded-xl px-3.5 py-1.5 text-[12px] font-bold transition-all cursor-pointer ${
-                    gradeFilter === g.key
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                      : "border border-slate-200/70 bg-white/55 text-muted-foreground hover:border-primary/30 dark:border-white/10 dark:bg-white/5"
-                  }`}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          </aside>
 
-          {/* Status filter */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-              <SlidersHorizontal className="h-3.5 w-3.5" /> Trạng thái
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {STATUS.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => setStatusFilter(s.key)}
-                  className={`rounded-xl px-3.5 py-1.5 text-[12px] font-bold transition-all cursor-pointer ${
-                    statusFilter === s.key
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                      : "border border-slate-200/70 bg-white/55 text-muted-foreground hover:border-primary/30 dark:border-white/10 dark:bg-white/5"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Card>
+          {/* ═══ MOBILE FILTERS DRAWER ═══ */}
+          {showFilters && (
+            <div
+              className="fixed inset-0 bg-black/60 z-[999] lg:hidden backdrop-blur-sm animate-in fade-in"
+              onClick={() => setShowFilters(false)}
+            >
+              <div
+                className="fixed right-0 top-0 bottom-0 w-[85vw] sm:w-[380px] bg-white dark:bg-slate-950 overflow-y-auto z-[1000] rounded-l-3xl shadow-2xl flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-white/5 sticky top-0 bg-white dark:bg-slate-950 z-[1]">
+                  <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                    <Filter className="h-4.5 w-4.5 text-primary" /> BỘ LỌC TÌM KIẾM
+                  </h2>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
 
-        {/* ═══ GRID ═══ */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => <ClassroomsSkeleton key={i} />)} 
-          </div>
-        ) : results.length === 0 ? (
-          <Empty
-            variant="search"
-            icon={<BookX className="h-10 w-10 text-primary" />}
-            title="Không tìm thấy lớp học nào phù hợp"
-            description="Hãy thử điều chỉnh từ khóa tìm kiếm hoặc bộ lọc để xem thêm kết quả khác."
-            action={
-              hasFilter ? (
-                <Button variant="outline" onClick={reset} className="h-11 rounded-2xl px-6 text-[13px]">
-                  <X className="h-4 w-4" /> Xóa bộ lọc
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {results.map((cls) => (
-              <ClassroomsCard 
-                key={cls.id}
-                classroom={{ ...cls, count: cls.enrolled || 0, teacher: cls.teacher || cls.name }}
-                onAction={(id) => router.push(cls.status ? `/my-classrooms/?id=${id}` : `/my-classrooms/${id}`)}
+                <div className="flex-1 p-6 overflow-y-auto">
+                  {FilterContent()}
+                </div>
+
+                {hasActive && (
+                  <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-slate-950 sticky bottom-0">
+                    <button
+                      type="button"
+                      onClick={() => { reset(); setShowFilters(false); }}
+                      className="whitespace-nowrap shrink-0 inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400"
+                    >
+                      <X className="h-4 w-4" /> XÓA TẤT CẢ
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ LISTING COLUMN ═══ */}
+          <div className="flex-1 min-w-0">
+            {loading ? (
+              <div className="flex flex-col gap-5">
+                {Array.from({ length: LIMIT }).map((_, i) => <ClassroomsSkeleton key={i} />)}
+              </div>
+            ) : results.length === 0 ? (
+              <Empty
+                variant="search"
+                icon={<BookX className="h-12 w-12 text-primary" />}
+                title="Không tìm thấy lớp học nào phù hợp"
+                description="Thử điều chỉnh lại bộ lọc để tìm kiếm lại nhé"
+                action={
+                  hasFilter ? (
+                    <Button variant="outline" onClick={reset} className="whitespace-nowrap shrink-0 inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-4 py-2 text-sm font-black text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400">
+                      <X className="h-4 w-4 mr-1" /> Đặt lại tất cả bộ lọc
+                    </Button>
+                  ) : undefined
+                }
               />
-            ))} 
+            ) : (
+              <div className="flex flex-col gap-5">
+                {results.map((cls) => (
+                  <div key={cls.id} className="transition-all duration-200 hover:-translate-y-0.5">
+                    <ClassroomsCard
+                      classroom={{
+                        ...cls,
+                        count: cls.enrolled || 0,
+                        teacher: typeof cls.teacherRef === "object" && cls.teacherRef ? (cls.teacherRef as any).name : (cls.teacherRef || cls.name || "Giảng viên"),
+                      }}
+                      onAction={(id) => router.push(cls.status ? `/my-classrooms/?id=${id}` : `/my-classrooms/${id}`)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Phân trang */}
+            {!loading && results.length > 0 && total > 1 && (
+              <Pagination className="mt-10">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage((p) => Math.max(1, p - 1));
+                      }}
+                      className={page === 1 ? "pointer-events-none opacity-40" : ""}
+                    />
+                  </PaginationItem>
+
+                  {pageNumbers.map((p, idx) =>
+                    p === "..." ? (
+                      <PaginationItem key={`ellipsis-${idx}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          href="#"
+                          isActive={p === page}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(p as number);
+                          }}
+                          className="font-bold text-xs"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  )}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage((p) => Math.min(total, p + 1));
+                      }}
+                      className={page === total ? "pointer-events-none opacity-40" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </div>
-        )}
+        </div>
       </div>
+
+      {/* ═══ MODAL THAM GIA BẰNG MÃ ═══ */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <Card className="w-full max-w-md !p-6 !rounded-3xl shadow-2xl border border-white/20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl relative">
-            
-            <button 
+            <button
               onClick={() => { setModal(false); setCode(""); }}
               className="absolute top-5 right-5 p-1.5 rounded-full text-muted-foreground hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
               aria-label="Đóng"
@@ -326,7 +769,6 @@ export default function FindClassroomsPage() {
               <X className="h-5 w-5" />
             </button>
 
-            {/* Nội dung */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-2xl bg-primary/10 text-primary">
@@ -342,7 +784,7 @@ export default function FindClassroomsPage() {
                 <div className="space-y-1.5">
                   <Input
                     autoFocus
-                    placeholder="XXX-XXX-XXX"
+                    placeholder="XXXX-XXX-XXXX"
                     value={code}
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
                     className="!rounded-2xl uppercase font-bold text-center tracking-wider text-base h-12 bg-slate-100/50 dark:bg-white/5 border-slate-200/70 dark:border-white/10"
@@ -357,14 +799,14 @@ export default function FindClassroomsPage() {
                     type="button"
                     variant="outline"
                     onClick={() => { setModal(false); setCode(""); }}
-                    className="flex-1 h-11 rounded-xl text-[13px] cursor-pointer"
+                    className="flex-1 h-11 rounded-xl text-xs font-bold cursor-pointer"
                   >
                     Hủy
                   </Button>
                   <Button
                     type="submit"
                     loading={loading}
-                    className="flex-1 h-11 rounded-xl text-[13px] shadow-lg shadow-primary/20 cursor-pointer"
+                    className="flex-1 h-11 rounded-xl text-xs font-bold shadow-lg shadow-primary/20 cursor-pointer"
                   >
                     Tham gia ngay
                   </Button>
