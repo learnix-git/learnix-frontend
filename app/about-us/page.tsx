@@ -25,8 +25,8 @@ import {
   IconBolt,
 } from '@tabler/icons-react';
 
-import { FeaturePill } from '@/components/about/AboutFeature';
-import { StatCard } from '@/components/about/AboutStat';
+import { FeaturePill } from '@/components/about-us/AboutFeature';
+import { StatCard } from '@/components/about-us/AboutStat';
 
 const STATS = [
   { label: 'Học sinh & Phụ huynh', value: '10,000+', icon: IconUsers },
