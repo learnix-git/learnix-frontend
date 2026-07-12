@@ -31,7 +31,6 @@ export const registerSchema = z
       .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất 1 chữ cái viết hoa")
       
       // Check chữ thường
-      
       .regex(/[a-z]/, "Mật khẩu phải chứa ít nhất 1 chữ cái viết thường")
       
       // Check chữ số
@@ -50,3 +49,34 @@ export const registerSchema = z
   });
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(1, "Vui lòng nhập mật khẩu mới")
+      .min(8, "Mật khẩu phải có ít nhất 8 ký tự")
+      .max(64, "Mật khẩu tối đa 64 ký tự")
+      
+      // Check chữ hoa
+      .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất 1 chữ cái viết hoa")
+
+      // Check chữ thường
+      .regex(/[a-z]/, "Mật khẩu phải chứa ít nhất 1 chữ cái viết thường")
+
+      // Check chữ số
+      .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất 1 chữ số")
+
+      // Check ký tự đặc biệt
+      .regex(/[^A-Za-z0-9]/, "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (!@#$%^&*)")
+
+      // Check dấu cách
+      .refine((val) => !val.includes(" "), "Mật khẩu không được chứa khoảng trắng"),
+    confirmPassword: z.string().min(1, "Vui lòng xác nhận mật khẩu mới"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

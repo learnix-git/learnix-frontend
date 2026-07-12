@@ -88,10 +88,10 @@ export function Footer() {
             </span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/dieu-khoan" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/terms-of-services" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               Điều khoản dịch vụ
             </Link>
-            <Link href="/bao-mat" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               Chính sách bảo mật
             </Link>
           </div>

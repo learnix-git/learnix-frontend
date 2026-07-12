@@ -43,9 +43,15 @@ export async function getInfo(): Promise<ApiResponse<User>> {
   return res.data;
 }
 
-// export async function forgotPassword(email: string): Promise<ApiResponse<null>> {}
+export async function forgotPassword(email: string): Promise<ApiResponse<null>> {
+  const res = await client.post<ApiResponse<null>>("/auth/forgot-password", { email });
+  return res.data;
+}
 
-// export async function resetPassword(data: { token: string; password: string; confirmPassword: string }): Promise<ApiResponse<null>> {}
+export async function resetPassword(token: string, password: string, confirmPassword: string ): Promise<ApiResponse<null>> {
+  const res = await client.post<ApiResponse<null>>("/auth/forgot-password", { token, password, confirmPassword });
+  return res.data;
+}
 
 // export async function changePassword(data: ChangePasswordRequest): Promise<ApiResponse<null>> {}
 

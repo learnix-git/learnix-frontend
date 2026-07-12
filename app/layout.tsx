@@ -105,7 +105,7 @@ export default function RootLayout({
                   {/* Glow Effects - Aura Gradient */}
                   <div className="pointer-events-none absolute inset-0 overflow-hidden">
                     <div className="absolute top-[-15%] left-[-15%] w-[65%] h-[60%] bg-blue-500/25 rounded-full blur-[var(--glow-blur)] opacity-50 dark:bg-primary/30 dark:opacity-60 animate-blob" />
-                    <div className="absolute top-[10%] right-[-10%] w-[60%] h-[55%] bg-sky-400/20 rounded-full blur-[var(--glow-blur)] opacity-40 dark:bg-purple-600/20 dark:opacity-50 animate-blob animation-delay-2000" />
+                    <div className="absolute top-[10%] right-[-10%] w-[60%] h-[55%] bg-sky-400/20 rounded-full blur-[var(--glow-blur)] opacity-40 dark:bg-cyan-600/20 dark:opacity-50 animate-blob animation-delay-2000" />
                     <div className="absolute bottom-[-15%] left-[5%] w-[60%] h-[60%] bg-cyan-400/20 rounded-full blur-[var(--glow-blur)] opacity-40 dark:bg-blue-600/20 dark:opacity-50 animate-blob animation-delay-4000" />
                   </div>
 

@@ -38,8 +38,6 @@ const TABS = [
 type TabMap = (typeof TABS)[number]["key"];
 
 // Khung xương
-// ! Claude: đồng bộ lại skeleton theo hero kính mờ (rounded-[2.5rem]) và sidebar kính mờ (rounded-[2rem])
-// mới, để không bị lệch/nhảy layout lúc chuyển từ loading sang dữ liệu thật.
 function SkeletonCard() {
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-8 space-y-6">
@@ -222,13 +220,10 @@ export default function DetailClassroomPage() {
       <div className="max-w-[1280px] mx-auto px-4 py-8 space-y-6">
 
         {/* ═══ HERO BANNER ═══ */}
-        {/* ! Claude: đổi Card phẳng sang kính mờ (glass) + bo góc 2.5rem + quầng sáng nền mờ phía sau,
-            đồng bộ với hero của trang "Khám Phá Lớp Học" (FindClassroomsPage) làm chuẩn */}
         <div className="relative overflow-hidden rounded-[2.5rem] border border-white/60 bg-white/50 p-6 shadow-sm backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/40 sm:p-8">
           <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
 
           <div className="relative flex flex-wrap items-center gap-2">
-            {/* ! Claude: thêm chấm tròn cho badge trạng thái, đồng bộ với ClassroomsCard */}
             {classroom.active ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-600 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Đang mở
@@ -243,7 +238,6 @@ export default function DetailClassroomPage() {
             </Badge>
           </div>
 
-          {/* ! Claude: thêm thanh accent dọc bên trái tiêu đề, lấy theo signature "h-9 w-2 rounded-full bg-primary" của hero trang danh sách */}
           <div className="relative mt-4 flex items-start gap-3">
             <div className="mt-1.5 h-8 w-1.5 shrink-0 rounded-full bg-primary sm:h-9" />
             <div className="min-w-0">
@@ -272,7 +266,6 @@ export default function DetailClassroomPage() {
           {/* ═══ MAIN CONTENT ═══ */}
           <div className="lg:col-span-8 space-y-4">
             {/* Tab navigation */}
-            {/* ! Claude: đổi rounded-2xl -> rounded-[1.75rem] để mềm mại hơn, thêm hiệu ứng chuyển tab mượt hơn */}
             <div className="flex flex-wrap gap-2 rounded-[1.75rem] border border-slate-200/70 bg-white/55 p-1.5 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -295,7 +288,6 @@ export default function DetailClassroomPage() {
             </div>
 
             {/* Tab content */}
-            {/* ! Claude: thêm animate-in fade-in cho nội dung tab, đồng bộ với hiệu ứng chip filter ở FindClassroomsPage */}
             {active === "overview" && (
               <Card className="!p-4 sm:!p-6 !rounded-[2rem] animate-in fade-in duration-200">
                 {classroom.description?.trim() ? (
@@ -314,7 +306,6 @@ export default function DetailClassroomPage() {
                   <Empty variant="default" icon={<Megaphone className="h-8 w-8" />} title="Chưa có thông báo nào" description="Giáo viên chưa đăng thông báo nào trong lớp học này " />
                 ) : (
                   feed.map((post) => (
-                    // ! Claude: thêm hover lift nhẹ, đồng bộ với hiệu ứng hover của ClassroomsCard trong danh sách lớp học
                     <Card key={post.id} className="!p-4 sm:!p-5 !rounded-[2rem] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
                       <div className="flex items-start gap-3">
                         <Avatar alt={post.author || classroom.teacherRef?.name} size="md" />
@@ -389,7 +380,6 @@ export default function DetailClassroomPage() {
                 ) : (
                   <div className="space-y-2.5">
                     {members.map((member) => (
-                      // ! Claude: thêm hover đổi nền nhẹ cho từng dòng thành viên, đồng bộ cảm giác tương tác với chuẩn
                       <div
                         key={member.id}
                         className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/55 p-3.5 transition-colors dark:border-white/10 dark:bg-white/5 hover:bg-slate-100/70 dark:hover:bg-white/10"
@@ -415,7 +405,6 @@ export default function DetailClassroomPage() {
           {/* ═══ STICKY SIDEBAR ═══ */}
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-6 space-y-4">
-              {/* ! Claude: đổi Card phẳng sang kính mờ, đồng bộ với sidebar bộ lọc của FindClassroomsPage */}
               <div className="space-y-5 rounded-[2rem] border border-white/60 bg-white/50 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 dark:shadow-none">
                 {/* Học phí */}
                 <div>
@@ -434,7 +423,6 @@ export default function DetailClassroomPage() {
                 </div>
 
                 {/* Action button */}
-                {/* ! Claude: thêm hover:-translate-y-0.5 + hover:shadow-xl, đồng bộ chuẩn CTA của FindClassroomsPage */}
                 {classroom.isEnrolled ? (
                   <Button
                     nativeButton={false}
