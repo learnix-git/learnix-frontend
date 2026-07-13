@@ -17,16 +17,16 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Empty } from "@/components/ui/Empty";
-import ClassroomsProgress from "@/components/classrooms/ClassroomsProgress";
+import CoursesProgress from "@/components/courses/CoursesProgress";
 
-import type { Classroom, Exam, Member } from "@/lib/api/types";
-import { ClassroomsAPI } from "@/lib/api/classrooms";
+import type { Course, Exam, Member } from "@/lib/api/types";
+import { CoursesAPI } from "@/lib/api/courses";
 import { FormatMoney, FormatTime } from "@/lib/utils";
 
 // Trạng thái
 type ExamState = Exam & Record<string, any>;
 type MemberState = Member & Record<string, any>;
-type ClassroomState = Classroom & Record<string, any>;
+type CourseState = Course & Record<string, any>;
 
 const TABS = [
   { key: "overview", label: "Tổng quan", icon: Info },
@@ -117,7 +117,7 @@ export default function DetailClassroomPage() {
   const [exams, setExams] = useState<ExamState[]>([]);
   const [members, setMembers] = useState<MemberState[]>([]);
   const [feed, setFeed] = useState<Record<string, any>[]>([]);
-  const [classroom, setClassroom] = useState<ClassroomState | null>(null);
+  const [classroom, setClassroom] = useState<CourseState | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [joining, setJoining] = useState<boolean>(false);
@@ -130,7 +130,7 @@ export default function DetailClassroomPage() {
     setNotFound(false);
 
     try {
-      const res = await ClassroomsAPI.getById(ID);
+      const res = await CoursesAPI.getById(ID);
       
       if (res && res.success === true && res.data) {
         const classData = res.data;
@@ -138,7 +138,7 @@ export default function DetailClassroomPage() {
         setFeed(classData.feed || []);
         setExams(classData.exams || []);
         setMembers(classData.members || []);
-        setClassroom(classData as ClassroomState);
+        setClassroom(classData as CourseState);
 
       } else {
         setNotFound(true);
@@ -166,7 +166,7 @@ export default function DetailClassroomPage() {
     if (!id) return;
     setJoining(true);
     try {
-      const res = await ClassroomsAPI.joinClass(id);
+      const res = await CoursesAPI.enroll(id);
       if (res && res.success === true) {
         toast.success("Đăng ký tham gia lớp học thành công!");
         setClassroom((prev) =>
@@ -250,7 +250,7 @@ export default function DetailClassroomPage() {
 
           <div className="relative mt-5 flex flex-wrap items-center gap-4 border-t border-slate-200/70 pt-4 dark:border-white/10">
             <div className="flex items-center gap-2">
-              <Avatar alt={classroom.teacherRef?.name || "GV"} src={classroom.teacherRef?.avatar} size="sm" className="ring-2 ring-white dark:ring-slate-900" />
+              <Avatar alt={classroom.teacherRef?.name || "GV"} src={classroom.teacherRef?.avatar ?? undefined} size="sm" className="ring-2 ring-white dark:ring-slate-900" />
               <span className="text-[13px] font-medium text-muted-foreground">
                 Giáo viên: <span className="font-bold text-foreground">{classroom.teacherRef?.name}</span>
               </span>
@@ -452,7 +452,7 @@ export default function DetailClassroomPage() {
                     <span className="font-bold text-foreground">{classroom.grade}</span>
                   </div>
 
-                  <ClassroomsProgress current={enrolled} capacity={capacity} />
+                  <CoursesProgress current={enrolled} capacity={capacity} />
 
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="flex items-center gap-1.5 font-bold text-muted-foreground">

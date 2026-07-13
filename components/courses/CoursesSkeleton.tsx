@@ -3,11 +3,14 @@
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-export default function ClassroomsSkeleton() {
+export default function CoursesSkeleton() {
   return (
-    <Card className="!p-5 sm:!p-6 !rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-6 border-slate-200/80 dark:border-white/10 w-full">
-      <div className="flex-1 min-w-0 space-y-3.5 w-full">
-        {/* Avatar + tên GV + trạng thái + khối lớp */}
+    <Card className="!p-0 !rounded-[2rem] flex flex-col md:flex-row overflow-hidden border-slate-200/80 dark:border-white/10 w-full">
+      {/* Ảnh thumbnail */}
+      <Skeleton className="w-full md:w-[220px] shrink-0 aspect-video md:aspect-square !rounded-none" />
+
+      <div className="flex-1 min-w-0 space-y-3.5 p-5 sm:p-6 w-full">
+        {/* Avatar + tên GV + bằng cấp + khối lớp */}
         <div className="flex items-center gap-2.5">
           <Skeleton className="h-9 w-9 rounded-full shrink-0" />
           <Skeleton className="h-4 w-28 rounded-md" />
@@ -35,7 +38,7 @@ export default function ClassroomsSkeleton() {
         </div>
       </div>
 
-      <div className="flex flex-col justify-between items-stretch gap-4 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-white/5 md:pl-6 md:border-l md:border-slate-200/60 md:dark:border-white/10 md:w-[240px] w-full">
+      <div className="flex flex-col justify-between items-stretch gap-4 shrink-0 p-5 sm:p-6 pt-0 md:pt-6 border-t md:border-t-0 border-slate-100 dark:border-white/5 md:border-l md:border-slate-200/60 md:dark:border-white/10 md:w-[240px] w-full">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Skeleton className="h-3 w-16 rounded-md" />

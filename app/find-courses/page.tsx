@@ -7,7 +7,7 @@ import {
   Search, X, Bookmark, Filter,
   GraduationCap, LogIn,
   SlidersHorizontal, BookX, Plus,
-  MapPin, Monitor, Wallet
+  Wallet
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -34,14 +34,14 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 
-import type { Classroom } from "@/lib/api/types";
-import { ClassroomsAPI } from "@/lib/api/classrooms";
+import type { Course } from "@/lib/api/types";
+import { CoursesAPI } from "@/lib/api/courses";
 import { GetToken } from "@/lib/auth/session";
 import { jwtDecode } from "jwt-decode";
-import ClassroomsCard from "@/components/classrooms/ClassroomsCard";
-import ClassroomsSkeleton from "@/components/classrooms/ClassroomsSkeleton";
+import CoursesSkeleton from "@/components/courses/CoursesSkeleton";
 import { useRouter } from "next/navigation";
 import { FormatMoney } from "@/lib/utils";
+import CoursesCard from "@/components/courses/CoursesCard";
 
 const SORT = [
   { label: "Mặc định", value: "relevant" },
@@ -67,14 +67,6 @@ const STATUS = [
   { key: "inactive", label: "Tạm đóng" },
 ] as const;
 
-const PROVINCES = ["An Giang", "Bắc Ninh", "Cà Mau", "Cao Bằng", "Cần Thơ", "Đà Nẵng", "Đắk Lắk", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Nội", "Hà Tĩnh", "Hải Phòng", "Huế", "Hưng Yên", "Khánh Hòa", "Lai Châu", "Lâm Đồng", "Lạng Sơn", "Lào Cai", "Nghệ An", "Ninh Bình", "Phú Thọ", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sơn La", "Tây Ninh", "Thái Nguyên", "Thanh Hóa", "TP. Hồ Chí Minh", "Tuyên Quang", "Vĩnh Long"] as const;
-
-const MODE = [
-  { key: "all", label: "Tất cả" },
-  { key: "online", label: "Học Online" },
-  { key: "offline", label: "Học Offline" },
-] as const;
-
 const QUICK_FEE = [
   { label: "Tất cả", max: 5000000 },
   { label: "Miễn phí", max: 0 },
@@ -89,7 +81,6 @@ const FEE_LIMIT = 5000000;
 
 type GradeMap = (typeof GRADE)[number]["key"];
 type StatusMap = (typeof STATUS)[number]["key"];
-type ModeMap = (typeof MODE)[number]["key"];
 
 function FilterGrade(grade: string | number, map: GradeMap) {
   if (map === "all") return true;
@@ -111,16 +102,14 @@ function FilterPage(current: number, total: number): (number | "...")[] {
   return pages;
 }
 
-export default function FindClassroomsPage() {
+export default function FindCoursesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
-  const [classrooms, setClassrooms] = useState<(Classroom & Record<string, any>)[]>([]);
+  const [courses, setCourses] = useState<(Course & Record<string, any>)[]>([]);
 
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState<GradeMap>("all");
   const [statusFilter, setStatusFilter] = useState<StatusMap>("all");
-  const [cityFilter, setCityFilter] = useState<string>("all");
-  const [modeFilter, setModeFilter] = useState<ModeMap>("all");
   const [maxFee, setMaxFee] = useState<number>(FEE_LIMIT);
   const [sortBy, setSortBy] = useState("relevant");
 
@@ -133,16 +122,16 @@ export default function FindClassroomsPage() {
   const fetchData = useCallback(async (targetPage: number, keyword: string) => {
     setLoading(true);
     try {
-      const res = await ClassroomsAPI.getAll({ search: keyword.trim(), page: targetPage, limit: LIMIT });
+      const res = await CoursesAPI.getAll({ search: keyword.trim(), page: targetPage, limit: LIMIT });
+      // ! Đúng theo ApiResponse<Course[]>: res.data luôn là mảng, res.pagination luôn nằm ở top-level (không lồng trong data)
       if (res && res.success === true && res.data) {
-        const data = res.data.classrooms || res.data;
-        setClassrooms(Array.isArray(data) ? data : []);
-        setTotal(res.data.pagination?.pages || res.data.pages || 1);
+        setCourses(Array.isArray(res.data) ? res.data : []);
+        setTotal(res.pagination?.pages || 1);
       } else {
-        toast.error("Không thể tải danh sách lớp học, vui lòng thử lại");
+        toast.error("Không thể tải danh sách khóa học, vui lòng thử lại");
       }
     } catch (error) {
-      toast.error("Đã xảy ra lỗi khi tải danh sách lớp học");
+      toast.error("Đã xảy ra lỗi khi tải danh sách khóa học");
     } finally {
       setLoading(false);
     }
@@ -165,16 +154,12 @@ export default function FindClassroomsPage() {
     search.trim() !== "" ||
     gradeFilter !== "all" ||
     statusFilter !== "all" ||
-    cityFilter !== "all" ||
-    modeFilter !== "all" ||
     maxFee < FEE_LIMIT;
 
   const reset = () => {
     setSearch("");
     setGradeFilter("all");
     setStatusFilter("all");
-    setCityFilter("all");
-    setModeFilter("all");
     setMaxFee(FEE_LIMIT);
     setSortBy("relevant");
     setPage(1);
@@ -182,21 +167,15 @@ export default function FindClassroomsPage() {
 
   // Hàm lưu kết quả tìm kiếm
   const results = useMemo(() => {
-    const filtered = classrooms.filter((cls) => {
+    const filtered = courses.filter((cls) => {
       const matches_grade = FilterGrade(cls.grade, gradeFilter);
       const matches_status =
         statusFilter === "all" ||
         (statusFilter === "active" && cls.active) ||
         (statusFilter === "inactive" && !cls.active);
-      const matches_city =
-        cityFilter === "all" || String(cls.address || "").toLowerCase().includes(cityFilter.toLowerCase());
-      const matches_mode =
-        modeFilter === "all" ||
-        (modeFilter === "offline" && Boolean(cls.address?.trim())) ||
-        (modeFilter === "online" && !cls.address?.trim());
       const matches_fee = (Number(cls.fee) || 0) <= maxFee;
 
-      return matches_grade && matches_status && matches_city && matches_mode && matches_fee;
+      return matches_grade && matches_status && matches_fee;
     });
 
     if (sortBy === "price-low") {
@@ -206,7 +185,7 @@ export default function FindClassroomsPage() {
       return [...filtered].sort((a, b) => (Number(b.fee) || 0) - (Number(a.fee) || 0));
     }
     return filtered;
-  }, [classrooms, gradeFilter, statusFilter, cityFilter, modeFilter, maxFee, sortBy]);
+  }, [courses, gradeFilter, statusFilter, maxFee, sortBy]);
 
   const chips = useMemo(() => {
     return [
@@ -218,20 +197,12 @@ export default function FindClassroomsPage() {
         label: `Trạng thái: ${STATUS.find((s) => s.key === statusFilter)?.label}`,
         onRemove: () => setStatusFilter("all"),
       },
-      cityFilter !== "all" && {
-        label: `${cityFilter}`,
-        onRemove: () => setCityFilter("all"),
-      },
-      modeFilter !== "all" && {
-        label: `Hình thức: ${MODE.find((m) => m.key === modeFilter)?.label}`,
-        onRemove: () => setModeFilter("all"),
-      },
       maxFee < FEE_LIMIT && {
         label: `Học phí ≤ ${FormatMoney(maxFee)}`,
         onRemove: () => setMaxFee(FEE_LIMIT),
       },
     ].filter((item): item is { label: string; onRemove: () => void } => !!item);
-  }, [gradeFilter, statusFilter, cityFilter, modeFilter, maxFee]);
+  }, [gradeFilter, statusFilter, maxFee]);
 
   const activeBadge = chips.length;
   const hasActive = activeBadge > 0;
@@ -250,26 +221,26 @@ export default function FindClassroomsPage() {
   const [modal, setModal] = useState(false);
   const [code, setCode] = useState("");
 
-  // Hàm tham gia lớp học
+  // Hàm đăng ký khóa học bằng mã
   const EnrollCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      toast.error("Vui lòng nhập mã lớp học!");
+      toast.error("Vui lòng nhập mã khóa học!");
       return;
     }
     setLoading(true);
     try {
-      const res = await ClassroomsAPI.joinClass(code.trim());
+      const res = await CoursesAPI.enroll(code.trim());
       if (res && res.success === true) {
-        toast.success("Tham gia lớp học thành công!");
+        toast.success("Đăng ký khóa học thành công!");
         setModal(false);
         setCode("");
         fetchData(page, search);
       } else {
-        toast.error(res?.message || "Mã lớp học không chính xác hoặc lớp đã đóng!");
+        toast.error(res?.message || "Mã khóa học không chính xác hoặc khóa học đã đóng!");
       }
     } catch (error: any) {
-      toast.error(error?.message || "Không thể tham gia lớp học lúc này.");
+      toast.error(error?.message || "Không thể đăng ký khóa học lúc này.");
     } finally {
       setLoading(false);
     }
@@ -303,57 +274,6 @@ export default function FindClassroomsPage() {
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      {/* Tỉnh / Thành phố */}
-      <div className="pb-5 border-b border-slate-100 dark:border-white/5">
-        <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] font-black text-slate-500 dark:text-slate-400 mb-2.5 select-none">
-          <MapPin size={16} className="text-primary" /> Tỉnh / Thành phố
-        </h3>
-        
-        <Select 
-          value={cityFilter} 
-          onValueChange={(val) => setCityFilter(val ?? "all")}
-        >
-          <SelectTrigger className="w-full h-11 px-3.5 rounded-xl bg-white/80 dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 text-xs font-bold text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm outline-none cursor-pointer">
-            <SelectValue placeholder="Tất cả khu vực">
-              {cityFilter === "all" ? "Tất cả" : cityFilter}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-1.5 max-h-[260px] overflow-y-auto z-[100] !no-scrollbar">
-            <SelectItem value="all" className="rounded-xl cursor-pointer text-xs font-bold py-2 px-3 my-0.5 focus:bg-primary/10 focus:text-primary outline-none transition-colors">
-              Tất cả
-            </SelectItem>
-            {PROVINCES.map((province, idx) => (
-              <SelectItem key={idx} value={province} className="rounded-xl cursor-pointer text-xs font-bold py-2 px-3 my-0.5 focus:bg-primary/10 focus:text-primary outline-none transition-colors">
-                {province}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Hình thức học */}
-      <div className="pb-5 border-b border-slate-100 dark:border-white/5">
-        <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] font-black text-slate-500 dark:text-slate-400 mb-3 select-none">
-          <Monitor size={16} className="text-primary" /> Hình thức học
-        </h3>
-        <div className="flex flex-wrap gap-1.5">
-          {MODE.map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => setModeFilter(m.key)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border ${
-                modeFilter === m.key
-                  ? "bg-primary text-primary-foreground border-transparent shadow-sm shadow-primary/20"
-                  : "bg-white/60 dark:bg-white/5 border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-primary"
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Mức học phí */}
@@ -457,7 +377,7 @@ export default function FindClassroomsPage() {
           <BreadcrumbComponent
             pathList={[
               { name: "Trang chủ", href: "/" },
-              { name: "Tìm kiếm lớp học", href: "/find-classrooms" },
+              { name: "Tìm kiếm khóa học", href: "/find-courses" },
             ]}
           />
         </div>
@@ -472,10 +392,10 @@ export default function FindClassroomsPage() {
                 <div className="h-9 w-2 rounded-full bg-primary" />
                 <div>
                   <h1 className="m-0 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
-                    Khám Phá Lớp Học
+                    Khám Phá Khóa Học
                   </h1>
                   <p className="m-0 mt-1.5 text-xs sm:text-sm font-medium text-muted-foreground">
-                    Tìm kiếm lớp học chất lượng cao theo đúng nhu cầu, khu vực và ngân sách của bạn
+                    Tìm kiếm khóa học chất lượng cao theo đúng nhu cầu và ngân sách của bạn
                   </p>
                 </div>
               </div>
@@ -487,7 +407,7 @@ export default function FindClassroomsPage() {
                     render={<Link href="/post-classrooms" />}
                     className="h-11 rounded-2xl px-5 text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200"
                   >
-                    <Plus className="h-4 w-4" /> Tạo lớp học mới
+                    <Plus className="h-4 w-4" /> Tạo khóa học mới
                   </Button>
                 ) : (
                   <Button
@@ -495,7 +415,7 @@ export default function FindClassroomsPage() {
                     onClick={() => setModal(true)}
                     className="h-11 rounded-2xl px-5 text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
                   >
-                    <LogIn className="h-4 w-4" /> Tham gia lớp bằng mã
+                    <LogIn className="h-4 w-4" /> Đăng ký khóa học bằng mã
                   </Button>
                 )}
 
@@ -505,7 +425,7 @@ export default function FindClassroomsPage() {
                   render={<Link href="/" />}
                   className="h-11 rounded-2xl px-5 text-xs font-bold !bg-white dark:!bg-white/10 !border-slate-200 dark:!border-white/15 !text-slate-700 dark:!text-white hover:!bg-slate-50 dark:hover:!bg-white/15 hover:!border-primary/40 hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  <Bookmark className="h-4 w-4" /> Lớp học đã lưu
+                  <Bookmark className="h-4 w-4" /> Khóa học đã lưu
                 </Button>
               </div>
             </div>
@@ -513,7 +433,7 @@ export default function FindClassroomsPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nhập tên lớp học, mã lớp, bạn muốn tìm kiếm..."
+              placeholder="Nhập tên khóa học, mã khóa học bạn muốn tìm kiếm..."
               leftAdornment={<Search className="h-4.5 w-4.5 text-muted-foreground" />}
               rightAdornment={
                 search ? (
@@ -539,7 +459,7 @@ export default function FindClassroomsPage() {
             <h2 className="m-0 text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
               {loading ? "Đang tìm kiếm" : "Tìm thấy"}{" "}
               {!loading && <span className="text-primary font-black">{results.length}</span>}{" "}
-              lớp học phù hợp{total > 1 ? ` · Trang ${page}/${total}` : ""}
+              khóa học phù hợp{total > 1 ? ` · Trang ${page}/${total}` : ""}
             </h2>
 
             <div className="flex items-center gap-2.5 self-end sm:self-auto w-full sm:w-auto justify-end">
@@ -670,18 +590,18 @@ export default function FindClassroomsPage() {
           <div className="flex-1 min-w-0">
             {loading ? (
               <div className="flex flex-col gap-5">
-                {Array.from({ length: LIMIT }).map((_, i) => <ClassroomsSkeleton key={i} />)}
+                {Array.from({ length: LIMIT }).map((_, i) => <CoursesSkeleton key={i} />)}
               </div>
             ) : results.length === 0 ? (
               <Empty
                 variant="search"
                 icon={<BookX className="h-12 w-12 text-primary" />}
-                title="Không tìm thấy lớp học nào phù hợp"
+                title="Không tìm thấy khóa học nào phù hợp"
                 description="Thử điều chỉnh lại bộ lọc để tìm kiếm lại nhé"
                 action={
                   hasFilter ? (
                     <Button variant="outline" onClick={reset} className="whitespace-nowrap shrink-0 inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-4 py-2 text-sm font-black text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400">
-                      <X className="h-4 w-4 mr-1" /> Đặt lại tất cả bộ lọc
+                      <X className="h-4 w-4 mr-1" /> XÓA BỘ LỌC
                     </Button>
                   ) : undefined
                 }
@@ -690,11 +610,10 @@ export default function FindClassroomsPage() {
               <div className="flex flex-col gap-5">
                 {results.map((cls) => (
                   <div key={cls.id} className="transition-all duration-200 hover:-translate-y-0.5">
-                    <ClassroomsCard
-                      classroom={{
+                    <CoursesCard
+                      course={{
                         ...cls,
-                        count: cls.enrolled || 0,
-                        teacher: typeof cls.teacherRef === "object" && cls.teacherRef ? (cls.teacherRef as any).name : (cls.teacherRef || cls.name || "Giảng viên"),
+                        count: cls.count ?? (cls as any).enrolled ?? 0,
                       }}
                       onAction={(id) => router.push(cls.status ? `/my-classrooms/?id=${id}` : `/my-classrooms/${id}`)}
                     />
@@ -775,8 +694,8 @@ export default function FindClassroomsPage() {
                   <LogIn className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="m-0 text-lg font-black text-foreground leading-tight tracking-tight">Tham gia lớp học</h3>
-                  <p className="m-0 text-xs text-muted-foreground">Nhập mã lớp học</p>
+                  <h3 className="m-0 text-lg font-black text-foreground leading-tight tracking-tight">Đăng ký khóa học</h3>
+                  <p className="m-0 text-xs text-muted-foreground">Nhập mã khóa học</p>
                 </div>
               </div>
 
@@ -790,7 +709,7 @@ export default function FindClassroomsPage() {
                     className="!rounded-2xl uppercase font-bold text-center tracking-wider text-base h-12 bg-slate-100/50 dark:bg-white/5 border-slate-200/70 dark:border-white/10"
                   />
                   <p className="text-[11px] text-muted-foreground text-center">
-                    Mã lớp chỉ gồm chữ hoa, số và dấu gạch ngang
+                    Mã khóa học chỉ gồm chữ hoa, số và dấu gạch ngang
                   </p>
                 </div>
 

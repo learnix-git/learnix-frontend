@@ -7,18 +7,17 @@ import { LOGIN_PATH } from "@/lib/auth/session";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { resetPassword } from "@/lib/api/auth";
-import {
-  resetPasswordSchema,
+import { resetPasswordSchema,
   type ResetPasswordFormData,
 } from "@/lib/validations/auth";
 import { IconLock, IconEye, IconEyeOff, IconCheck, IconArrowLeft } from "@tabler/icons-react";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const params = useSearchParams();
+  const token = params.get("token");
 
-  const [formData, setFormData] = useState<ResetPasswordFormData>({
+  const [form, setForm] = useState<ResetPasswordFormData>({
     password: "",
     confirmPassword: "",
   });
@@ -32,22 +31,25 @@ export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [responseMsg, setResponseMsg] = useState<string | null>(null);
+  const [response, setResponse] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const updateField = (field: "password" | "confirmPassword", value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  // Cập nhật dữ liệu form và reset trạng thái lỗi
+  const field = (field: "password" | "confirmPassword", value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
     if (error) setError("");
   };
 
-  const inputClass = (hasError?: string) =>
-    `w-full rounded-2xl border bg-white/30 dark:bg-white/10 backdrop-blur-sm pl-10 pr-10 py-3 text-sm text-foreground dark:text-white outline-none transition-colors placeholder:text-muted-foreground/60 dark:placeholder:text-white/40 focus:border-primary ${
-      hasError ? "border-destructive/70 focus:border-destructive" : "border-white/40 dark:border-white/20"
-    }`;
+  // Tạo class Tailwind cho input với kiểu hiển thị tương ứng khi có hoặc không có lỗi
+  const input = (hasError?: string) =>
+  `w-full rounded-2xl border bg-white/30 dark:bg-white/10 pl-10 pr-10 py-3 text-sm text-foreground dark:text-white outline-none transition-colors placeholder:text-muted-foreground/60 dark:placeholder:text-white/40 focus:border-primary ${
+    hasError ? "border-destructive/70 focus:border-destructive" : "border-white/40 dark:border-white/20"
+  }`;
 
+  // Gửi form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -58,9 +60,9 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const result = resetPasswordSchema.safeParse(formData);
+    // Kiểm tra mật khẩu có chuẩn không
+    const result = resetPasswordSchema.safeParse(form);
     if (!result.success) {
-      // 💡 BÓC LỖI TRỰC TIẾP KHÔNG CẦN CASTING CÁI FIELD QUÁI QUỶ KIA NỮA
       const fieldErrors: { password?: string; confirmPassword?: string } = {};
       for (const issue of result.error.issues) {
         const key = issue.path[0] as "password" | "confirmPassword";
@@ -71,7 +73,9 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true);
+
     try {
+      // Gọi API
       const res = await resetPassword(
         token,
         result.data.password,
@@ -81,7 +85,7 @@ export default function ResetPasswordPage() {
       if (res.success === true) {
         const message = res.message?.trim();
         if (message) {
-          setResponseMsg(message);
+          setResponse(message);
           toast.success(message);
         } else {
           toast.success("Đặt lại mật khẩu thành công!");
@@ -190,12 +194,9 @@ export default function ResetPasswordPage() {
                 <IconCheck size={32} className="text-primary" />
               </div>
               <h1 className="text-2xl font-bold text-foreground mb-2">Đặt lại mật khẩu thành công!</h1>
-              <p className="text-sm text-muted-foreground mb-6">
-                Mật khẩu đã được cập nhật. Bạn có thể đăng nhập bằng mật khẩu mới.
-              </p>
-              {responseMsg && (
+              {response && (
                 <p className="text-sm font-medium text-foreground rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 mb-6 backdrop-blur-sm">
-                  {responseMsg}
+                  {response}
                 </p>
               )}
               <Button onClick={() => router.push(LOGIN_PATH)} className="rounded-xl w-full" size="lg">
@@ -219,12 +220,12 @@ export default function ResetPasswordPage() {
                     <input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => updateField("password", e.target.value)}
+                      value={form.password}
+                      onChange={(e) => field("password", e.target.value)}
                       placeholder="Tối thiểu 8 ký tự"
                       aria-invalid={!!errors.password}
                       aria-describedby={errors.password ? "password-error" : undefined}
-                      className={inputClass(errors.password)}
+                      className={input(errors.password)}
                     />
                     <button
                       type="button"
@@ -252,12 +253,12 @@ export default function ResetPasswordPage() {
                     <input
                       id="confirmPassword"
                       type={showConfirm ? "text" : "password"}
-                      value={formData.confirmPassword}
-                      onChange={(e) => updateField("confirmPassword", e.target.value)}
+                      value={form.confirmPassword}
+                      onChange={(e) => field("confirmPassword", e.target.value)}
                       placeholder="Nhập lại mật khẩu"
                       aria-invalid={!!errors.confirmPassword}
                       aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
-                      className={inputClass(errors.confirmPassword)}
+                      className={input(errors.confirmPassword)}
                     />
                     <button
                       type="button"

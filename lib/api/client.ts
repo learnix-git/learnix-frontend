@@ -163,7 +163,7 @@ client.interceptors.response.use(
 
     const msg =
       error.response?.data?.message || error.message || "Có lỗi xảy ra";
-    return Promise.reject(new Error(msg));
+    return Promise.reject(error);
   },
 );
 

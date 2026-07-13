@@ -13,58 +13,67 @@ import {
   IconAlertCircle,
 } from "@tabler/icons-react";
 
-const SOCIAL_LABELS: Record<string, string> = {
+const LABELS: Record<string, string> = {
   google: "Google",
   facebook: "Facebook",
   apple: "Apple",
   github: "GitHub",
 };
 
-function socialLabel(provider: string): string {
+function social(provider: string): string {
   const key = provider.toLowerCase();
-  return SOCIAL_LABELS[key] ?? provider;
+  return LABELS[key] ?? provider;
 }
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const [response, setresponse] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [response, setResponse] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [socialProvider, setSocialProvider] = useState<string | null>(null);
 
-  const onEmailChange = (value: string) => {
+  const emailChange = (value: string) => {
     setEmail(value);
-    if (errorMessage) setErrorMessage(null);
-    if (socialProvider) setSocialProvider(null);
+    if (error) 
+      setError(null);
+    if (socialProvider) 
+      setSocialProvider(null);
   };
 
+  // Gửi form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setLoading(true);
+
     try {
       const res = await forgotPassword(email);
       if (res.success === true) {
         const message = res.message?.trim();
         if (message) {
-          setresponse(message);
+          setResponse(message);
           toast.success(message);
         } else {
           toast.success("Đã gửi email đặt lại mật khẩu!");
         }
         setSent(true);
       } else {
-        // BE trả msg qua `res.msg` (kể cả 4xx — đã được API chuẩn hoá trả về).
-        // Nếu có `socialProvider` (vd. user đăng ký qua Google) thì hiển thị
-        // CTA phù hợp, không gửi email đặt lại.
-        setErrorMessage(res.message || "Gửi email thất bại");
-        // setSocialProvider(res.socialProvider ?? null);
+        setError(res.message || "Gửi email thất bại");
       }
-    } catch {
-      setErrorMessage("Có lỗi xảy ra, vui lòng thử lại");
-      setSocialProvider(null);
+    } catch(err : any) {
+      setError("Có lỗi xảy ra, vui lòng thử lại");
+      // Kiểm tra có phải tài khoản google không
+      const data = err.response?.data;
+      
+      setError(data?.message || "Có lỗi xảy ra, vui lòng thử lại");
+      
+      if (data?.data?.provider === "google") {
+        setSocialProvider("google");
+      } else {
+        setSocialProvider(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -147,20 +156,20 @@ export default function ForgotPasswordPage() {
                       id="email"
                       type="email"
                       value={email}
-                      onChange={(e) => onEmailChange(e.target.value)}
+                      onChange={(e) => emailChange(e.target.value)}
                       placeholder="name@example.com"
                       required
-                      aria-invalid={!!errorMessage}
-                      aria-describedby={errorMessage ? "email-error" : undefined}
+                      aria-invalid={!!error}
+                      aria-describedby={error ? "email-error" : undefined}
                       className={`w-full rounded-2xl border bg-white/30 dark:bg-white/10 backdrop-blur-sm pl-11 pr-4 py-3.5 text-sm text-foreground dark:text-white outline-none transition-all placeholder:text-muted-foreground/60 dark:placeholder:text-white/40 ${
-                        errorMessage
+                        error
                           ? "border-destructive/70 focus:border-destructive"
                           : "border-white/40 dark:border-white/20 focus:border-primary"
                       }`}
                     />
                   </div>
 
-                  {errorMessage && (
+                  {error && (
                     <div
                       id="email-error"
                       role="alert"
@@ -172,7 +181,7 @@ export default function ForgotPasswordPage() {
                           className="mt-0.5 shrink-0 text-destructive"
                         />
                         <p className="text-sm font-medium text-foreground dark:text-white">
-                          {errorMessage}
+                          {error}
                         </p>
                       </div>
 
@@ -193,7 +202,7 @@ export default function ForgotPasswordPage() {
                       )}
                       {socialProvider && socialProvider !== "google" && (
                         <p className="mt-3 text-xs text-muted-foreground">
-                          Tài khoản này đăng ký qua <strong>{socialLabel(socialProvider)}</strong>.
+                          Tài khoản này đăng ký qua <strong>{social(socialProvider)}</strong>.
                           Vui lòng sử dụng nút đăng nhập tương ứng tại trang đăng nhập.
                         </p>
                       )}

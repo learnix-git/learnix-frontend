@@ -7,6 +7,18 @@ export interface AuthResponse {
   token: string;
 }
 
+export function getToken(): string | null {
+  return GetToken();
+}
+
+export function setSession(user: User): void {
+  SaveSession(user);
+}
+
+export function removeSession(): void {
+  ClearSession();
+}
+
 export async function login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
   const res = await client.post<ApiResponse<AuthResponse>>("/auth/login", data);
   return res.data;
@@ -26,33 +38,22 @@ export async function loginViaGoogle(code: string): Promise<ApiResponse<AuthResp
   return res.data;
 }
 
-export function getToken(): string | null {
-  return GetToken();
-}
-
-export function setSession(user: User): void {
-  SaveSession(user);
-}
-
-export function removeSession(): void {
-  ClearSession();
-}
-
 export async function getInfo(): Promise<ApiResponse<User>> {
   const res = await client.get<ApiResponse<User>>("/auth/info");
   return res.data;
 }
 
-export async function forgotPassword(email: string): Promise<ApiResponse<null>> {
-  const res = await client.post<ApiResponse<null>>("/auth/forgot-password", { email });
+export async function forgotPassword(email: string): Promise<ApiResponse<{ provider?: string | null }>> {
+  const res = await client.post<ApiResponse<{ provider?: string | null }>>("/auth/forgot-password", { email });
   return res.data;
 }
 
 export async function resetPassword(token: string, password: string, confirmPassword: string ): Promise<ApiResponse<null>> {
-  const res = await client.post<ApiResponse<null>>("/auth/forgot-password", { token, password, confirmPassword });
+  const res = await client.post<ApiResponse<null>>("/auth/reset-password", { token, password, confirmPassword });
   return res.data;
 }
 
-// export async function changePassword(data: ChangePasswordRequest): Promise<ApiResponse<null>> {}
-
-// export async function updateProfile(data: UpdateProfileRequest): Promise<ApiResponse<AuthResponse>> {}
+export async function changePassword(newPassword: string, confirmPassword: string, oldPassword?: string): Promise<ApiResponse<null>> {
+  const res = await client.put<ApiResponse<null>>("/auth/change-password", { oldPassword, newPassword, confirmPassword }); 
+  return res.data;
+}

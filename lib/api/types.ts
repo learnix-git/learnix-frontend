@@ -6,7 +6,12 @@ export interface ApiResponse<T = any> {
   success: true | false;
   message: string;
   data?: T;
-  errors?: any;
+  pagination?: {
+    items: number;
+    pages: number;
+    current: number;
+    limit: number;
+  };
 }
 
 export interface LoginRequest {
@@ -28,6 +33,8 @@ export interface RegisterRequest {
 
 export type Role = "STUDENT" | "TEACHER" | "ADMIN";
 
+export type Status = "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED";
+
 export interface GeneralItem {
   id: number | string;
   name: string;
@@ -35,7 +42,7 @@ export interface GeneralItem {
 }
 
 // !==========================================
-// ! MODELS
+// ! MODELS - USER & TUTOR
 // !==========================================
 
 export interface User {
@@ -48,46 +55,149 @@ export interface User {
   avatar: string | null;
   active: boolean;
   token?: string;
+
+  // ! Thông tin dành riêng cho Gia sư
+  cccd?: string | null;
+  degree?: string | null;
+  major?: string | null;
+  bio?: string | null;
+  fee?: number | null;
+
+  // ! Relations
+  courses?: Course[];
+  posts?: Post[];
+  teachingRef?: Booking[];
+  bookingRef?: Booking[];
 }
 
-export interface Classroom {
+// !==========================================
+// ! MODELS - COURSES 
+// !==========================================
+
+export interface Course {
   id: string;
   name: string;
   code: string;
   description?: string | null;
   teacher: string;
-  capacity: number;
+  thumbnail?: string | null;
+  feed?: any; // Prisma Json
   active: boolean;
   created: string;
   updated: string;
   deleted?: string | null;
   fee: number;
   grade: number;
-  address?: string;
 
   // ! Tham số cho giao diện
   price?: string;
   rating?: number;
   lessons?: number;
   count?: number;
-  status?: "active" | "draft";
+  status?: "active" | "draft" | boolean;
+
+  // ! Relations
+  teacherRef?: User | null;
+  members?: Member[];
+  chapters?: Chapter[];
+  exams?: Exam[];
 }
 
-export interface Schedule {
+export interface Chapter {
   id: string;
-  time: string;
   title: string;
-  class: string;
-  url: string;
+  courseId: string;
+  created: string;
+
+  // ! Relations
+  courseRef?: Course | null;
+  lessons?: Lesson[];
+}
+
+export interface Lesson {
+  id: string;
+  title: string;
+  video?: string | null;
+  content?: string | null;
+  chapterId: string;
+  created: string;
+
+  // ! Relations
+  chapterRef?: Chapter | null;
 }
 
 export interface Member {
   id: string;
-  classroom: string;
+  course: string;
   student: string;
   role: string;
   joined: string;
+
+  // ! Relations
+  courseRef?: Course | null;
+  studentRef?: User | null;
 }
+
+// !==========================================
+// ! MODELS - TUTORS
+// !==========================================
+
+export interface Post {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  type: "FIND_CLASS" | "FIND_TUTOR" | string;
+  subject: string;
+  budget: number;
+  address?: string | null;
+  contact?: string | null;
+  created: string;
+  updated: string;
+
+  // ! Relations
+  userRef?: User | null;
+}
+
+export interface Booking {
+  id: string;
+  teacherId: string;
+  studentId: string;
+  start?: string | null;
+  schedule?: string | null;
+  online: boolean;
+  address?: string | null;
+  meet?: string | null;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | string;
+  fee: number;
+  created: string;
+  updated: string;
+
+  // ! Relations
+  teacherRef?: User | null;
+  studentRef?: User | null;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  courseId?: string | null;
+  bookingId?: string | null;
+  amount: number;
+  status: Status;
+  gateway: string;
+  created: string;
+  updated: string;
+
+  // ! Relations
+  userRef?: User | null;
+  courseRef?: Course | null;
+  bookingRef?: Booking | null;
+}
+
+// !==========================================
+// ! MODELS - THI CỬ & CHẤM ĐIỂM
+// !==========================================
 
 export interface Bank {
   id: string;
@@ -124,7 +234,7 @@ export interface Exam {
   duration: number;
   threshold: number;
   teacher: string;
-  classroom?: string | null;
+  course?: string | null;
   questions: any;       // Prisma Json
   config: any;          // Prisma Json
   status: string;
@@ -135,7 +245,7 @@ export interface Exam {
   deleted?: string | null;
 
   // ! Relations
-  classroomRef?: Classroom | null;
+  courseRef?: Course | null;
   submissions?: Submission[];
 }
 
@@ -158,7 +268,7 @@ export interface Score {
   id: string;
   student: string;
   exam: string;
-  classroom?: string | null;
+  course?: string | null;
   submission: string;
   total: number;
   max: number;
@@ -168,6 +278,10 @@ export interface Score {
   created: string;
   updated: string;
 }
+
+// !==========================================
+// ! MODELS - TIỆN ÍCH KHÁC
+// !==========================================
 
 export interface Plan {
   id: string;

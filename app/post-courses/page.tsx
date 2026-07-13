@@ -25,22 +25,24 @@ import {
   SelectItem,
 } from "@/components/ui/Select";
 
-import { ClassroomsAPI } from "@/lib/api/classrooms";
+import { CoursesAPI } from "@/lib/api/courses";
 import { 
-  classroomSchema, GRADE, type ClassroomFormData 
-} from "@/lib/validations/classrooms";
-import ClassroomsCard from "@/components/classrooms/ClassroomsCard";
+  coursesSchema, type CoursesFormData
+} from "@/lib/validations/courses";
+import CoursesCard from "@/components/courses/CoursesCard";
 
-export default function PostClassroomPage() {
+const GRADE = ["lớp 6", "lớp 7", "lớp 8", "lớp 9", "lớp 10", "lớp 11", "lớp 12", "Đại học"];
+
+export default function PostCoursesPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   
   // Khởi tạo form với giá trị mặc định và quy tắc kiểm tra dữ liệu.
   const { watch, control, register, handleSubmit,
     formState: { errors },
-  } = useForm<ClassroomFormData>({
+  } = useForm<CoursesFormData>({
 
-    resolver: zodResolver(classroomSchema) as Resolver<ClassroomFormData>,
+    resolver: zodResolver(coursesSchema) as Resolver<CoursesFormData>,
     
     defaultValues: {
       name: "",
@@ -54,7 +56,7 @@ export default function PostClassroomPage() {
 
   const values = watch();
 
-  const submit: SubmitHandler<ClassroomFormData> = async (data) => {
+  const submit: SubmitHandler<CoursesFormData> = async (data) => {
     setSubmitting(true);
     
     try {
@@ -63,7 +65,8 @@ export default function PostClassroomPage() {
       if (isNaN(numeric)) numeric = 13;
 
       // Gọi API
-      const res = await ClassroomsAPI.createClass({
+      const res = await CoursesAPI.create({
+        active: true,
         name: data.name,
         grade: numeric,
         fee: Number(data.fee),
@@ -249,8 +252,8 @@ export default function PostClassroomPage() {
             <div className="lg:sticky lg:top-6 space-y-3">
               <h3 className="m-0 mb-2 px-1 text-[13px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Xem trước lớp học</h3>
 
-              <ClassroomsCard 
-                classroom={{ 
+              <CoursesCard 
+                course={{ 
                   name: values.name || "", 
                   grade: values.grade as any, 
                   fee: values.fee || 0,
