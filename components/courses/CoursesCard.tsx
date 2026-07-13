@@ -7,10 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import type { Course } from "@/lib/api/types";
-import { FormatMoney } from "@/lib/utils";
+import { FormatMoney, Cn } from "@/lib/utils";
 import TooltipHover from "@/components/ui/Tooltip";
-
-import CoursesProgress from "./CoursesProgress";
 
 interface CoursesCardProps {
   course: Partial<Course> & {
@@ -19,9 +17,12 @@ interface CoursesCardProps {
     lessonsCount?: number;
     status?: "active" | "draft" | boolean;
   };
-  isPreview?: boolean;             
-  isJoining?: boolean;             
-  onAction?: (id: string) => void; 
+  isPreview?: boolean;
+  isJoining?: boolean;
+  onAction?: (id: string) => void;
+  // "auto" = ngang trên md+ (mặc định, dùng cho danh sách full-width)
+  // "vertical" = luôn xếp dọc, dùng khi card nằm trong cột/sidebar hẹp
+  layout?: "auto" | "vertical";
 }
 
 export default function CoursesCard({
@@ -29,6 +30,7 @@ export default function CoursesCard({
   isPreview = false,
   isJoining = false,
   onAction,
+  layout = "auto",
 }: CoursesCardProps) {
   const {
     id,
@@ -47,6 +49,9 @@ export default function CoursesCard({
     status = false,
   } = course;
 
+  const isVertical = layout === "vertical";
+  const row = !isVertical;
+
   const display = typeof grade === "number" ? `Khối ${grade}` : (grade || "Chưa chọn");
   const teacherName = teacherRef?.name || "Giảng viên";
   const teacherAvatar = teacherRef?.avatar || undefined;
@@ -54,8 +59,18 @@ export default function CoursesCard({
   const teacherBio = teacherRef?.bio?.trim();
 
   return (
-    <Card className="group !p-0 !rounded-[2rem] flex flex-col md:flex-row md:items-stretch overflow-hidden bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/10 hover:border-primary dark:hover:border-primary/50 hover:shadow-xl dark:hover:shadow-2xl dark:hover:shadow-black/80 transition-all duration-300 w-full">
-      <div className="relative w-full md:w-[260px] shrink-0 aspect-video md:aspect-auto overflow-hidden bg-slate-100 dark:bg-white/5">
+    <Card
+      className={Cn(
+        "group !p-0 !rounded-[2rem] flex flex-col overflow-hidden bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/10 hover:border-primary dark:hover:border-primary/50 hover:shadow-xl dark:hover:shadow-2xl dark:hover:shadow-black/80 transition-all duration-300 w-full",
+        row && "md:flex-row md:items-stretch"
+      )}
+    >
+      <div
+        className={Cn(
+          "relative w-full shrink-0 aspect-video overflow-hidden bg-slate-100 dark:bg-white/5",
+          row && "md:w-[260px] md:aspect-auto"
+        )}
+      >
         {thumbnail ? (
           <img
             src={thumbnail}
@@ -68,18 +83,6 @@ export default function CoursesCard({
             <span className="text-[10px] font-bold uppercase tracking-wider">Chưa có ảnh</span>
           </div>
         )}
-
-        <div className="absolute left-3 top-3">
-          {active ? (
-            <span className="inline-flex items-center rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-black text-white shadow-sm">
-              Đang mở
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-black text-white shadow-sm">
-              Tạm đóng
-            </span>
-          )}
-        </div>
       </div>
 
       <div className="flex-1 min-w-0 space-y-3.5 p-5 sm:p-6">
@@ -141,11 +144,12 @@ export default function CoursesCard({
         </div>
       </div>
 
-      <div className="flex flex-col justify-between items-stretch gap-4 shrink-0 p-5 sm:p-6 border-t md:border-t-0 border-slate-100 dark:border-white/5 md:border-l md:border-slate-200/60 md:dark:border-white/10 md:w-[260px]">
-        <div className="w-full">
-          <CoursesProgress current={count} chaptersCount={chaptersCount} lessonsCount={lessonsCount} />
-        </div>
-
+      <div
+        className={Cn(
+          "flex flex-col justify-between items-stretch gap-4 shrink-0 p-5 sm:p-6 border-t border-slate-100 dark:border-white/5",
+          row && "md:border-t-0 md:border-l md:border-slate-200/60 md:dark:border-white/10 md:w-[260px]"
+        )}
+      >
         {status ? (
           <Button
             type="button"

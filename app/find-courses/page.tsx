@@ -415,7 +415,7 @@ export default function FindCoursesPage() {
                     onClick={() => setModal(true)}
                     className="h-11 rounded-2xl px-5 text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
                   >
-                    <LogIn className="h-4 w-4" /> Đăng ký khóa học bằng mã
+                    <LogIn className="h-4 w-4" /> Tham gia khóa học bằng mã
                   </Button>
                 )}
 
