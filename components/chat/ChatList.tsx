@@ -12,7 +12,7 @@ import { useConversations } from "@/hooks/chat/useConversations";
 import { usePresenceSync } from "@/hooks/chat/usePresenceSync";
 import { usePresenceStore } from "@/lib/stores/presence";
 import { Avatar } from "@/components/ui/Avatar";
-import { normalizeVietnameseString } from "@/lib/utils";
+import { NormalizeString } from "@/lib/utils";
 import { ChatOrderBadge } from "./ChatBadge";
 import type { Conversation } from "@/lib/chat/types";
 
@@ -268,19 +268,19 @@ export function ChatList({
   usePresenceSync(peerIds);
 
   const filtered = useMemo(() => {
-    const normalizedSearch = normalizeVietnameseString(search.trim());
+    const normalizedSearch = NormalizeString(search.trim());
 
     return items
       .filter((c) => c.peer)
       .filter((c) => (tab === "unread" ? c.unreadCount > 0 : true))
       .filter((c) => {
         if (!normalizedSearch) return true;
-        const peerName = normalizeVietnameseString(c.peer!.name);
+        const peerName = NormalizeString(c.peer!.name);
         const projectName = c.projectName
-          ? normalizeVietnameseString(c.projectName)
+          ? NormalizeString(c.projectName)
           : "";
         const serviceName = c.serviceName
-          ? normalizeVietnameseString(c.serviceName)
+          ? NormalizeString(c.serviceName)
           : "";
         return (
           peerName.includes(normalizedSearch) ||
