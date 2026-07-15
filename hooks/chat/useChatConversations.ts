@@ -3,51 +3,56 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatAPI } from "@/lib/api/chat";
 import { getSocket, subscribeSocketState } from "@/lib/chat/socket";
-import { isSocketMessageNew, normalizeMessage } from "@/lib/chat/normalize";
-import { usePeerCache } from "@/lib/stores/peerCache";
+import { CheckMessage, NormalizeMessage } from "@/lib/chat/normalize";
+import { Cache } from "@/lib/stores/cache";
 import type { ChatConversation } from "@/lib/chat/types";
 
-function chatTime(value: string | null): number {
+// ! Dùng để sắp xếp danh sách chat theo thứ tự tin nhắn mới nhất ở trên
+function SortTime(value: string | null): number {
   if (!value) return 0;
   const parsed = new Date(value.replace(" ", "T")).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function previewFor(type: string, content: string | null): string {
+// ! Tạo nội dung preview cho tin nhắn cuối cùng
+function ChatPreview(type: string, content: string | null): string {
   if (type === "text") return content || "";
   if (type === "image") return "Hình ảnh";
   return "Tệp đính kèm";
 }
 
-export function useConversations(
-  myId: number,
-  activeConversationId?: number | null,
-  typeFilter?: "direct" | "project" | "service"
+export function useChatConversations(
+  myId: string,
+  conversationId?: string | null,
+  type?: "direct" | "course"
 ) {
   const [items, setItems] = useState<ChatConversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const setPeers = usePeerCache((s) => s.setPeers);
-  const activeConversationIdRef = useRef<number | null | undefined>(
-    activeConversationId
+  const setPeers = Cache((s) => s.setPeers);
+  const conversationIdRef = useRef<string | null | undefined>(
+    conversationId
   );
 
-  activeConversationIdRef.current = activeConversationId;
+  conversationIdRef.current = conversationId;
 
   const conversationIds = useMemo(
     () =>
       items
         .map((conversation) => conversation.id)
-        .filter((id) => Number.isFinite(id) && id > 0),
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
     [items]
   );
   const conversationIdsKey = conversationIds.join(",");
 
+  // ! Tải danh sách ban đầu
   const refresh = useCallback(async () => {
     try {
-      const res = await ChatAPI.listConversations(
-        typeFilter ? { type: typeFilter } : {}
+      // Lấy tất cả cuộc trò chuyện
+      const res = await ChatAPI.FilterConversation(
+        type ? { type: type } : {}
       );
-      if (res.code === 200 && Array.isArray(res.data.items)) {
+
+      if (res.code === 200 && Array.isArray(res.data?.items)) {
         setItems(res.data.items);
         setPeers(
           res.data.items
@@ -56,39 +61,41 @@ export function useConversations(
         );
       }
     } catch {
-      // Keep the previous list while a transient request fails.
+      // Keep the previous list while a transient request fails
     } finally {
       setLoading(false);
     }
-  }, [setPeers, typeFilter]);
+  }, [setPeers, type]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
+  // ! Đánh dấu đã đọc khi mở chat
   useEffect(() => {
-    if (!activeConversationId) return;
+    if (!conversationId) return;
     setItems((prev) =>
       prev.map((conversation) =>
-        conversation.id === activeConversationId
+        conversation.id === conversationId
           ? { ...conversation, unreadCount: 0 }
           : conversation
       )
     );
-  }, [activeConversationId]);
+  }, [conversationId]);
 
+  // ! Xử lý tin nhắn mới realtime
   useEffect(() => {
-    let detach: (() => void) | null = null;
-    let attachedSocket: unknown = null;
+    let detached: (() => void) | null = null;
+    let attached: unknown = null;
 
     const attach = () => {
       const socket = getSocket();
-      if (!socket || attachedSocket === socket) return;
-      detach?.();
+      if (!socket || attached === socket) return;
+      detached?.();
 
       const onNew = (raw: unknown) => {
-        if (!isSocketMessageNew(raw)) return;
-        const message = normalizeMessage(raw);
+        if (!CheckMessage(raw)) return;
+        const message = NormalizeMessage(raw);
         if (!message) return;
 
         setItems((prev) => {
@@ -107,25 +114,25 @@ export function useConversations(
             }
 
             const isActive =
-              conversation.id === activeConversationIdRef.current;
+              conversation.id === conversationIdRef.current;
             return {
               ...conversation,
               lastMessageAt: message.createdAt,
-              lastMessagePreview: previewFor(message.type, message.content),
+              lastMessagePreview: ChatPreview(message.type, message.content),
               unreadCount:
                 isMine || isActive ? 0 : conversation.unreadCount + 1,
             };
           });
 
           return updated.sort(
-            (a, b) => chatTime(b.lastMessageAt) - chatTime(a.lastMessageAt)
+            (a, b) => SortTime(b.lastMessageAt) - SortTime(a.lastMessageAt)
           );
         });
       };
 
       socket.on("message:new", onNew);
-      attachedSocket = socket;
-      detach = () => socket.off("message:new", onNew);
+      attached = socket;
+      detached = () => socket.off("message:new", onNew);
     };
 
     attach();
@@ -134,7 +141,7 @@ export function useConversations(
     });
 
     return () => {
-      detach?.();
+      detached?.();
       unsubscribe();
     };
   }, [myId, refresh]);
@@ -142,7 +149,7 @@ export function useConversations(
   useEffect(() => {
     if (conversationIds.length === 0) return;
 
-    const joinVisibleConversations = () => {
+    const JoinConversation = () => {
       const socket = getSocket();
       if (!socket?.connected) return;
 
@@ -162,18 +169,15 @@ export function useConversations(
       });
     };
 
-    joinVisibleConversations();
+    JoinConversation();
     const unsubscribe = subscribeSocketState((state) => {
-      if (state === "connected") joinVisibleConversations();
+      if (state === "connected") JoinConversation();
     });
 
     return () => {
       unsubscribe();
     };
-    // Re-run when list membership or selected conversation changes. ChatWindow cleanup can
-    // leave a room that the list still needs, so the list re-joins its visible rooms.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConversationId, conversationIdsKey]);
+  }, [conversationId, conversationIdsKey]);
 
   return { items, loading, refresh };
 }

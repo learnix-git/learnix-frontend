@@ -2,18 +2,18 @@
 
 import { useEffect } from "react";
 import { getSocket } from "@/lib/chat/socket";
-import { isSocketMessageNew, normalizeMessage } from "@/lib/chat/normalize";
-import { usePeerCache } from "@/lib/stores/peerCache";
+import { CheckMessage, NormalizeMessage } from "@/lib/chat/normalize";
+import { Cache } from "@/lib/stores/cache";
 import { useChatStatus } from "./useChatStatus";
 import { useChatStore } from "@/lib/stores/chat";
-import { useMessageLoader } from "./useMessageLoader";
-import { useMessageSender } from "./useMessageSender";
-import { useTypingIndicator } from "./useTypingIndicator";
-import { useReadReceipts } from "./useReadReceipts";
+import { useChatLoader } from "./useChatLoader";
+import { useChatSender } from "./useChatSender";
+import { useChatTyping } from "./useChatTyping";
+import { useChatReceipts } from "./useChatReceipts";
 import { useChatAttachments } from "./useChatAttachments";
-import type { SendMessagePayload } from "@/lib/chat/types";
+import type { MessagePayload } from "@/lib/chat/types";
 
-export function useChatRoom(conversationId: number | null, myId: number) {
+export function useChatRoom(conversationId: string | null, myId: string) {
   const { status: socketStatus } = useChatStatus();
 
   const {
@@ -26,14 +26,14 @@ export function useChatRoom(conversationId: number | null, myId: number) {
     loadOlder,
     reloadMessages,
     messageIdsRef,
-  } = useMessageLoader(conversationId);
+  } = useChatLoader(conversationId);
 
-  const { stopTyping, emitTyping, peerTyping } = useTypingIndicator(
+  const { stopTyping, emitTyping, peerTyping } = useChatTyping(
     conversationId,
     myId
   );
 
-  const { send } = useMessageSender(
+  const { send } = useChatSender(
     conversationId,
     myId,
     messageIdsRef,
@@ -42,14 +42,13 @@ export function useChatRoom(conversationId: number | null, myId: number) {
     stopTyping
   );
 
-  const { readByPeer, markRead } = useReadReceipts(conversationId, myId);
+  const { readByPeer, markRead } = useChatReceipts(conversationId, myId);
 
   const { uploading, uploadAttachment } = useChatAttachments(
     conversationId,
     setMessages
   );
 
-  // Sync active conversation with global store.
   useEffect(() => {
     useChatStore.getState().setActiveConversationId(conversationId);
     return () => {
@@ -57,7 +56,6 @@ export function useChatRoom(conversationId: number | null, myId: number) {
     };
   }, [conversationId]);
 
-  // Socket join/leave + incoming message handling.
   useEffect(() => {
     if (!conversationId || socketStatus !== "connected") return;
     const socket = getSocket();
@@ -74,8 +72,8 @@ export function useChatRoom(conversationId: number | null, myId: number) {
     );
 
     const onNew = (raw: unknown) => {
-      if (!isSocketMessageNew(raw)) return;
-      const message = normalizeMessage(raw, usePeerCache.getState().lookup);
+      if (!CheckMessage(raw)) return;
+      const message = NormalizeMessage(raw, Cache.getState().lookup);
       if (!message || message.conversationId !== conversationId) return;
 
       if (message.type !== "text" && !message.attachment) {
@@ -102,8 +100,7 @@ export function useChatRoom(conversationId: number | null, myId: number) {
     };
   }, [conversationId, myId, reloadMessages, setMessages, socketStatus, stopTyping]);
 
-  // Convenience: send attachment via REST directly.
-  const sendAttachment = async (payload: SendMessagePayload) => {
+  const sendAttachment = async (payload: MessagePayload) => {
     return uploadAttachment(payload);
   };
 

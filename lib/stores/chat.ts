@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { ChatAPI } from "@/lib/api/chat";
 
 export interface UnreadCountItem {
-  conversationId: number;
+  conversationId: string;
   count: number;
   latestAt: string;
 }
@@ -15,12 +15,12 @@ interface ChatState {
   loading: boolean;
   initialized: boolean;
   error: string | null;
-  activeConversationId: number | null;
+  activeConversationId: string | null;
 
-  setActiveConversationId: (id: number | null) => void;
+  setActiveConversationId: (id: string | null) => void;
   fetchUnreadCount: () => Promise<void>;
-  incrementUnreadCount: (conversationId: number, latestAt: string) => void;
-  clearUnreadCount: (conversationId: number) => void;
+  incrementUnreadCount: (conversationId: string, latestAt: string) => void;
+  clearUnreadCount: (conversationId: string) => void;
   reset: () => void;
 }
 
@@ -44,8 +44,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      const res = await ChatAPI.getUnreadCount();
-      if (res.code === 200) {
+      const res = await ChatAPI.CountUnread();
+      if (res.code === 200 && res.data) {
         set({
           unreadCount: res.data.total,
           items: res.data.items,
@@ -53,7 +53,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           loading: false,
         });
       } else {
-        throw new Error(res.msg || "Không thể lấy số tin nhắn chưa đọc");
+        throw new Error(res.message || "Không thể lấy số tin nhắn chưa đọc");
       }
     } catch (err) {
       set({
@@ -65,7 +65,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   incrementUnreadCount: (conversationId, latestAt) => {
     set((state) => {
-      // Nếu là active conversation, không tăng count
       if (state.activeConversationId === conversationId) {
         return state;
       }
@@ -84,7 +83,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
             )
           : [...baseItems, { conversationId, count: 1, latestAt }];
 
-      // Sắp xếp items theo latestAt DESC
       nextItems.sort(
         (a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime()
       );

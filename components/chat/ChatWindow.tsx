@@ -2,71 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { freelancers } from "@/lib/data";
 import {
   AlertCircle,
-  Briefcase,
+  BookOpen,
   ChevronLeft,
-  Handshake,
   FileArchive,
   FileImage,
   FileSpreadsheet,
   FileText,
   Loader2,
-  Package as PackageIcon,
   Paperclip,
   Send,
   WifiOff,
   X,
 } from "lucide-react";
 import { useChatRoom } from "@/hooks/chat/useChatRoom";
-import { usePresenceSync } from "@/hooks/chat/usePresenceSync";
+import { useChatPresence } from "@/hooks/chat/useChatPresence";
 import { useChatStatus } from "@/hooks/chat/useChatStatus";
 import { reconnectChat } from "@/lib/chat/socket";
 import { ChatAPI } from "@/lib/api/chat";
 import { usePresenceStore } from "@/lib/stores/presence";
 import { MessageBubble } from "./ChatBubble";
-import { OfferMessage } from "./OfferMessage";
-import { SendOfferModal } from "./SendOfferModal";
-import { ChatOrderBadge } from "./ChatBadge";
 import { Avatar } from "@/components/ui/Avatar";
-import { formatPriceUnit } from "@/lib/service-filters";
-import type { ChatUser, ChatOrderRef } from "@/lib/chat/types";
-import { peerProfileLink } from "@/lib/chat/peer-link";
-
-/**
- * Service context gắn vào header. Có thể là id+name tối thiểu (từ URL) hoặc
- * full object từ API (có thumbnail, price, priceUnit) — UI tự fallback.
- *
- * `isFreelancer` mirror với `ChatServiceRef.isFreelancer` từ response
- * `/api/v1/chat/list` (BE 2026-07-06): true khi service thuộc về user-as-
- * freelancer hiện tại (seller side) → gate UI "Gửi offer".
- */
-type ServiceContext =
-  | {
-      id: number;
-      name: string;
-      thumbnail?: string | null;
-      price?: number | null;
-      priceUnit?: string | null;
-      alias?: string | null;
-      /** SLA fields — optional, fallback về defaults khi null. */
-      deliveryDays?: number | null;
-      revisionLimit?: number | null;
-      reviewDuration?: number | null;
-      isFreelancer?: boolean | null;
-    }
-  | null;
-
-type ProjectContext =
-  | {
-      id: number;
-      name: string;
-      alias: string | null;
-      statusTitle?: string | null;
-      status?: number | null;
-    }
-  | null;
+import type { ChatUser, ChatCourseRef } from "@/lib/chat/types";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_MESSAGE_LENGTH = 5000;
@@ -123,13 +81,6 @@ function UploadIcon({ kind }: { kind: UploadState["kind"] }) {
   return <FileText className={className} />;
 }
 
-/**
- * Spec 5.4: "Hoạt động X phút trước" khi offline có lastSeenAt.
- *   < 1 phút -> "Vừa mới truy cập"
- *   < 60 phút -> "Hoạt động X phút trước"
- *   < 24 giờ -> "Hoạt động X giờ trước"
- *   >= 1 ngày -> "Hoạt động X ngày trước"
- */
 function formatLastSeen(iso: string | null): string | null {
   if (!iso) return null;
   try {
@@ -173,28 +124,13 @@ export default function ChatWindow({
   peer,
   myId,
   onBack,
-  project,
-  service,
-  canSendOffer = false,
-  conversationOrder = null,
+  course = null,
 }: {
-  conversationId: number;
+  conversationId: string;
   peer: ChatUser;
-  myId: number;
+  myId: string;
   onBack?: () => void;
-  project?: ProjectContext;
-  service?: ServiceContext;
-  /**
-   * Cho phép hiển thị button "Gửi offer" — parent set true khi:
-   *  - conversation type === "service"
-   *  - current user là owner của service (seller side)
-   */
-  canSendOffer?: boolean;
-  /**
-   * Order gắn với conversation (V2 §18.1). Khi có → hiển thị badge trong
-   * header. Parent lấy từ `conv.order` khi user chọn conversation.
-   */
-  conversationOrder?: ChatOrderRef | null;
+  course?: ChatCourseRef | null;
 }) {
   const {
     messages,
@@ -208,48 +144,22 @@ export default function ChatWindow({
     send,
     markRead,
     emitTyping,
-  } =
-    useChatRoom(conversationId, myId);
+  } = useChatRoom(conversationId, myId);
+  
   const { status: socketStatus, lastError: socketError } = useChatStatus();
 
-  /**
-   * Build URL trỏ về trang hồ sơ của peer.
-   *
-   * BE 2026-07-06 trả các field mới trên peer: `ownerId`/`ownerAlias`
-   * (AppOwner) và `creatorId`/`creatorAlias` (AppCreator). Helper
-   * `peerProfileLink()` quyết định URL theo thứ tự ưu tiên spec BE:
-   *   - ownerId  → /client/<ownerAlias || ownerId>
-   *   - creatorId → /freelancer/<creatorAlias || creatorId>
-   *   - không có → null (peer chưa có profile, header chỉ render text)
-   *
-   * `service?.isFreelancer` KHÔNG còn dùng để quyết định route nữa — BE là
-   * nguồn quyết định duy nhất, tránh sai lệch khi role thật của peer
-   * không trùng với context conversation (vd. buyer chưa có owner profile
-   * nhưng peer là freelancer).
-   */
-  const peerLink = peerProfileLink(peer);
-  const profileUrl = peerLink?.url ?? null;
+  const profileUrl = peer.role === "TEACHER" ? `/teachers/${peer.id}` : null;
 
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
-  /**
-   * Service offer modal — chỉ mở được khi conversation type=service VÀ
-   * current user là service owner (peer != service.user). Parent truyền
-   * prop `canSendOffer` để gate UI.
-   */
-  const [offerModalOpen, setOfferModalOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingOlderScrollHeightRef = useRef<number | null>(null);
-  // Đánh dấu user đã rời đỉnh ít nhất 1 lần. Khi mới mở conv, container có
-  // thể đã ở scrollTop=0 mà user chưa cuộn gì (do content ngắn hoặc auto-scroll
-  // chưa kịp chạy) — nếu cứ thấy ở đỉnh là loadOlder thì sẽ fire ngay khi mount.
   const hasLeftTopRef = useRef(false);
-  // Sync presence cho peer đang chat (peer không nằm trong ChatList items
-  // -> cần gọi riêng để biết online/offline ngay khi mở conv)
-  usePresenceSync([peer.id]);
+
+  useChatPresence([peer.id]);
   const peerOnline = usePresenceStore((s) => s.online.has(peer.id));
   const peerLastSeenAt = usePresenceStore((s) => s.lastSeen[peer.id] ?? null);
   const peerLastSeenLabel = formatLastSeen(peerLastSeenAt);
@@ -277,23 +187,17 @@ export default function ChatWindow({
     if (!el || loading || loadingOlder || !hasMore) return;
 
     if (el.scrollTop > 4) {
-      // Đã rời đỉnh — đánh dấu để lần sau chạm đỉnh thì mới load.
       hasLeftTopRef.current = true;
       return;
     }
 
-    // Đang ở đỉnh, nhưng nếu user chưa từng rời đỉnh kể từ khi mount thì
-    // vị trí này là "tự nhiên" (content ngắn / auto-scroll), bỏ qua.
     if (!hasLeftTopRef.current) return;
-
-    // Reset cờ để debounce: nếu user cứ đứng yên ở đỉnh, chỉ load 1 lần.
     hasLeftTopRef.current = false;
 
     pendingOlderScrollHeightRef.current = el.scrollHeight;
     const loaded = await loadOlder();
     if (!loaded) {
       pendingOlderScrollHeightRef.current = null;
-      // Load thất bại (hết trang / lỗi) thì giữ cờ = false để không lặp lại.
     }
   };
 
@@ -342,7 +246,7 @@ export default function ChatWindow({
     };
     setUploadState(baseUploadState);
     try {
-      const res = await ChatAPI.uploadFile(conversationId, file, (pct) => {
+      const res = await ChatAPI.UploadFile(conversationId, file, (pct) => {
         setUploadState((prev) =>
           prev ? { ...prev, progress: pct, status: "uploading" } : prev
         );
@@ -358,7 +262,7 @@ export default function ChatWindow({
         });
         setUploadState(null);
       } else {
-        const msg = res.msg || "Upload thất bại";
+        const msg = res.message || "Upload thất bại";
         setUploadError(msg);
         setUploadState((prev) =>
           prev ? { ...prev, status: "failed", error: msg } : prev
@@ -382,29 +286,16 @@ export default function ChatWindow({
     }
   };
 
-  /**
-   * Paste ảnh (Snipping Tool, Print Screen, screenshot tool) hoặc file từ
-   * Explorer/Finder vào textarea → upload như file đính kèm. Nếu clipboard
-   * chỉ có text → để default (không preventDefault).
-   *
-   * Lưu ý:
-   *  - Snipping Tool / screenshot utility thường set `file.name = ""`, chỉ
-   *    có mime (vd `image/png`). Synthesize name có timestamp + ext từ mime
-   *    để upload pipeline (extension check + server) nhận đúng file.
-   *  - preventDefault chỉ khi thực sự handle file, tránh nuốt paste text.
-   *  - v1: chỉ xử lý file đầu — đơn giản, đủ cho use case 1 ảnh.
-   *  - Guard `isUploadingAttachment` để không queue upload thứ 2.
-   */
   const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (isUploadingAttachment) return;
 
     const files = e.clipboardData?.files;
-    if (!files || files.length === 0) return; // text paste → default
+    if (!files || files.length === 0) return;
 
     const file = files[0];
     if (!file) return;
 
-    e.preventDefault(); // chặn textarea insert binary content
+    e.preventDefault();
 
     let fileToUpload = file;
     if (!file.name) {
@@ -423,73 +314,30 @@ export default function ChatWindow({
       <div className="absolute bottom-12 left-12 h-72 w-72 bg-blue-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
 
       <div className="sticky top-0 z-20 flex-shrink-0">
-        {project && (
+        {course && (
           <Link
-            href={project.alias ? `/viec-lam/${project.alias}` : `/job/${project.id}`}
+            href={`/classes/${course.slug || course.id}`}
             className="flex items-center gap-2.5 px-4 md:px-6 py-2.5 bg-gradient-to-r from-primary/[0.10] via-primary/[0.04] to-transparent dark:from-primary/[0.18] dark:via-primary/[0.08] dark:to-transparent border-b border-primary/15 dark:border-primary/20 backdrop-blur-xl hover:from-primary/[0.16] hover:to-primary/[0.06] dark:hover:from-primary/[0.24] dark:hover:to-primary/[0.12] transition-colors"
           >
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 dark:bg-primary/30 text-primary flex-shrink-0 shadow-sm shadow-primary/10">
-              <Briefcase className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0 flex-1 flex items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/80 dark:text-primary/70 flex-shrink-0">
-                Dự án
+                Lớp học
               </span>
               <span className="h-3 w-px bg-primary/30 flex-shrink-0" />
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">
-                {project.name}
-              </span>
-              {project.statusTitle && (
-                <span className="hidden sm:inline-flex items-center rounded-md border border-primary/25 bg-primary/10 dark:bg-primary/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary whitespace-nowrap shrink-0">
-                  {project.statusTitle}
+              {course.code && (
+                <span className="text-xs font-bold text-primary/95 dark:text-primary/85 bg-primary/10 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                  {course.code}
                 </span>
               )}
+              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">
+                {course.name}
+              </span>
             </div>
             <span className="hidden md:inline-flex text-[10px] font-black uppercase tracking-wider text-primary/80 dark:text-primary/70 flex-shrink-0">
-              Xem dự án →
-            </span>
-          </Link>
-        )}
-
-        {service && (
-          <Link
-            href={`/dich-vu/${service.alias || service.id}`}
-            className="flex items-center gap-2.5 px-4 md:px-6 py-2.5 bg-gradient-to-r from-blue-500/[0.10] via-blue-500/[0.04] to-transparent dark:from-blue-400/[0.18] dark:via-blue-400/[0.08] dark:to-transparent border-b border-blue-500/15 dark:border-blue-400/20 backdrop-blur-xl hover:from-blue-500/[0.16] hover:to-blue-500/[0.06] dark:hover:from-blue-400/[0.24] dark:hover:to-blue-400/[0.12] transition-colors"
-          >
-            {service.thumbnail ? (
-              <div className="h-7 w-7 flex-shrink-0 rounded-lg overflow-hidden border border-white/40 dark:border-white/10 shadow-sm bg-slate-100 dark:bg-zinc-800">
-                <img
-                  src={service.thumbnail}
-                  alt={service.name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 dark:bg-blue-400/30 text-blue-600 dark:text-blue-400 flex-shrink-0 shadow-sm shadow-blue-500/10">
-                <PackageIcon className="w-3.5 h-3.5" />
-              </div>
-            )}
-            <div className="min-w-0 flex-1 flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600/80 dark:text-blue-400/70 flex-shrink-0">
-                Dịch vụ
-              </span>
-              <span className="h-3 w-px bg-blue-500/30 flex-shrink-0" />
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">
-                {service.name}
-              </span>
-              {service.price != null && Number.isFinite(service.price) && (
-                <span className="hidden sm:inline-flex items-center gap-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider flex-shrink-0">
-                  {Math.round(service.price).toLocaleString("vi-VN")} ₫
-                  {service.priceUnit && (
-                    <span className="text-[8px] font-bold opacity-80 normal-case">
-                      /{formatPriceUnit(service.priceUnit)}
-                    </span>
-                  )}
-                </span>
-              )}
-            </div>
-            <span className="hidden md:inline-flex text-[10px] font-black uppercase tracking-wider text-blue-600/80 dark:text-blue-400/70 flex-shrink-0">
-              Xem dịch vụ →
+              Xem lớp học →
             </span>
           </Link>
         )}
@@ -544,10 +392,6 @@ export default function ChatWindow({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Order badge (V2 §18.2) — hiển thị khi conversation có order */}
-            {conversationOrder && conversationOrder.code && (
-              <ChatOrderBadge order={conversationOrder} size="header" />
-            )}
             {socketStatus !== "connected" && (
               <SocketStatusBadge
                 status={socketStatus}
@@ -592,32 +436,15 @@ export default function ChatWindow({
           )}
           {messages.map((m) =>
             m.sender ? (
-              m.type === "offer" && service ? (
-                <div
-                  key={m.id}
-                  className={`flex ${m.sender.id === myId ? "justify-end" : "justify-start"}`}
-                >
-                  <div className="max-w-[78%] w-full sm:w-[420px]">
-                    <OfferMessage
-                      msg={m}
-                      serviceId={service.id}
-                      conversationId={conversationId}
-                      variant={m.sender.id === myId ? "seller" : "buyer"}
-                      myId={myId}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <MessageBubble
-                  key={m.id}
-                  msg={m}
-                  isMine={m.sender.id === myId}
-                  isRead={
-                    m.sender.id === myId &&
-                    (readByPeer[peer.id] ?? 0) >= m.id
-                  }
-                />
-              )
+              <MessageBubble
+                key={m.id}
+                msg={m}
+                isMine={m.sender.id === myId}
+                isRead={
+                  m.sender.id === myId &&
+                  (readByPeer[peer.id] ?? "") === m.id
+                }
+              />
             ) : null
           )}
           {peerTyping && (
@@ -729,20 +556,6 @@ export default function ChatWindow({
 
       <div className="sticky bottom-0 p-4 bg-white/60 dark:bg-zinc-950/40 backdrop-blur-xl border-t border-slate-100 dark:border-white/5 flex-shrink-0 z-10">
         <div className="max-w-3xl mx-auto flex items-center gap-2 md:gap-3">
-          {/* "Gửi offer" — chỉ hiện khi conversation type=service VÀ user là owner */}
-          {canSendOffer && (service?.isFreelancer) && (
-            <button
-              type="button"
-              onClick={() => setOfferModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 h-11 px-3 md:px-4 rounded-2xl border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-all hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
-              aria-label="Gửi offer"
-              title="Gửi offer cho buyer"
-            >
-              <Handshake className="w-4 h-4" />
-              <span className="hidden md:inline text-[13px] font-semibold">Gửi offer</span>
-            </button>
-          )}
-
           <input
             ref={fileRef}
             type="file"
@@ -789,7 +602,7 @@ export default function ChatWindow({
             disabled={!text.trim() || sending}
             className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all flex-shrink-0 shadow-md ${
               text.trim() && !sending
-                ? "bg-primary text-white shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 cursor-pointer hover:bg-primaryup"
+                ? "bg-primary text-white shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 cursor-pointer"
                 : "bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-600 cursor-not-allowed"
             }`}
             aria-label="Gửi"
@@ -798,35 +611,6 @@ export default function ChatWindow({
           </button>
         </div>
       </div>
-
-      {/* Service offer modal — chỉ render khi conversation có service context */}
-      {service && (
-        <SendOfferModal
-          open={offerModalOpen}
-          onOpenChange={setOfferModalOpen}
-          conversationId={conversationId}
-          service={{
-            id: service.id,
-            title: service.name,
-            thumbnail: service.thumbnail ?? null,
-            price: service.price ?? 0,
-            priceUnit: service.priceUnit ?? "fixed",
-            deliveryDays: service.deliveryDays ?? null,
-            revisionLimit: service.revisionLimit ?? null,
-            reviewDuration: service.reviewDuration ?? null,
-          }}
-          onSent={() => {
-            // Realtime event sẽ tự đẩy message vào list — không cần refetch.
-            // Scroll xuống cuối cho user thấy offer vừa gửi.
-            setTimeout(() => {
-              scrollRef.current?.scrollTo({
-                top: scrollRef.current.scrollHeight,
-                behavior: "smooth",
-              });
-            }, 100);
-          }}
-        />
-      )}
     </div>
   );
 }

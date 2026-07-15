@@ -3,16 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/chat/socket";
 import { ChatAPI } from "@/lib/api/chat";
-import type { SocketMessageRead } from "@/lib/chat/types";
+import type { SocketRead } from "@/lib/chat/types";
 
 type ChatAck = {
   ok?: boolean;
   error?: string;
-  messageId?: number;
+  messageId?: string;
   inserted?: number;
 };
 
-function emitWithAck<T extends ChatAck>(
+function EmitAck<T extends ChatAck>(
   event: string,
   payload: Record<string, unknown>,
   timeoutMs = 3000
@@ -34,24 +34,24 @@ function emitWithAck<T extends ChatAck>(
   });
 }
 
-export function useReadReceipts(conversationId: number | null, myId: number) {
-  const [readByPeer, setReadByPeer] = useState<Record<number, number>>({});
-  const lastMarkedReadRef = useRef(0);
+export function useChatReceipts(conversationId: string | null, myId: string) {
+  const [readByPeer, setReadByPeer] = useState<Record<string, string>>({});
+  const lastMarkedReadRef = useRef("");
 
   const markRead = useCallback(
-    (upToMessageId: number) => {
-      if (!conversationId || upToMessageId <= lastMarkedReadRef.current) return;
-      lastMarkedReadRef.current = upToMessageId;
+    (messageId: string) => {
+      if (!conversationId || messageId === lastMarkedReadRef.current) return;
+      lastMarkedReadRef.current = messageId;
 
-      const payload = { conversationId, upToMessageId };
-      emitWithAck<ChatAck>("message:read", payload, 3000)
+      const payload = { conversationId, messageId };
+      EmitAck<ChatAck>("message:read", payload, 3000)
         .then((ack) => {
           if (ack?.ok === false) {
             throw new Error(ack.error || "Socket read failed");
           }
         })
         .catch(() => {
-          ChatAPI.markRead(conversationId, upToMessageId).catch(() => {});
+          ChatAPI.MarkAsRead(conversationId, messageId).catch(() => {});
         });
     },
     [conversationId]
@@ -60,18 +60,18 @@ export function useReadReceipts(conversationId: number | null, myId: number) {
   useEffect(() => {
     if (!conversationId) {
       setReadByPeer({});
-      lastMarkedReadRef.current = 0;
+      lastMarkedReadRef.current = "";
       return;
     }
 
     const socket = getSocket();
     if (!socket?.connected) return;
 
-    const onRead = (read: SocketMessageRead) => {
+    const onRead = (read: SocketRead) => {
       if (read.conversationId === conversationId && read.readerId !== myId) {
         setReadByPeer((prev) => ({
           ...prev,
-          [read.readerId]: read.upToMessageId,
+          [read.readerId]: read.messageId,
         }));
       }
     };

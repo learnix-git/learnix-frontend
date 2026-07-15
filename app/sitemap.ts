@@ -16,37 +16,7 @@ const STATIC_ROUTES: MetadataRoute.Sitemap = [
   { url: `${BASE_URL}/signin`, changeFrequency: "yearly", priority: 0.3 },
   { url: `${BASE_URL}/signup`, changeFrequency: "yearly", priority: 0.3 },
   { url: `${BASE_URL}/forgot-password`, changeFrequency: "yearly", priority: 0.3 },
-  { url: `${BASE_URL}/change-password`, changeFrequency: "yearly", priority: 0.3 },
-
-  { url: `${BASE_URL}/teacher-dashboard`, changeFrequency: "daily", priority: 0.8 }, 
-  { url: `${BASE_URL}/student-dashboard`, changeFrequency: "daily", priority: 0.8 }, 
-
-  { url: `${BASE_URL}/find-classrooms`, changeFrequency: "daily", priority: 0.9 }, 
-  { url: `${BASE_URL}/my-classrooms`, changeFrequency: "weekly", priority: 0.7 },
-  { url: `${BASE_URL}/my-classrooms/[id]`, changeFrequency: "daily", priority: 0.7 },
-  { url: `${BASE_URL}/post-classrooms`, changeFrequency: "weekly", priority: 0.7 },
-
-  { url: `${BASE_URL}/banks`, changeFrequency: "daily", priority: 0.8 },            
-  { url: `${BASE_URL}/banks/create`, changeFrequency: "monthly", priority: 0.6 },  
-  { url: `${BASE_URL}/banks/edit`, changeFrequency: "monthly", priority: 0.6 },   
-
-  { url: `${BASE_URL}/exams`, changeFrequency: "daily", priority: 0.8 },             
-  { url: `${BASE_URL}/exams/create`, changeFrequency: "weekly", priority: 0.7 },  
-  { url: `${BASE_URL}/exams/edit`, changeFrequency: "weekly", priority: 0.7 },   
-
-  { url: `${BASE_URL}/scores`, changeFrequency: "daily", priority: 0.7 },
-  { url: `${BASE_URL}/submissions`, changeFrequency: "daily", priority: 0.8 },                 
-
-  { url: `${BASE_URL}/plans`, changeFrequency: "daily", priority: 0.7 },            
-  { url: `${BASE_URL}/plans/create`, changeFrequency: "weekly", priority: 0.6 },  
-  { url: `${BASE_URL}/plans/edit`, changeFrequency: "weekly", priority: 0.6 },  
-
-  { url: `${BASE_URL}/profile`, changeFrequency: "weekly", priority: 0.7 },         
-  { url: `${BASE_URL}/profile/create`, changeFrequency: "monthly", priority: 0.5 }, 
-  { url: `${BASE_URL}/profile/edit`, changeFrequency: "monthly", priority: 0.5 }, 
-
-  { url: `${BASE_URL}/messages`, changeFrequency: "daily", priority: 0.8 }, 
-  { url: `${BASE_URL}/notifications`, changeFrequency: "daily", priority: 0.6 },     
+  { url: `${BASE_URL}/change-password`, changeFrequency: "yearly", priority: 0.3 },  
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

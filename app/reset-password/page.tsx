@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
         result.data.confirmPassword
       );
 
-      if (res.success === true) {
+      if (res.code === 200) {
         const message = res.message?.trim();
         if (message) {
           setResponse(message);

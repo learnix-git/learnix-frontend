@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/chat/socket";
-import type { SocketTyping } from "@/lib/chat/types";
+import type { SocketType } from "@/lib/chat/types";
 
-export function useTypingIndicator(conversationId: number | null, myId: number) {
+export function useChatTyping(conversationId: string | null, myId: string) {
   const [peerTyping, setPeerTyping] = useState(false);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -47,9 +47,9 @@ export function useTypingIndicator(conversationId: number | null, myId: number) 
     const socket = getSocket();
     if (!socket?.connected) return;
 
-    const onTyping = (typing: SocketTyping) => {
+    const onTyping = (typing: SocketType) => {
       if (typing.conversationId === conversationId && typing.userId !== myId) {
-        setPeerTyping(typing.isTyping);
+        setPeerTyping(typing.typing);
       }
     };
 

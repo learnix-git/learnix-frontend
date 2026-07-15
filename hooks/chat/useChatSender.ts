@@ -4,18 +4,18 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/chat/socket";
 import { ChatAPI } from "@/lib/api/chat";
-import { normalizeMessage } from "@/lib/chat/normalize";
-import { usePeerCache } from "@/lib/stores/peerCache";
-import type { ChatMessage, SendMessagePayload } from "@/lib/chat/types";
+import { NormalizeMessage } from "@/lib/chat/normalize";
+import { Cache } from "@/lib/stores/cache";
+import type { ChatMessage, MessagePayload } from "@/lib/chat/types";
 
 type ChatAck = {
   ok?: boolean;
   error?: string;
-  messageId?: number;
+  messageId?: string;
   inserted?: number;
 };
 
-function emitWithAck<T extends ChatAck>(
+function EmitAck<T extends ChatAck>(
   event: string,
   payload: Record<string, unknown>,
   timeoutMs = 3000
@@ -37,25 +37,25 @@ function emitWithAck<T extends ChatAck>(
   });
 }
 
-export function useMessageSender(
-  conversationId: number | null,
-  myId: number,
-  messageIdsRef: React.MutableRefObject<Set<number>>,
+export function useChatSender(
+  conversationId: string | null,
+  myId: string,
+  messageIdsRef: React.MutableRefObject<Set<string>>,
   setMessages: (updater: (prev: ChatMessage[]) => ChatMessage[]) => void,
   reloadMessages: () => Promise<void>,
   stopTyping: () => void
 ) {
-  const peerLookup = usePeerCache((s) => s.lookup);
+  const peerLookup = Cache((s) => s.lookup);
 
   const sendViaRest = useCallback(
-    async (payload: SendMessagePayload) => {
+    async (payload: MessagePayload) => {
       if (!conversationId) return;
-      const res = await ChatAPI.sendMessage(conversationId, payload);
+      const res = await ChatAPI.SendMessage(conversationId, payload);
       if (res.code !== 200) {
-        throw new Error(res.msg || "Send message failed");
+        throw new Error(res.message || "Send message failed");
       }
 
-      const sent = normalizeMessage(res.data, peerLookup);
+      const sent = NormalizeMessage(res.data, peerLookup);
       if (sent) {
         setMessages((prev) =>
           prev.some((message) => message.id === sent.id) ? prev : [...prev, sent]
@@ -66,12 +66,12 @@ export function useMessageSender(
   );
 
   const send = useCallback(
-    async (payload: SendMessagePayload) => {
+    async (payload: MessagePayload) => {
       if (!conversationId) return;
       stopTyping();
 
       try {
-        const ack = await emitWithAck<ChatAck>("message:send", {
+        const ack = await EmitAck<ChatAck>("message:send", {
           conversationId,
           ...payload,
         });

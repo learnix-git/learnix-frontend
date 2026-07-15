@@ -13,9 +13,9 @@ import {
   reconnectChat,
   subscribeSocketState,
 } from "@/lib/chat/socket";
-import type { PresencePayload } from "@/lib/chat/types";
+import type { SocketPresence } from "@/lib/chat/types";
 import { useChatStore } from "@/lib/stores/chat";
-import { isSocketMessageNew, normalizeMessage } from "@/lib/chat/normalize";
+import { CheckMessage, NormalizeMessage } from "@/lib/chat/normalize";
 import { useNotifications } from "@/lib/stores/notifications";
 import {
   isSocketNotificationNew,
@@ -31,7 +31,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const logout = useAuth((state) => state.logout);
   const setOne = usePresenceStore((state) => state.setOne);
   const router = useRouter();
-  const offlineTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(
+  const offlineTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map()
   );
 
@@ -51,7 +51,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     let lastAttachedSocket: unknown = null;
     const offlineTimers = offlineTimersRef.current;
 
-    const clearOfflineTimer = (userId: number) => {
+    const clearOfflineTimer = (userId: string) => {
       const timer = offlineTimers.get(userId);
       if (!timer) return;
       clearTimeout(timer);
@@ -64,15 +64,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       cleanup?.();
 
-      // Reconcile unread count and notifications when socket connects/reconnects
       if (GetToken()) {
         useChatStore.getState().fetchUnreadCount();
         useNotifications.getState().refresh();
       }
 
-      const onPresence = (payload: PresencePayload) => {
-        const userId = Number(payload?.userId);
-        if (!Number.isFinite(userId) || userId <= 0) {
+      const onPresence = (payload: SocketPresence) => {
+        const userId = payload?.userId ? String(payload.userId) : "";
+        if (!userId) {
           console.warn("[chat] ignore invalid presence userId", payload);
           return;
         }
@@ -83,20 +82,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
         clearOfflineTimer(userId);
         if (payload.online) {
-          setOne(userId, true, payload.lastSeenAt);
+          setOne(userId as any, true, payload.lastSeenAt);
           return;
         }
 
         const timer = setTimeout(() => {
           offlineTimers.delete(userId);
-          setOne(userId, false, payload.lastSeenAt);
+          setOne(userId as any, false, payload.lastSeenAt);
         }, OFFLINE_GRACE_MS);
         offlineTimers.set(userId, timer);
       };
 
       const onNewMessage = (raw: unknown) => {
-        if (!isSocketMessageNew(raw)) return;
-        const message = normalizeMessage(raw);
+        if (!CheckMessage(raw)) return;
+        const message = NormalizeMessage(raw);
         if (!message) return;
 
         const myId = useAuth.getState().user?.id;
@@ -110,13 +109,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       const onMessageRead = (payload: any) => {
         const myId = useAuth.getState().user?.id;
-        if (myId && payload?.readerId === myId) {
+        if (myId && String(payload?.readerId) === String(myId)) {
           useChatStore.getState().clearUnreadCount(payload.conversationId);
         }
       };
 
       const onNewNotification = (raw: unknown) => {
-        // 1. Type-guard + normalize socket payload.
         if (!isSocketNotificationNew(raw)) {
           console.warn("[chat] invalid notification:new payload", raw);
           return;
@@ -124,14 +122,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const payload = normalizeSocketNotification(raw);
         if (!payload) return;
 
-        // 2. Force-refresh notification list (bypass `loading` guard trong store).
         void useNotifications.getState().forceRefresh();
 
-        // 3. Phát bus — các trang đã subscribe (qua useNotificationPageRefresh)
-        //    sẽ tự quyết định có match và gọi refreshFn.
         emitInvalidate(payload);
 
-        // 4. Toast thông báo (không có CTA "Mở")
         if (payload.title) {
           toast.info(payload.title, {
             description: payload.content || undefined,
@@ -211,8 +205,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     useChatStore.getState().fetchUnreadCount();
     useNotifications.getState().refresh();
 
-    // Refresh presence TTL mỗi 25s. Server tự ping 15s nhưng client ping
-    // thêm giúp dot online ổn định hơn khi mạng chập chờn (CHAT_GUIDE §9.3).
     const presenceTimer = window.setInterval(() => {
       const socket = getSocket();
       if (socket?.connected) socket.emit("presence:ping");

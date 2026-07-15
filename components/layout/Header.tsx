@@ -634,7 +634,7 @@ export function Header() {
             <>
               <Tooltip content="Tin nhắn" side="bottom">
                 <Link
-                  href="/tin-nhan"
+                  href="/chat"
                   className="relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-muted text-foreground hover:bg-muted transition-all duration-200"
                   aria-label="Tin nhắn"
                 >

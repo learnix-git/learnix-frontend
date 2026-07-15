@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatAPI } from "@/lib/api/chat";
-import { normalizeMessage } from "@/lib/chat/normalize";
-import { usePeerCache } from "@/lib/stores/peerCache";
+import { NormalizeMessage } from "@/lib/chat/normalize";
+import { Cache } from "@/lib/stores/cache";
 import type { ChatMessage } from "@/lib/chat/types";
 
-const MESSAGE_PAGE_SIZE = 30;
+const SIZE = 30;
 
-export function useMessageLoader(conversationId: number | null) {
+export function useChatLoader(conversationId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -17,22 +17,24 @@ export function useMessageLoader(conversationId: number | null) {
   const [error, setError] = useState<string | null>(null);
 
   const loadSeqRef = useRef(0);
-  const messageIdsRef = useRef<Set<number>>(new Set());
-  const peerLookup = usePeerCache((s) => s.lookup);
+  const messageIdsRef = useRef<Set<string>>(new Set());
+  const peerLookup = Cache((s) => s.lookup);
 
-  const normalizeMessages = useCallback(
+  const NormalizeMessages = useCallback(
     (items: ChatMessage[]) =>
       items
-        .map((message) => normalizeMessage(message, peerLookup))
+        .map((message) => NormalizeMessage(message, peerLookup))
         .filter((message): message is ChatMessage => message !== null),
     [peerLookup]
   );
 
   const mergeMessages = useCallback((current: ChatMessage[], incoming: ChatMessage[]) => {
-    const byId = new Map<number, ChatMessage>();
+    const byId = new Map<string, ChatMessage>();
     for (const message of current) byId.set(message.id, message);
     for (const message of incoming) byId.set(message.id, message);
-    return Array.from(byId.values()).sort((a, b) => a.id - b.id);
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
   }, []);
 
   const reloadMessages = useCallback(
@@ -41,19 +43,19 @@ export function useMessageLoader(conversationId: number | null) {
       const seq = ++loadSeqRef.current;
       if (showLoading) setLoading(true);
 
-      const res = await ChatAPI.getMessages(conversationId, 1, MESSAGE_PAGE_SIZE);
+      const res = await ChatAPI.RecvMessage(1, SIZE, conversationId);
       if (seq !== loadSeqRef.current) return;
-      if (res.code === 200 && Array.isArray(res.data.items)) {
-        const normalized = normalizeMessages(res.data.items);
+      if (res.code === 200 && res.data && Array.isArray(res.data.items)) {
+        const normalized = NormalizeMessages(res.data.items);
         setMessages((prev) => (prev.length > 0 ? mergeMessages(prev, normalized) : normalized));
         setPage(1);
         setTotal(res.data.total);
         setError(null);
       } else {
-        setError(res.msg || "Load messages failed");
+        setError(res.message || "Load messages failed");
       }
     },
-    [conversationId, mergeMessages, normalizeMessages]
+    [conversationId, mergeMessages, NormalizeMessages]
   );
 
   const loadOlder = useCallback(async () => {
@@ -63,13 +65,13 @@ export function useMessageLoader(conversationId: number | null) {
     const nextPage = page + 1;
     setLoadingOlder(true);
     try {
-      const res = await ChatAPI.getMessages(conversationId, nextPage, MESSAGE_PAGE_SIZE);
-      if (res.code !== 200 || !Array.isArray(res.data.items)) {
-        setError(res.msg || "Load older messages failed");
+      const res = await ChatAPI.RecvMessage(nextPage, SIZE, conversationId);
+      if (res.code !== 200 || !res.data || !Array.isArray(res.data.items)) {
+        setError(res.message || "Load older messages failed");
         return false;
       }
 
-      const normalized = normalizeMessages(res.data.items);
+      const normalized = NormalizeMessages(res.data.items);
       setMessages((prev) => mergeMessages(prev, normalized));
       setPage(nextPage);
       setTotal(res.data.total);
@@ -86,7 +88,7 @@ export function useMessageLoader(conversationId: number | null) {
     loadingOlder,
     mergeMessages,
     messages.length,
-    normalizeMessages,
+    NormalizeMessages,
     page,
     total,
   ]);
@@ -129,7 +131,7 @@ export function useMessageLoader(conversationId: number | null) {
     setMessages,
     loading,
     loadingOlder,
-    hasMore: total === 0 ? messages.length >= MESSAGE_PAGE_SIZE : messages.length < total,
+    hasMore: total === 0 ? messages.length >= SIZE : messages.length < total,
     error,
     loadOlder,
     reloadMessages,

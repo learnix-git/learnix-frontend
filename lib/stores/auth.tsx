@@ -57,7 +57,7 @@ export const useAuth = create<AuthState>((set) => ({
 
   login: async (data) => {
     const res = await authService.login(data);
-    if (res.success === true && res.data) {
+    if (res.code === 200 && res.data) {
       const userWithToken = { ...res.data.user, accessToken: res.data.token };
       SaveSession(userWithToken);
 
@@ -69,14 +69,14 @@ export const useAuth = create<AuthState>((set) => ({
 
   register: async (data) => {
     const res = await authService.register(data);
-    if (res.success === true) {
+    if (res.code === 200) {
       throw new Error(res.message || "Đăng ký thất bại");
     }
   },
 
   loginViaGoogle: async (code) => {
     const res = await authService.loginViaGoogle(code);
-    if (res.success === true && res.data) {
+    if (res.code === 200 && res.data) {
       const userWithToken = { ...res.data.user, accessToken: res.data.token };
       SaveSession(userWithToken);
 
@@ -94,7 +94,7 @@ export const useAuth = create<AuthState>((set) => ({
   fetch: async () => {
     try {
       const res = await authService.getInfo();
-      if (res.success === true && res.data) {
+      if (res.code === 200 && res.data) {
         UpdateSession(res.data);
         set({ user: res.data, isAuthenticated: true });
       } else if (res.success !== true) {

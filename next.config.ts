@@ -1,12 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  reactCompiler: true,
 };
 
-// TODO: Làm xong nhớ sửa cái này
-module.exports = nextConfig;
+export default nextConfig;

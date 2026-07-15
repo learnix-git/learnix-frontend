@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+// TODO
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "Deploy thì thay đổi thành URL thật";
 
