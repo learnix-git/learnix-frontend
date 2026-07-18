@@ -4,5 +4,5 @@
 // `Access-Control-Allow-Origin: https://creator.minasoft.vn`,
 // `Access-Control-Allow-Credentials: true`).
 export const CHAT_CONFIG = {
-  SOCKET_URL: process.env.NEXT_PUBLIC_CHAT_URL || "",
+  SOCKET_URL: process.env.NEXT_PUBLIC_API_URL || "",
 } as const;
