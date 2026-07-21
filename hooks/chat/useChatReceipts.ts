@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSocket } from "@/lib/chat/socket";
+import { GetSocket } from "@/lib/chat/socket";
 import { ChatAPI } from "@/lib/api/chat";
 import type { SocketRead } from "@/lib/chat/types";
 
@@ -17,12 +17,15 @@ function EmitAck<T extends ChatAck>(
   payload: Record<string, unknown>,
   timeoutMs = 3000
 ): Promise<T> {
-  const socket = getSocket();
+  const socket = GetSocket();
+
+  // Socket chưa kết nối
   if (!socket?.connected) {
     return Promise.reject(new Error("Socket is not connected"));
   }
 
   return new Promise((resolve, reject) => {
+    // Tự hủy nếu server không phản hồi
     const timer = window.setTimeout(() => {
       reject(new Error("Socket ack timeout"));
     }, timeoutMs);
@@ -35,21 +38,34 @@ function EmitAck<T extends ChatAck>(
 }
 
 export function useChatReceipts(conversationId: string | null, myId: string) {
+  // Lưu tin nhắn cuối cùng mà từng người đã đọc
   const [readByPeer, setReadByPeer] = useState<Record<string, string>>({});
+
+  // Lưu id tin nhắn đã đánh dấu đọc gần nhất
   const lastMarkedReadRef = useRef("");
 
-  const markRead = useCallback(
+  // Đánh dấu một tin nhắn là đã đọc
+  const MarkRead = useCallback(
     (messageId: string) => {
-      if (!conversationId || messageId === lastMarkedReadRef.current) return;
+      // Không gửi lại nếu đã đánh dấu trước đó
+      if (!conversationId || messageId === lastMarkedReadRef.current)
+        return;
+
       lastMarkedReadRef.current = messageId;
 
-      const payload = { conversationId, messageId };
-      EmitAck<ChatAck>("message:read", payload, 3000)
+      const payload = {
+        conversationId,
+        messageId,
+      };
+
+      // Ưu tiên gửi qua socket
+      EmitAck<ChatAck>("message:read", payload)
         .then((ack) => {
           if (ack?.ok === false) {
             throw new Error(ack.error || "Socket read failed");
           }
         })
+        // Nếu socket lỗi thì gọi API
         .catch(() => {
           ChatAPI.MarkAsRead(conversationId, messageId).catch(() => {});
         });
@@ -58,17 +74,25 @@ export function useChatReceipts(conversationId: string | null, myId: string) {
   );
 
   useEffect(() => {
+    // Reset khi không còn cuộc trò chuyện
     if (!conversationId) {
       setReadByPeer({});
       lastMarkedReadRef.current = "";
       return;
     }
 
-    const socket = getSocket();
-    if (!socket?.connected) return;
+    const socket = GetSocket();
 
-    const onRead = (read: SocketRead) => {
-      if (read.conversationId === conversationId && read.readerId !== myId) {
+    // Socket chưa kết nối
+    if (!socket?.connected)
+      return;
+
+    // Nhận sự kiện người còn lại đã đọc tin nhắn
+    const OnRead = (read: SocketRead) => {
+      if (
+        read.conversationId === conversationId &&
+        read.readerId !== myId
+      ) {
         setReadByPeer((prev) => ({
           ...prev,
           [read.readerId]: read.messageId,
@@ -76,11 +100,16 @@ export function useChatReceipts(conversationId: string | null, myId: string) {
       }
     };
 
-    socket.on("message:read", onRead);
+    socket.on("message:read", OnRead);
+
+    // Hủy lắng nghe khi unmount hoặc đổi cuộc trò chuyện
     return () => {
-      socket.off("message:read", onRead);
+      socket.off("message:read", OnRead);
     };
   }, [conversationId, myId]);
 
-  return { readByPeer, markRead };
+  return {
+    readByPeer,
+    markRead: MarkRead,
+  };
 }

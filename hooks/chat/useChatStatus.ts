@@ -2,30 +2,42 @@
 
 import { useEffect, useState } from "react";
 import {
-  getLastSocketError,
-  getSocketState,
-  subscribeSocketError,
-  subscribeSocketState,
+  GetSocketError,
+  GetSocketStatus,
+  SubscribeSocketError,
+  SubscribeSocketStatus,
   type ChatSocketState,
 } from "@/lib/chat/socket";
 
 export function useChatStatus(): {
-  status: ChatSocketState;
-  lastError: string | null;
+  socketStatus: ChatSocketState;
+  socketError: string | null;
 } {
-  const [status, setStatus] = useState<ChatSocketState>(getSocketState());
-  const [lastError, setLastError] = useState<string | null>(getLastSocketError());
+  // Trạng thái kết nối và lỗi của socket
+  const [socketStatus, setSocketStatus] = useState<ChatSocketState>(
+    GetSocketStatus()
+  );
+  const [socketError, setSocketError] = useState<string | null>(
+    GetSocketError()
+  );
 
+  // Đăng ký lắng nghe trạng thái và lỗi của socket
   useEffect(() => {
-    setStatus(getSocketState());
-    setLastError(getLastSocketError());
-    const off1 = subscribeSocketState(setStatus);
-    const off2 = subscribeSocketError(setLastError);
+    setSocketStatus(GetSocketStatus());
+    setSocketError(GetSocketError());
+
+    const offStatus = SubscribeSocketStatus(setSocketStatus);
+    const offError = SubscribeSocketError(setSocketError);
+
     return () => {
-      off1();
-      off2();
+      offStatus();
+      offError();
     };
   }, []);
 
-  return { status, lastError };
+  // Trả về trạng thái và lỗi hiện tại
+  return {
+    socketStatus,
+    socketError,
+  };
 }

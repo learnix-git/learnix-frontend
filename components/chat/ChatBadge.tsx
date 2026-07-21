@@ -4,22 +4,27 @@ import Link from "next/link";
 import { Receipt } from "lucide-react";
 import { Cn } from "@/lib/utils";
 
-export interface ChatEnrollmentBadgeProps {
+export interface ChatBadgeProps {
   enrollment: {
     code: string;
-    status: "PENDING" | "PAID" | "CANCELLED" | string;
+    status:
+      "PENDING" | 
+      "PAID" | 
+      "CANCELLED" | 
+      string;
     statusTitle?: string | null;
   };
-  size?: "compact" | "header";
   className?: string;
+  size?: "compact" | "header";
 }
 
-interface BadgeStyle {
+interface StatusStyle {
   wrap: string;
   icon: string;
 }
 
-function styleForStatus(status: string): BadgeStyle {
+// Hàm trả về màu sắc badge tương ứng với trạng thái đơn hàng
+function SetStatusStyle(status: string): StatusStyle {
   switch (status) {
     case "PENDING":
       return {
@@ -40,15 +45,16 @@ function styleForStatus(status: string): BadgeStyle {
   }
 }
 
-export function ChatEnrollmentBadge({
+export function ChatBadge({
+  className,
   enrollment,
   size = "compact",
-  className,
-}: ChatEnrollmentBadgeProps) {
+}: ChatBadgeProps) {
+  // Không có mã đơn hàng thì không hiển thị badge
   if (!enrollment?.code) return null;
 
-  const styles = styleForStatus(enrollment.status);
-  const isHeader = size === "header";
+  const styles = SetStatusStyle(enrollment.status);
+  const header = size === "header";
 
   return (
     <Link
@@ -58,19 +64,20 @@ export function ChatEnrollmentBadge({
       className={Cn(
         "inline-flex items-center gap-1.5 rounded-full border backdrop-blur-md transition-all hover:scale-[1.03] active:scale-[0.97] cursor-pointer",
         styles.wrap,
-        isHeader
+        header
           ? "h-8 px-3 text-[11px] font-bold"
           : "h-6 px-2 text-[9.5px] font-black uppercase tracking-wider",
         className
       )}
     >
-      <Receipt className={Cn(isHeader ? "h-3.5 w-3.5" : "h-2.5 w-2.5", styles.icon)} />
-      <span className={isHeader ? "" : "truncate max-w-[110px]"}>
+      <Receipt className={Cn(header ? "h-3.5 w-3.5" : "h-2.5 w-2.5", styles.icon)} />
+      <span className={header ? "" : "truncate max-w-[110px]"}>
         {enrollment.code}
+        {/* Hiển thị trạng thái */}
         {enrollment.statusTitle && (
           <>
             <span className="opacity-60 mx-1">•</span>
-            <span className={isHeader ? "" : "normal-case font-bold tracking-normal"}>
+            <span className={header ? "" : "normal-case font-bold tracking-normal"}>
               {enrollment.statusTitle}
             </span>
           </>

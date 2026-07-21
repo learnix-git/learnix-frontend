@@ -3,15 +3,15 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/stores/auth";
-import { usePresenceStore } from "@/lib/stores/presence";
+import { usePresenceStore } from "@/lib/stores/chat";
 import { GetToken } from "@/lib/auth/session";
 import {
+  GetSocket,
+  ConnectChat,
+  DisconnectChat,
+  ReconnectChat,
+  SubscribeSocketStatus,
   CHAT_AUTH_FAILED_EVENT,
-  connectChat,
-  disconnectChat,
-  getSocket,
-  reconnectChat,
-  subscribeSocketState,
 } from "@/lib/chat/socket";
 import type { SocketPresence } from "@/lib/chat/types";
 import { useChatStore } from "@/lib/stores/chat";
@@ -27,49 +27,58 @@ import { toast } from "sonner";
 const OFFLINE_GRACE_MS = 10_000;
 
 export function ChatProvider({ children }: { children: ReactNode }) {
+  // Token của người dùng
   const userToken = useAuth((state) => state.user?.token ?? null);
   const logout = useAuth((state) => state.logout);
   const setOne = usePresenceStore((state) => state.setOne);
   const router = useRouter();
+
+  // Danh sách hẹn giờ ngoại tuyến
   const offlineTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map()
   );
 
+  // Theo dõi lỗi xác thực Socket
   useEffect(() => {
-    const onAuthFailed = () => {
+    // Hàm xử lý khi xác thực thất bại
+    const OnAuthFailed = () => {
       logout();
     };
 
-    window.addEventListener(CHAT_AUTH_FAILED_EVENT, onAuthFailed);
+    window.addEventListener(CHAT_AUTH_FAILED_EVENT, OnAuthFailed);
     return () => {
-      window.removeEventListener(CHAT_AUTH_FAILED_EVENT, onAuthFailed);
+      window.removeEventListener(CHAT_AUTH_FAILED_EVENT, OnAuthFailed);
     };
   }, [logout]);
 
+  // Theo dõi kết nối và sự kiện Socket
   useEffect(() => {
-    let cleanup: (() => void) | null = null;
+    let cleanupSocket: (() => void) | null = null;
     let lastAttachedSocket: unknown = null;
     const offlineTimers = offlineTimersRef.current;
 
-    const clearOfflineTimer = (userId: string) => {
-      const timer = offlineTimers.get(userId);
-      if (!timer) return;
-      clearTimeout(timer);
+    // Hàm xóa hẹn giờ ngoại tuyến
+    const ClearOfflineTimer = (userId: string) => {
+      const offlineTimer = offlineTimers.get(userId);
+      if (!offlineTimer) return;
+      clearTimeout(offlineTimer);
       offlineTimers.delete(userId);
     };
 
-    const attach = () => {
-      const socket = getSocket();
+    // Hàm kết nối và lắng nghe sự kiện Socket
+    const AttachSocket = () => {
+      const socket = GetSocket();
       if (!socket || lastAttachedSocket === socket) return;
 
-      cleanup?.();
+      cleanupSocket?.();
 
       if (GetToken()) {
         useChatStore.getState().fetchUnreadCount();
         useNotifications.getState().refresh();
       }
 
-      const onPresence = (payload: SocketPresence) => {
+      // Xử lý trạng thái online
+      const OnPresence = (payload: SocketPresence) => {
         const userId = payload?.userId ? String(payload.userId) : "";
         if (!userId) {
           console.warn("[chat] ignore invalid presence userId", payload);
@@ -80,20 +89,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        clearOfflineTimer(userId);
+        ClearOfflineTimer(userId);
         if (payload.online) {
           setOne(userId as any, true, payload.lastSeenAt);
           return;
         }
 
-        const timer = setTimeout(() => {
+        const offlineTimer = setTimeout(() => {
           offlineTimers.delete(userId);
           setOne(userId as any, false, payload.lastSeenAt);
         }, OFFLINE_GRACE_MS);
-        offlineTimers.set(userId, timer);
+        offlineTimers.set(userId, offlineTimer);
       };
 
-      const onNewMessage = (raw: unknown) => {
+      // Xử lý tin nhắn mới
+      const OnNewMessage = (raw: unknown) => {
         if (!CheckMessage(raw)) return;
         const message = NormalizeMessage(raw);
         if (!message) return;
@@ -107,14 +117,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      const onMessageRead = (payload: any) => {
+      // Xử lý tin nhắn đã đọc
+      const OnMessageRead = (payload: any) => {
         const myId = useAuth.getState().user?.id;
         if (myId && String(payload?.readerId) === String(myId)) {
           useChatStore.getState().clearUnreadCount(payload.conversationId);
         }
       };
 
-      const onNewNotification = (raw: unknown) => {
+      // Xử lý thông báo mới
+      const OnNewNotification = (raw: unknown) => {
         if (!isSocketNotificationNew(raw)) {
           console.warn("[chat] invalid notification:new payload", raw);
           return;
@@ -133,36 +145,40 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      socket.on("presence:update", onPresence);
-      socket.on("message:new", onNewMessage);
-      socket.on("message:read", onMessageRead);
-      socket.on("notification:new", onNewNotification);
+      // Đăng ký sự kiện Socket
+      socket.on("presence:update", OnPresence);
+      socket.on("message:new", OnNewMessage);
+      socket.on("message:read", OnMessageRead);
+      socket.on("notification:new", OnNewNotification);
 
       lastAttachedSocket = socket;
-      cleanup = () => {
-        socket.off("presence:update", onPresence);
-        socket.off("message:new", onNewMessage);
-        socket.off("message:read", onMessageRead);
-        socket.off("notification:new", onNewNotification);
+      // Hủy đăng ký sự kiện Socket
+      cleanupSocket = () => {
+        socket.off("presence:update", OnPresence);
+        socket.off("message:new", OnNewMessage);
+        socket.off("message:read", OnMessageRead);
+        socket.off("notification:new", OnNewNotification);
       };
     };
 
-    const unsubscribe = subscribeSocketState((state) => {
-      if (state === "connected") attach();
+    const unsubscribeSocket = SubscribeSocketStatus((state) => {
+      if (state === "connected") AttachSocket();
     });
 
-    attach();
+    AttachSocket();
 
     return () => {
-      cleanup?.();
-      unsubscribe();
+      cleanupSocket?.();
+      unsubscribeSocket();
       offlineTimers.forEach((timer) => clearTimeout(timer));
       offlineTimers.clear();
     };
   }, [setOne, router]);
 
+  // Theo dõi trạng thái hiển thị của trang web
   useEffect(() => {
-    const onVisibility = () => {
+    // Hàm xử lý khi thay đổi hiển thị tab
+    const OnVisibilityChange = () => {
       if (document.visibilityState !== "visible") return;
 
       const token = userToken ?? GetToken();
@@ -171,42 +187,44 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         useNotifications.getState().refresh();
       }
 
-      const socket = getSocket();
+      const socket = GetSocket();
       if (socket?.connected) return;
       if (!socket) {
-        reconnectChat();
+        ReconnectChat();
         return;
       }
 
       try {
         socket.connect();
       } catch {
-        reconnectChat();
+        ReconnectChat();
       }
     };
 
-    document.addEventListener("visibilitychange", onVisibility);
+    document.addEventListener("visibilitychange", OnVisibilityChange);
     return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("visibilitychange", OnVisibilityChange);
     };
   }, [userToken]);
 
+  // Theo dõi token và kết nối Socket
   useEffect(() => {
-    const token = userToken ?? GetToken();
-    if (!token) {
-      const existing = getSocket();
-      if (existing) disconnectChat();
+    const socketToken = userToken ?? GetToken();
+    if (!socketToken) {
+      const existingSocket = GetSocket();
+      if (existingSocket) DisconnectChat();
       useChatStore.getState().reset();
       useNotifications.getState().reset();
       return;
     }
 
-    connectChat(token);
+    ConnectChat(socketToken);
     useChatStore.getState().fetchUnreadCount();
     useNotifications.getState().refresh();
 
+    // Hẹn giờ duy trì trạng thái online
     const presenceTimer = window.setInterval(() => {
-      const socket = getSocket();
+      const socket = GetSocket();
       if (socket?.connected) socket.emit("presence:ping");
     }, 25_000);
 

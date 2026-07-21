@@ -1,6 +1,6 @@
 export interface ChatUser {
   id: string;
-  name: string;
+  name: string | null;
   avatar: string | null;
   alias: string | null;
   role?: "STUDENT" | "TEACHER" | "ADMIN" | string;
@@ -27,7 +27,7 @@ export interface ChatMessage {
 export interface ChatCourseRef {
   id: string;
   code: string | null;
-  name: string;
+  name: string | null;
   slug?: string | null;
   grade?: string | null;
   thumbnail: string | null;

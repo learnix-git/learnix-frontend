@@ -2,10 +2,10 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { getSocket } from "@/lib/chat/socket";
+import { GetSocket } from "@/lib/chat/socket";
 import { ChatAPI } from "@/lib/api/chat";
 import { NormalizeMessage } from "@/lib/chat/normalize";
-import { Cache } from "@/lib/stores/cache";
+import { Cache } from "@/lib/stores/chat";
 import type { ChatMessage, MessagePayload } from "@/lib/chat/types";
 
 type ChatAck = {
@@ -15,12 +15,15 @@ type ChatAck = {
   inserted?: number;
 };
 
-function EmitAck<T extends ChatAck>(
+// Gửi sự kiện socket và chờ phản hồi từ server
+function SendSocketAck<T extends ChatAck>(
   event: string,
   payload: Record<string, unknown>,
   timeoutMs = 3000
 ): Promise<T> {
-  const socket = getSocket();
+  const socket = GetSocket();
+
+  // Nếu socket chưa kết nối thì báo lỗi
   if (!socket?.connected) {
     return Promise.reject(new Error("Socket is not connected"));
   }
@@ -47,36 +50,51 @@ export function useChatSender(
 ) {
   const peerLookup = Cache((s) => s.lookup);
 
-  const sendViaRest = useCallback(
+  // Gửi tin nhắn bằng REST API
+  const SendViaRest = useCallback(
     async (payload: MessagePayload) => {
       if (!conversationId) return;
+
       const res = await ChatAPI.SendMessage(conversationId, payload);
+
+      // Nếu gửi thất bại thì báo lỗi
       if (res.code !== 200) {
         throw new Error(res.message || "Send message failed");
       }
 
       const sent = NormalizeMessage(res.data, peerLookup);
+
+      // Thêm tin nhắn nếu chưa tồn tại
       if (sent) {
         setMessages((prev) =>
-          prev.some((message) => message.id === sent.id) ? prev : [...prev, sent]
+          prev.some((message) => message.id === sent.id)
+            ? prev
+            : [...prev, sent]
         );
       }
     },
     [conversationId, peerLookup, setMessages]
   );
 
+  // Gửi tin nhắn
   const send = useCallback(
     async (payload: MessagePayload) => {
       if (!conversationId) return;
+
+      // Tắt trạng thái đang nhập trước khi gửi
       stopTyping();
 
       try {
-        const ack = await EmitAck<ChatAck>("message:send", {
+        // Ưu tiên gửi bằng socket
+        const ack = await SendSocketAck<ChatAck>("message:send", {
           conversationId,
           ...payload,
         });
+
+        // Nếu gửi thành công thì kiểm tra echo từ server
         if (ack?.ok !== false && ack?.messageId) {
           const messageId = ack.messageId;
+
           window.setTimeout(() => {
             if (!messageIdsRef.current.has(messageId)) {
               void reloadMessages().catch((err) => {
@@ -84,27 +102,46 @@ export function useChatSender(
               });
             }
           }, 1200);
+
           return;
         }
+
         throw new Error(ack?.error || "Socket send failed");
       } catch (err) {
+        // File lỗi thì báo ngay, không fallback REST
         if (payload.type !== "text") {
-          const msg = err instanceof Error ? err.message : "Send attachment failed";
+          const msg =
+            err instanceof Error
+              ? err.message
+              : "Send attachment failed";
+
           toast.error(msg);
           throw err;
         }
+
         console.warn("[chat] socket text send failed, fallback REST:", err);
       }
 
       try {
-        await sendViaRest(payload);
+        // Tin nhắn text sẽ fallback sang REST
+        await SendViaRest(payload);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Send message failed";
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Send message failed";
+
         toast.error(msg);
         throw err;
       }
     },
-    [conversationId, messageIdsRef, reloadMessages, sendViaRest, stopTyping]
+    [
+      conversationId,
+      messageIdsRef,
+      reloadMessages,
+      SendViaRest,
+      stopTyping,
+    ]
   );
 
   return { send };

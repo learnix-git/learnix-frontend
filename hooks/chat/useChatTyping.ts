@@ -1,69 +1,105 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSocket } from "@/lib/chat/socket";
+import { GetSocket } from "@/lib/chat/socket";
 import type { SocketType } from "@/lib/chat/types";
 
-export function useChatTyping(conversationId: string | null, myId: string) {
+export function useChatTyping(
+  conversationId: string | null,
+  myId: string
+) {
+  // Trạng thái đối phương đang nhập
   const [peerTyping, setPeerTyping] = useState(false);
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Lưu timer dừng trạng thái đang nhập
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Đánh dấu đã gửi sự kiện đang nhập hay chưa
   const isTypingRef = useRef(false);
 
-  const stopTyping = useCallback(() => {
+  // Dừng trạng thái đang nhập
+  const StopTyping = useCallback(() => {
     if (!conversationId) return;
-    const socket = getSocket();
-    if (typingTimer.current) {
-      clearTimeout(typingTimer.current);
-      typingTimer.current = null;
+
+    const socket = GetSocket();
+
+    // Hủy timer hiện tại
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
     }
+
+    // Gửi trạng thái dừng nhập nếu đang kết nối
     if (socket?.connected && isTypingRef.current) {
       socket.emit("typing:stop", { conversationId });
     }
+
     isTypingRef.current = false;
   }, [conversationId]);
 
-  const emitTyping = useCallback(() => {
+  // Gửi trạng thái đang nhập
+  const EmitTyping = useCallback(() => {
     if (!conversationId) return;
-    const socket = getSocket();
+
+    const socket = GetSocket();
     if (!socket?.connected) return;
+
+    // Chỉ gửi một lần khi bắt đầu nhập
     if (!isTypingRef.current) {
       socket.emit("typing:start", { conversationId });
       isTypingRef.current = true;
     }
-    if (typingTimer.current) clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => {
+
+    // Reset thời gian tự động dừng nhập
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+    }
+
+    typingTimerRef.current = setTimeout(() => {
       socket.emit("typing:stop", { conversationId });
       isTypingRef.current = false;
-      typingTimer.current = null;
+      typingTimerRef.current = null;
     }, 2000);
   }, [conversationId]);
 
+  // Lắng nghe trạng thái đang nhập của đối phương
   useEffect(() => {
     if (!conversationId) {
       setPeerTyping(false);
       return;
     }
 
-    const socket = getSocket();
+    const socket = GetSocket();
     if (!socket?.connected) return;
 
     const onTyping = (typing: SocketType) => {
-      if (typing.conversationId === conversationId && typing.userId !== myId) {
+      if (
+        typing.conversationId === conversationId &&
+        typing.userId !== myId
+      ) {
         setPeerTyping(typing.typing);
       }
     };
 
     socket.on("typing:update", onTyping);
+
     return () => {
       socket.off("typing:update", onTyping);
     };
   }, [conversationId, myId]);
 
+  // Hủy timer khi component unmount
   useEffect(() => {
     return () => {
-      if (typingTimer.current) clearTimeout(typingTimer.current);
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+      }
     };
   }, []);
 
-  return { peerTyping, stopTyping, emitTyping };
+  return {
+    peerTyping,
+    stopTyping: StopTyping,
+    emitTyping: EmitTyping,
+  };
 }
