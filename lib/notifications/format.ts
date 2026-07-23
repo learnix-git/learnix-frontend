@@ -39,10 +39,15 @@ export function formatTimeAgo(input: string, now: Date = new Date()): string {
   });
 }
 
+/**
+ * Dòng tóm tắt cho notification groupable (hiện chỉ `post_bid`: nhiều gia sư
+ * cùng báo giá cho 1 bài đăng). Verb mặc định trung tính để dùng lại được
+ * cho các type non-groupable khác nếu BE bổ sung group mới.
+ */
 export function buildSummaryLine(
   creators: string[],
   count: number,
-  verb: string = "đã gửi thông báo",
+  verb: string = "đã gửi báo giá",
 ): string {
   if (!creators || creators.length === 0) return verb;
   if (count <= 1) {

@@ -1,8 +1,8 @@
 import client from "./client";
-import type { ApiResponse, ApiListResponse } from "./types";
+import type { ApiResponse } from "./types";
 import type { NotificationItem } from "@/lib/notifications/types";
 
-export interface NotificationListResponse extends ApiListResponse<NotificationItem> {
+export interface NotificationListResponse extends ApiResponse<NotificationItem[]> {
   unreadCount: number;
 }
 
@@ -26,7 +26,7 @@ export const NotificationAPI = {
     return res.data;
   },
 
-  read: async (id: number): Promise<NotificationActionResponse> => {
+  read: async (id: string): Promise<NotificationActionResponse> => {
     const res = await client.post<NotificationActionResponse>("/notifications/read", {
       id,
     });

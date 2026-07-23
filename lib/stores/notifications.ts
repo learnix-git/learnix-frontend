@@ -20,10 +20,10 @@ interface NotificationState {
   /**
    * Force refresh từ socket realtime — bypass `loading` guard trong `fetchList`
    * để notification mới về có thể ghi đè state ngay cả khi user đang paginated load.
-   * Dùng cho ChatProvider handler `notification:new`.
+   * Dùng cho provider socket khi nhận `notification:new`.
    */
   forceRefresh: () => Promise<void>;
-  markRead: (id: number) => Promise<void>;
+  markRead: (id: string) => Promise<void>;
   markReadGroup: (groupKey: string) => Promise<void>;
   markAllRead: () => Promise<void>;
   reset: () => void;
@@ -61,14 +61,13 @@ function applyMarkReadGroup(
 
 /**
  * Optimistic update cho non-groupable notification: flip `isRead` thành true
- * trên item khớp `latestTargetId` (id mà `read` API sẽ được gọi). Bug trước
- * đây chỉ decrement `unreadCount` mà KHÔNG update `items[*].isRead` → badge
+ * trên item khớp `latestTargetId` (id mà `read` API sẽ được gọi). Đồng bộ
+ * pattern với `applyMarkReadGroup` / `applyMarkAllRead` để tránh bug badge
  * giảm nhưng list vẫn hiển thị unread (dot, bold title, primary bg).
- * Đồng bộ pattern với `applyMarkReadGroup` / `applyMarkAllRead`.
  */
 function applyMarkRead(
   items: NotificationItem[],
-  id: number,
+  id: string,
 ): { items: NotificationItem[]; unreadDelta: number } {
   let unreadDelta = 0;
   const next = items.map((n) => {
@@ -114,17 +113,18 @@ export const useNotifications = create<NotificationState>((set, get) => ({
     try {
       const res = await NotificationAPI.list({ page, limit });
       if (res.code !== 200) {
-        throw new Error(res.msg || "Không thể tải thông báo");
+        throw new Error(res.message || "Không thể tải thông báo");
       }
 
-      const incoming = Array.isArray(res.items) ? res.items : [];
+      const incoming = Array.isArray(res.data) ? res.data : [];
       const merged = reset ? incoming : [...get().items, ...incoming];
+      const total = Number(res.pagination?.items ?? merged.length);
 
       set({
         items: merged,
-        total: Number(res.total ?? merged.length),
+        total,
         unreadCount: Number(res.unreadCount ?? 0),
-        hasMore: merged.length < Number(res.total ?? merged.length),
+        hasMore: merged.length < total,
         loading: false,
         refreshing: false,
         initialized: true,
@@ -151,15 +151,15 @@ export const useNotifications = create<NotificationState>((set, get) => ({
     try {
       const res = await NotificationAPI.list({ page: 1, limit: get().limit });
       if (res.code !== 200) {
-        throw new Error(res.msg || "Không thể tải thông báo");
+        throw new Error(res.message || "Không thể tải thông báo");
       }
 
-      const incoming = Array.isArray(res.items) ? res.items : [];
+      const incoming = Array.isArray(res.data) ? res.data : [];
       set({
         items: incoming,
-        total: Number(res.total ?? incoming.length),
+        total: Number(res.pagination ?? incoming.length),
         unreadCount: Number(res.unreadCount ?? 0),
-        hasMore: incoming.length < Number(res.total ?? incoming.length),
+        hasMore: incoming.length < Number(res.pagination ?? incoming.length),
         loading: false,
         refreshing: false,
         initialized: true,
@@ -180,9 +180,6 @@ export const useNotifications = create<NotificationState>((set, get) => ({
     const target = before.items.find((n) => n.latestTargetId === id);
     if (target && target.isRead) return;
 
-    // Optimistic: flip isRead trên item + decrement unreadCount.
-    // Trước đây chỉ update unreadCount → badge giảm nhưng list vẫn hiển thị
-    // unread. Dùng helper giống applyMarkReadGroup để đồng bộ pattern.
     const optimistic = applyMarkRead(before.items, id);
     if (optimistic.unreadDelta > 0) {
       set({
@@ -194,7 +191,7 @@ export const useNotifications = create<NotificationState>((set, get) => ({
     try {
       const res = await NotificationAPI.read(id);
       if (res.code !== 200) {
-        throw new Error(res.msg || "Cập nhật thất bại");
+        throw new Error(res.message || "Cập nhật thất bại");
       }
     } catch (err) {
       // Rollback về state trước nếu lỗi.
@@ -221,7 +218,7 @@ export const useNotifications = create<NotificationState>((set, get) => ({
     try {
       const res = await NotificationAPI.readGroup(groupKey);
       if (res.code !== 200) {
-        throw new Error(res.msg || "Cập nhật thất bại");
+        throw new Error(res.message || "Cập nhật thất bại");
       }
     } catch (err) {
       set({
@@ -242,7 +239,7 @@ export const useNotifications = create<NotificationState>((set, get) => ({
     try {
       const res = await NotificationAPI.readAll();
       if (res.code !== 200) {
-        throw new Error(res.msg || "Cập nhật thất bại");
+        throw new Error(res.message || "Cập nhật thất bại");
       }
     } catch (err) {
       set({

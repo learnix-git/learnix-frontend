@@ -3,22 +3,23 @@
 /**
  * Singleton pub/sub bus cho notification:new từ socket.
  *
- * Mỗi trang đăng ký 1 listener qua `subscribeInvalidate`. ChatProvider gọi
- * `emitInvalidate(payload)` mỗi khi nhận event `notification:new` từ socket —
- * listener nào tự quyết định có nên refresh data hay không (dựa trên
- * `matchFn` đăng ký riêng).
+ * Mỗi trang đăng ký 1 listener qua `subscribeInvalidate`. ChatProvider (hoặc
+ * provider socket tương ứng) gọi `emitInvalidate(payload)` mỗi khi nhận event
+ * `notification:new` — listener nào tự quyết định có nên refresh data hay
+ * không (dựa trên `matchFn` đăng ký riêng, vd trang /my-bookings chỉ refresh
+ * khi `payload.type` bắt đầu bằng `booking_`).
  *
- * Pattern copy từ `lib/chat/socket.ts:19-20,54-65` (Set<listener> in-house) —
- * tránh thêm dependency mitt/nanoevents cho 1 use case nhỏ.
+ * In-house Set<listener> — tránh thêm dependency mitt/nanoevents cho 1 use
+ * case nhỏ.
  *
  * Module-level singleton → sống xuyên suốt session, không bị ảnh hưởng bởi
  * React strict mode remount.
  */
 
 export interface InvalidatePayload {
-  id: number;
+  id: string;
   type: string;
-  sourceId: number | null;
+  sourceId: string | null;
   /**
    * Slug / code SEO-friendly của đối tượng liên quan. Socket payload từ BE
    * KHÔNG có — FE tự default = null; matcher sẽ fallback `sourceId` nếu
@@ -28,13 +29,13 @@ export interface InvalidatePayload {
   title: string;
   content: string;
   createdAt: string;
-  targetId: number;
-  userId: number;
+  targetId: string;
+  userId: string;
   /**
-   * Optional deep-link id cho routing. Hiện dùng cho `service_offer_received`
-   * (V2 §20): id của offer message trong conversation để FE scroll/highlight.
+   * Optional deep-link id cho routing. Hiện dùng cho `message_new`: id của
+   * tin nhắn trong hội thoại để FE scroll/highlight.
    */
-  messageId?: number;
+  messageId?: string;
 }
 
 export type InvalidateListener = (payload: InvalidatePayload) => void;

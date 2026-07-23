@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNotifications } from "@/lib/stores/notifications";
 import { useAuth } from "@/lib/stores/auth";
 
 /**
  * Polling thông báo định kỳ + khi tab focus lại.
- * BE không có push realtime (chỉ có OneSignal placeholder) nên FE cần gọi
- * list định kỳ để badge unread cập nhật khi user ở yên 1 trang.
+ * Nếu BE không có push realtime (hoặc chỉ có OneSignal cho mobile), FE cần
+ * gọi list định kỳ để badge unread cập nhật khi user ở yên 1 trang.
  *
- * Tần suất: 30s (theo khuyến nghị BE §6.1). Khi tab ẩn → pause (document.hidden)
- * để tránh lãng phí request. Khi focus lại → poll ngay 1 lần.
+ * Tần suất: 30s. Khi tab ẩn → pause (document.hidden) để tránh lãng phí
+ * request. Khi focus lại → poll ngay 1 lần.
  */
 export function useNotificationPolling(intervalMs: number = 30_000) {
   const isAuthed = useAuth((s) => s.isAuthenticated);

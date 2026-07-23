@@ -3,63 +3,131 @@
 import React, { useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  AlertCircle,
+  Award,
   ArrowLeft,
-  BadgeCheck,
   Bell,
-  Briefcase,
+  CalendarCheck,
+  CalendarClock,
+  CalendarPlus,
+  CalendarX,
   CheckCheck,
   ChevronRight,
   CircleCheck,
   Clock,
+  ClipboardCheck,
+  FileCheck2,
+  Flag,
+  GraduationCap,
+  Handshake,
   Inbox,
   KeyRound,
-  MessageSquare,
+  MessageCircle,
   Receipt,
   RefreshCw,
   Search,
-  Sparkles,
-  User,
-  UserPlus,
+  Send,
+  ShieldCheck,
+  Star,
   X,
 } from "lucide-react";
 import { Cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { BreadcrumbComponent } from "@/components/ui/Breadcrumb";
 import TooltipHover from "@/components/ui/Tooltip";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/stores/auth";
 import { useNotifications } from "@/lib/stores/notifications";
 import { resolveNotificationRoute } from "@/lib/notifications/router";
-import { formatTimeAgo, buildSummaryLine } from "@/lib/notifications/format";
+import { formatTimeAgo } from "@/lib/notifications/format";
 import { NormalizeString } from "@/lib/utils";
 import type { NotificationItem } from "@/lib/notifications/types";
 
-// Color Consistency Lock: tất cả type dùng primary purple làm accent
-// duy nhất. Phân biệt qua icon + label, không qua màu.
-// 11 type — sync với lib/notifications/router.ts::NOTIFICATION_TYPE_LABEL.
-const TYPE_META: Record<string, { icon: typeof Bell; label: string }> = {
-  // Order-related
-  order_completion_reminder: { icon: Clock, label: "Nhắc hoàn thành đơn" },
-  order_dispute_created: { icon: AlertCircle, label: "Mở tranh chấp" },
-  order_dispute_reply: { icon: MessageSquare, label: "Phản hồi tranh chấp" },
-  order_dispute_resolved: { icon: BadgeCheck, label: "Tranh chấp đã xử lý" },
-  order_paid: { icon: Receipt, label: "Đơn hàng đã thanh toán" },
-  order_revision_request: { icon: RefreshCw, label: "Yêu cầu chỉnh sửa" },
-  payment_success: { icon: CircleCheck, label: "Thanh toán thành công" },
-  // Project-related
-  project_apply: { icon: Briefcase, label: "Ứng tuyển dự án" },
-  project_approved: { icon: BadgeCheck, label: "Dự án được duyệt" },
-  project_invite: { icon: UserPlus, label: "Lời mời dự án" },
-  // Account
-  password_changed: { icon: KeyRound, label: "Bảo mật tài khoản" },
+// Mỗi nhóm type dùng 1 accent riêng để phân biệt nhanh (đơn hàng: primary,
+// lịch học: sky, bài đăng/báo giá: violet, học tập: amber, tài khoản: slate) —
+// khác với minahub (khoá dùng 1 màu primary duy nhất cho mọi type).
+const TYPE_META: Record<
+  string,
+  { icon: typeof Bell; label: string; accent: string }
+> = {
+  // Đơn hàng / thanh toán
+  order_paid: { icon: Receipt, label: "Đơn hàng đã thanh toán", accent: "primary" },
+  payment_success: { icon: CircleCheck, label: "Thanh toán thành công", accent: "primary" },
+  // Đặt lịch học 1-1
+  booking_requested: { icon: CalendarPlus, label: "Yêu cầu đặt lịch mới", accent: "sky" },
+  booking_confirmed: { icon: CalendarCheck, label: "Lịch học đã xác nhận", accent: "sky" },
+  booking_cancelled: { icon: CalendarX, label: "Lịch học đã huỷ", accent: "sky" },
+  booking_rescheduled: { icon: CalendarClock, label: "Lịch học đã đổi giờ", accent: "sky" },
+  // Bài đăng tìm gia sư
+  post_bid: { icon: Send, label: "Báo giá mới cho bài đăng", accent: "violet" },
+  bid_accepted: { icon: Handshake, label: "Báo giá được chọn", accent: "violet" },
+  // Khoá học
+  enrollment_success: { icon: GraduationCap, label: "Ghi danh khoá học thành công", accent: "amber" },
+  certificate_issued: { icon: Award, label: "Chứng chỉ mới", accent: "amber" },
+  review_received: { icon: Star, label: "Đánh giá mới", accent: "amber" },
+  // Bài tập / bài kiểm tra
+  assignment_graded: { icon: FileCheck2, label: "Bài tập đã được chấm", accent: "amber" },
+  exam_graded: { icon: ClipboardCheck, label: "Bài kiểm tra đã được chấm", accent: "amber" },
+  // Báo cáo
+  report_created: { icon: Flag, label: "Báo cáo mới", accent: "rose" },
+  report_resolved: { icon: ShieldCheck, label: "Báo cáo đã xử lý", accent: "rose" },
+  // Tin nhắn
+  message_new: { icon: MessageCircle, label: "Tin nhắn mới", accent: "primary" },
+  // Tài khoản
+  password_changed: { icon: KeyRound, label: "Bảo mật tài khoản", accent: "slate" },
 };
 
-const DEFAULT_TYPE_META = { icon: Bell, label: "Thông báo" };
+const DEFAULT_TYPE_META = { icon: Bell, label: "Thông báo", accent: "primary" };
 
 function getTypeMeta(type: string) {
   return TYPE_META[type] ?? DEFAULT_TYPE_META;
+}
+
+// Map accent → class Tailwind. Dùng token cố định (không CSS var động) vì
+// list accent nhỏ, không cần theme runtime.
+const ACCENT_CLASS: Record<
+  string,
+  { chip: string; tile: string; icon: string; dot: string }
+> = {
+  primary: {
+    chip: "from-primary/15 to-primary/5 border-primary/20 text-primary",
+    tile: "from-primary/25 to-primary/5 border-primary/25",
+    icon: "text-primary",
+    dot: "bg-primary",
+  },
+  sky: {
+    chip: "from-sky-500/15 to-sky-500/5 border-sky-500/20 text-sky-600 dark:text-sky-400",
+    tile: "from-sky-500/25 to-sky-500/5 border-sky-500/25",
+    icon: "text-sky-600 dark:text-sky-400",
+    dot: "bg-sky-500",
+  },
+  violet: {
+    chip: "from-violet-500/15 to-violet-500/5 border-violet-500/20 text-violet-600 dark:text-violet-400",
+    tile: "from-violet-500/25 to-violet-500/5 border-violet-500/25",
+    icon: "text-violet-600 dark:text-violet-400",
+    dot: "bg-violet-500",
+  },
+  amber: {
+    chip: "from-amber-500/15 to-amber-500/5 border-amber-500/20 text-amber-600 dark:text-amber-400",
+    tile: "from-amber-500/25 to-amber-500/5 border-amber-500/25",
+    icon: "text-amber-600 dark:text-amber-400",
+    dot: "bg-amber-500",
+  },
+  rose: {
+    chip: "from-rose-500/15 to-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-400",
+    tile: "from-rose-500/25 to-rose-500/5 border-rose-500/25",
+    icon: "text-rose-600 dark:text-rose-400",
+    dot: "bg-rose-500",
+  },
+  slate: {
+    chip: "from-slate-500/15 to-slate-500/5 border-slate-500/20 text-slate-600 dark:text-slate-400",
+    tile: "from-slate-500/25 to-slate-500/5 border-slate-500/25",
+    icon: "text-slate-600 dark:text-slate-400",
+    dot: "bg-slate-500",
+  },
+};
+
+function getAccent(accent: string) {
+  return ACCENT_CLASS[accent] ?? ACCENT_CLASS.primary;
 }
 
 export default function NotificationManagement() {
@@ -92,7 +160,7 @@ export default function NotificationManagement() {
   useEffect(() => {
     if (loading) return;
     if (!isAuthed) {
-      router.replace("/login?redirect=/notifications");
+      router.replace("/signin?redirect=/notifications");
       return;
     }
     if (storeLoading) return;
@@ -212,14 +280,15 @@ export default function NotificationManagement() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-2.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/15 text-[11px] font-bold text-primary tracking-wide">
-                <Sparkles className="h-3 w-3" />
+                <GraduationCap className="h-3 w-3" />
                 {greeting()}
               </div>
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-none m-0">
                 Thông báo
               </h1>
               <p className="text-sm text-muted-foreground m-0 max-w-md leading-relaxed">
-                Mọi cập nhật về dự án, đơn hàng và tài khoản của bạn sẽ xuất hiện tại đây.
+                Cập nhật về khoá học, lịch học với gia sư, đơn hàng và tài khoản của
+                bạn sẽ xuất hiện tại đây.
               </p>
             </div>
 
@@ -291,7 +360,7 @@ export default function NotificationManagement() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm thông báo..."
+                placeholder="Tìm khoá học, lịch học, đơn hàng..."
                 className="w-full h-10 pl-11 pr-10 py-2 bg-white/50 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-2xl text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground text-foreground"
               />
               {searchQuery && (
@@ -308,10 +377,10 @@ export default function NotificationManagement() {
         </div>
 
         {/* Main shell: 2-pane glass card */}
-        <div className="rounded-[2.5rem] border border-white/40 dark:border-white/10 bg-white/30 dark:bg-white/5 shadow-2xl shadow-primary/5 backdrop-blur-2xl overflow-hidden flex h-[640px] relative">
+        <div className="rounded-[2rem] border border-white/40 dark:border-white/10 bg-white/30 dark:bg-white/5 shadow-2xl shadow-primary/5 backdrop-blur-2xl overflow-hidden flex h-[640px] relative">
           {/* Glow blob ambient inside the shell */}
           <div className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -right-20 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -right-20 w-72 h-72 bg-sky-400/10 rounded-full blur-3xl" />
 
           {/* List pane */}
           <div
@@ -419,6 +488,7 @@ function NotifListItem({
   onClick: () => void;
 }) {
   const meta = getTypeMeta(notif.type);
+  const accent = getAccent(meta.accent);
   const Icon = meta.icon;
 
   return (
@@ -441,19 +511,16 @@ function NotifListItem({
       <div className="flex items-start gap-3">
         <div
           className={Cn(
-            "shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center border transition-all duration-200",
-            // Active: gradient đậm + glow shadow + group-hover lift icon
-            isActive
-              ? "bg-gradient-to-br from-primary/30 to-primary/15 border-primary/40 shadow-md shadow-primary/25"
-              : !notif.isRead
-                ? "bg-gradient-to-br from-primary/15 to-primary/5 border-primary/20 group-hover:from-primary/20 group-hover:to-primary/10 group-hover:border-primary/30 group-hover:shadow-sm group-hover:shadow-primary/10"
-                : "bg-white/60 dark:bg-white/5 border-white/40 dark:border-white/10 group-hover:border-primary/20 group-hover:bg-primary/5",
+            "shrink-0 w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-200 bg-gradient-to-br",
+            !notif.isRead || isActive
+              ? accent.tile
+              : "from-white/60 to-white/60 dark:from-white/5 dark:to-white/5 border-white/40 dark:border-white/10 group-hover:border-primary/20",
           )}
         >
           <Icon
             className={Cn(
               "h-[18px] w-[18px] transition-transform duration-200 group-hover:scale-110",
-              !notif.isRead ? "text-primary" : "text-muted-foreground group-hover:text-primary",
+              !notif.isRead ? accent.icon : "text-muted-foreground group-hover:text-primary",
             )}
           />
         </div>
@@ -463,7 +530,7 @@ function NotifListItem({
             <span
               className={Cn(
                 "text-[10px] font-bold shrink-0 tracking-wide",
-                notif.isRead ? "text-muted-foreground" : "text-primary",
+                notif.isRead ? "text-muted-foreground" : accent.icon,
               )}
             >
               {meta.label}
@@ -494,7 +561,7 @@ function NotifListItem({
         </div>
 
         {!notif.isRead && !isActive && (
-          <span className="shrink-0 mt-1.5 h-2 w-2 rounded-full bg-primary shadow-sm shadow-primary/40 animate-pulse" />
+          <span className={Cn("shrink-0 mt-1.5 h-2 w-2 rounded-full shadow-sm animate-pulse", accent.dot)} />
         )}
       </div>
     </button>
@@ -511,6 +578,7 @@ function NotifDetail({
   onOpen: () => void;
 }) {
   const meta = getTypeMeta(notif.type);
+  const accent = getAccent(meta.accent);
   const Icon = meta.icon;
   const route = resolveNotificationRoute(notif);
   const hasRoute = !!route;
@@ -533,16 +601,16 @@ function NotifDetail({
       <div className="relative px-6 sm:px-8 pt-6 pb-5 border-b border-white/40 dark:border-white/5 shrink-0 overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-0">
           <div className="absolute -top-10 -right-10 w-48 h-48 bg-primary/15 rounded-full blur-3xl" />
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-purple-400/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-sky-400/10 rounded-full blur-3xl" />
         </div>
         <div className="relative flex gap-4">
-          <div className="shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 border border-primary/25 flex items-center justify-center shadow-lg shadow-primary/10">
-            <Icon className="h-6 w-6 text-primary" />
+          <div className={Cn("shrink-0 w-14 h-14 rounded-full bg-gradient-to-br border flex items-center justify-center shadow-lg", accent.tile)}>
+            <Icon className={Cn("h-6 w-6", accent.icon)} />
           </div>
           <div className="space-y-2 min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/20 text-[10px] font-black text-primary">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className={Cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r border text-[10px] font-black", accent.chip)}>
+                <span className={Cn("h-1.5 w-1.5 rounded-full", accent.dot)} />
                 {meta.label}
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -654,7 +722,7 @@ function NotificationsSkeleton() {
           className="p-3.5 rounded-2xl border border-white/30 dark:border-white/5 bg-white/20 dark:bg-white/[0.02] animate-pulse"
         >
           <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-slate-200/70 dark:bg-zinc-800 shrink-0" />
+            <div className="w-11 h-11 rounded-full bg-slate-200/70 dark:bg-zinc-800 shrink-0" />
             <div className="flex-1 min-w-0 space-y-2 pt-1">
               <div className="flex items-center gap-2">
                 <div className="h-2.5 w-16 bg-slate-200/70 dark:bg-zinc-800 rounded" />

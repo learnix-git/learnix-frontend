@@ -4,8 +4,6 @@ import type { InvalidatePayload } from "./invalidate-bus";
 /**
  * Type guard cho socket payload `notification:new`.
  *
- * Pattern copy từ `lib/chat/normalize.ts:71-79` (`isSocketMessageNew`).
- *
  * `sourceId` là optional (`number | null`) — không bắt buộc trong guard.
  */
 export function isSocketNotificationNew(
@@ -14,13 +12,13 @@ export function isSocketNotificationNew(
   if (!x || typeof x !== "object") return false;
   const r = x as Record<string, unknown>;
   return (
-    typeof r.id === "number" &&
+    typeof r.id === "string" &&
     typeof r.type === "string" &&
     typeof r.title === "string" &&
     typeof r.content === "string" &&
     typeof r.createdAt === "string" &&
-    typeof r.targetId === "number" &&
-    typeof r.userId === "number"
+    typeof r.targetId === "string" &&
+    typeof r.userId === "string"
   );
 }
 
@@ -29,7 +27,7 @@ export function isSocketNotificationNew(
  *  - Trả null nếu guard fail.
  *  - `sourceAlias` luôn = null vì socket không có; matcher / resolveNotificationRoute
  *    sẽ tự fallback `sourceId`.
- *  - `messageId` chỉ có trên một số type (vd `service_offer_received` — V2 §20).
+ *  - `messageId` chỉ có trên một số type (vd `message_new`).
  */
 export function normalizeSocketNotification(
   raw: unknown,
@@ -37,7 +35,7 @@ export function normalizeSocketNotification(
   if (!isSocketNotificationNew(raw)) return null;
   const r = raw as unknown as Record<string, unknown>;
   const messageId =
-    typeof r.messageId === "number" && Number.isFinite(r.messageId)
+    typeof r.messageId === "string" && r.messageId.length > 0
       ? r.messageId
       : undefined;
   return {
@@ -54,13 +52,11 @@ export function normalizeSocketNotification(
  * (groupKey, latestCreators, unreadInGroup, count, isRead, summary,
  * latestTargetId, latestAt) được default an toàn.
  *
- * Dùng cho toast CTA trong ChatProvider — không nên dùng để hiển thị UI
- * danh sách notification (vì thiếu nhiều metadata).
+ * Dùng cho toast CTA khi có notification realtime — không nên dùng để hiển
+ * thị UI danh sách notification (vì thiếu nhiều metadata).
  *
  * Lưu ý: `groupKey` set = null (không phải String(n.id)) — socket payload
- * chỉ là 1 event non-groupable, không có khái niệm groupKey. Trước đây
- * gán String(n.id) sai semantically; router không đọc groupKey nên không
- * ảnh hưởng, nhưng type giờ là `string | null` nên phải sửa cho khớp.
+ * chỉ là 1 event non-groupable, không có khái niệm groupKey.
  */
 export function toRouterShape(n: InvalidatePayload): NotificationItem {
   return {

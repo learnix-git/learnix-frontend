@@ -1,45 +1,66 @@
 /**
- * Notification types — mirror schema trong `NOTIFICATION_GUIDE.md` (BE).
+ * Notification types — Learnix (marketplace giáo dục: khoá học + gia sư 1-1).
  *
- * 11 type đang được BE push (xem §5):
- *  - password_changed                  (non-groupable)
- *  - project_apply                     (groupable — duy nhất hiện tại)
- *  - project_invite                    (non-groupable)
- *  - project_approved                  (non-groupable)
- *  - order_paid                        (non-groupable)
- *  - payment_success                   (non-groupable)
- *  - order_completion_reminder         (non-groupable)
- *  - order_revision_request            (non-groupable)
- *  - order_dispute_created             (non-groupable)
- *  - order_dispute_reply               (non-groupable) — sourceId = dispute.id (backlog §12.1)
- *  - order_dispute_resolved            (non-groupable)
+ * 17 type đang định nghĩa (xem `router.ts::NOTIFICATION_TYPE_LABEL` để đồng bộ):
+ *
+ *  Đơn hàng / thanh toán (model `Order`)
+ *   - order_paid                  (non-groupable)
+ *   - payment_success             (non-groupable)
+ *
+ *  Đặt lịch học 1-1 (model `Booking`)
+ *   - booking_requested           (non-groupable) — học viên gửi yêu cầu tới gia sư
+ *   - booking_confirmed           (non-groupable) — gia sư xác nhận
+ *   - booking_cancelled           (non-groupable)
+ *   - booking_rescheduled         (non-groupable)
+ *
+ *  Bài đăng tìm gia sư (model `Post` / `Bid`)
+ *   - post_bid                    (groupable — nhiều gia sư báo giá cùng 1 bài đăng)
+ *   - bid_accepted                (non-groupable)
+ *
+ *  Khoá học
+ *   - enrollment_success          (non-groupable) — ghi danh khoá học thành công
+ *   - certificate_issued          (non-groupable)
+ *   - review_received             (non-groupable) — gia sư/khoá học nhận đánh giá mới
+ *
+ *  Bài tập / bài kiểm tra
+ *   - assignment_graded           (non-groupable) — model `Task`
+ *   - exam_graded                 (non-groupable) — model `Submission`
+ *
+ *  Báo cáo / khiếu nại (model `Report`)
+ *   - report_created              (non-groupable)
+ *   - report_resolved             (non-groupable)
+ *
+ *  Tin nhắn
+ *   - message_new                 (non-groupable) — dùng `messageId` để deep-link
+ *
+ *  Tài khoản
+ *   - password_changed            (non-groupable)
  *
  * Field `type` giữ `string` (không union literal) để tương thích khi BE bổ sung
  * type mới mà FE chưa migrate — `switch (n.type)` nên có `default: return null`
- * hoặc `fallback` icon cho các type lạ. Groupable chỉ có `project_apply`
- * (xem BE §3.1 `GROUPABLE_TYPES`).
+ * hoặc `fallback` icon cho các type lạ. Groupable hiện chỉ có `post_bid`.
  */
 export interface NotificationItem {
   /**
    * Key nhóm theo `${type}:${sourceId}`. `null` cho non-groupable — VD
-   * `password_changed`, `order_paid`, `payment_success`, ... Khi null thì
+   * `password_changed`, `order_paid`, `booking_confirmed`, ... Khi null thì
    * `count = 1`, `unreadInGroup = 0|1`, `latestTargetId` = id của chính
    * notification target đó.
    */
   groupKey: string | null;
   type: string;
   /**
-   * ID đối tượng liên quan (project.id, order.id, dispute.id, user.id,...).
-   * Nullable theo DB schema §2.1 — vài type (vd `password_changed`) vẫn
-   * có number, nhưng `order_dispute_reply` đang backlog §12.1 có thể
-   * trả null nếu dispute bị xóa. Luôn check `?? 0` trước khi dùng làm param.
+   * ID đối tượng liên quan (order.id, booking.id, post.id, course.id,
+   * certificate.id, task.id, submission.id, report.id, chat.id, user.id...).
+   * Nullable — luôn check `?? 0` trước khi dùng làm param route.
    */
-  sourceId: number | null;
+  sourceId: string | null;
   /**
-   * Slug / code SEO-friendly của đối tượng liên quan (project.slug,
-   * order.code, ...). BE trả thêm để FE build URL đẹp. `null` khi:
-   *  - type không có entity tương ứng (`password_changed`, `order_dispute_reply`)
-   *  - entity đã bị xóa khỏi DB
+   * Slug / code SEO-friendly của đối tượng liên quan (order.code,
+   * course.slug, certificate.code, ...). BE trả thêm để FE build URL đẹp.
+   * `null` khi:
+   *  - type không có entity tương ứng (`password_changed`, `report_*`)
+   *  - entity đã bị xoá khỏi DB
    *  - socket payload (realtime) — FE tự default = null
    * Fallback về `sourceId` nếu null.
    */
@@ -55,8 +76,9 @@ export interface NotificationItem {
   unreadInGroup: number;
   isRead: boolean;
   /**
-   * Tên các actor mới nhất trong group. Với non-groupable, thường là `["Bạn"]`
-   * (chính user là người trigger). Luôn là array — có thể rỗng.
+   * Tên các actor mới nhất trong group (vd tên các gia sư đã báo giá cho
+   * `post_bid`). Với non-groupable, thường là `["Bạn"]` hoặc tên đối tác
+   * (gia sư/học viên) trigger sự kiện. Luôn là array — có thể rỗng.
    */
   latestCreators: string[];
   /**
@@ -64,7 +86,7 @@ export interface NotificationItem {
    * tại — dùng cho `POST /notifications/read` (mark read endpoint yêu cầu
    * target.id, KHÔNG phải notification.id).
    */
-  latestTargetId: number;
+  latestTargetId: string;
   /**
    * Timestamp của notification mới nhất trong group (groupable) hoặc của
    * chính notification (non-groupable). Format BE: `YYYY-MM-DD HH:mm:ss`
@@ -72,10 +94,10 @@ export interface NotificationItem {
    */
   latestAt: string;
   /**
-   * Optional deep-link id cho router. Hiện dùng cho `service_offer_received`
-   * (V2 §20) — id của offer message để FE scroll/highlight trong conversation.
-   * Không có trên notification list response (chỉ socket payload) → null/undefined
-   * cho các notification lấy từ API list.
+   * Optional deep-link id cho router. Dùng cho `message_new` — id của tin
+   * nhắn trong hội thoại để FE scroll/highlight. Không có trên notification
+   * list response (chỉ socket payload) → null/undefined cho notification
+   * lấy từ API list.
    */
-  messageId?: number | null;
+  messageId?: string | null;
 }
