@@ -36,7 +36,6 @@ function ChatPreview(type: string, content: string | null): string {
 export function useChatConversations(
   myId: string,
   conversationId?: string | null,
-  type?: "direct" | "course"
 ) {
   // Danh sách cuộc trò chuyện
   const [items, setItems] = useState<ChatConversation[]>([]);
@@ -72,9 +71,7 @@ export function useChatConversations(
   // Tải danh sách cuộc trò chuyện
   const Refresh = useCallback(async () => {
     try {
-      const res = await ChatAPI.FilterConversation(
-        type ? { type } : {}
-      );
+      const res = await ChatAPI.FilterConversation();
 
       if (res.code === 200 && Array.isArray(res.data?.items)) {
         setItems(res.data.items);
@@ -91,7 +88,7 @@ export function useChatConversations(
     } finally {
       setLoading(false);
     }
-  }, [setPeers, type]);
+  }, [setPeers]);
 
   // Tải danh sách khi hook khởi tạo
   useEffect(() => {

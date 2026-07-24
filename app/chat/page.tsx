@@ -9,7 +9,7 @@ import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ChatAPI } from "@/lib/api/chat";
 import { useAuth } from "@/lib/stores/auth";
 import { GetUser } from "@/lib/auth/session";
-import type { ChatUser, ChatCourseRef } from "@/lib/chat/types";
+import type { ChatUser } from "@/lib/chat/types";
 
 function ChatLoading() {
   return (
@@ -103,7 +103,6 @@ export default function ChatPage() {
   // Trạng thái cuộc trò chuyện hiện tại
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedPeer, setSelectedPeer] = useState<ChatUser | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<ChatCourseRef | null>(null);
 
   // Trạng thái mở cuộc trò chuyện
   const [open, setOpen] = useState(false);
@@ -113,11 +112,9 @@ export default function ChatPage() {
     async (
       id: string,
       peer: ChatUser | null,
-      course: ChatCourseRef | null = null
     ) => {
       setSelectedId(id);
       setSelectedPeer(peer);
-      setSelectedCourse(course);
     },
     []
   );
@@ -134,75 +131,9 @@ export default function ChatPage() {
   const peerAliasParam = searchParams.get("peerAlias");
   const peerAvatarParam = searchParams.get("peerAvatar");
 
-  // Lấy thông tin khóa học user đang chat
-  const courseIdParam = searchParams.get("courseId");
-  const courseNameParam = searchParams.get("courseName");
-
   useEffect(() => {
     // Nếu chưa đăng nhập thì không render
     if (!userId) return;
-
-    // Lấy thông tin khóa học từ URL
-    const courseUrl: ChatCourseRef | null = courseIdParam
-      ? {
-          id: courseIdParam,
-          name: courseNameParam,
-          code: null,
-          thumbnail: null,
-          price: null,
-        }
-      : null;
-
-    // Xử lý đoạn chat khóa học
-    if (courseUrl) {
-      if (chatParam && peerIdParam) {
-        SetConversation(
-          chatParam,
-          {
-            id: peerIdParam,
-            name: peerNameParam,
-            avatar: peerAvatarParam,
-            alias: peerAliasParam,
-          },
-          courseUrl
-        );
-        return;
-      }
-
-      let cancelled = false;
-      setOpen(true);
-
-      // Gọi API tạo đoạn chat nếu chưa có và mở đoạn chat nếu đã có
-      ChatAPI.UpsertConversation({ 
-        peerId: peerIdParam || "", 
-        courseId: courseUrl.id 
-      })
-        .then((res) => {
-          if (cancelled) return;
-
-          if (res.code === 200 && res.data) {
-            SetConversation(
-              res.data.id, 
-              res.data.peer, 
-              res.data.course
-            );
-          } else {
-            toast.error(res.message || "Không thể mở cuộc trò chuyện");
-          }
-        })
-        .catch((e) => {
-          if (cancelled) return;
-
-          toast.error(e instanceof Error ? e.message : "Lỗi không xác định");
-        })
-        .finally(() => {
-          if (!cancelled) setOpen(false);
-        });
-
-      return () => {
-        cancelled = true;
-      };
-    }
 
     // Xử lý đoạn chat riêng
     if (chatParam && peerIdParam) {
@@ -214,7 +145,6 @@ export default function ChatPage() {
           avatar: peerAvatarParam,
           alias: peerAliasParam,
         },
-        null
       );
       return;
     }
@@ -235,7 +165,6 @@ export default function ChatPage() {
           SetConversation(
             res.data.id, 
             res.data.peer, 
-            res.data.course
           );
         } else {
           toast.error(res.message || "Không thể mở cuộc trò chuyện");
@@ -253,7 +182,7 @@ export default function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [userId, userParam, chatParam, peerIdParam, peerNameParam, peerAvatarParam, courseIdParam, courseNameParam, SetConversation]);
+  }, [userId, userParam, chatParam, peerIdParam, peerNameParam, peerAvatarParam, SetConversation]);
 
   if (!userId) {
     return (
@@ -274,17 +203,7 @@ export default function ChatPage() {
 
         // Mở cuộc trò chuyện được chọn
         onSelect={(selectedChat: any) => {
-          const course: ChatCourseRef | null =
-            selectedChat.type === "course" && selectedChat.courseId
-              ? {
-                  id: selectedChat.courseId,
-                  name: selectedChat.courseName,
-                  code: selectedChat.courseCode,
-                  thumbnail: selectedChat.courseThumbnail,
-                  price: null,
-                }
-              : null;
-          SetConversation(selectedChat.id, selectedChat.peer, course);
+          SetConversation(selectedChat.id, selectedChat.peer);
         }}
 
         // Ẩn danh sách chat trên mobile
@@ -303,13 +222,11 @@ export default function ChatPage() {
             conversationId={selectedId}
             
             peer={selectedPeer}
-            course={selectedCourse}
 
             // Quay lại danh sách cuộc trò chuyện
             onBack={() => {
               setSelectedId(null);
               setSelectedPeer(null);
-              setSelectedCourse(null);
               if (typeof window !== "undefined") {
                 window.history.replaceState(null, "", window.location.pathname);
               }

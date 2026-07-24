@@ -9,26 +9,28 @@ export function NormalizeMessage(
   input: unknown,
   peerLookup?: (senderId: string) => ChatUser | null
 ): ChatMessage | null {
-  // Nếu dữ liệu không hợp lệ thì bỏ qua
   if (!input || typeof input !== "object") return null;
 
   const raw = input as Record<string, unknown>;
 
-  // Lấy id của tin nhắn
+  // REST dùng "id", socket dùng "messageId"
   const id = String(raw.id ?? raw.messageId ?? "").trim();
   if (!id) return null;
+
+  // REST dùng "room", socket dùng "conversationId"
+  const conversationId = String(raw.conversationId ?? raw.room ?? "").trim();
 
   // Chuẩn hóa thông tin người gửi
   let sender: ChatUser | null = null;
 
-  if (raw.sender && typeof raw.sender === "object") {
-    const s = raw.sender as Record<string, unknown>;
+  if (raw.user && typeof raw.user === "object") {
+    const u = raw.user as Record<string, unknown>;
 
     sender = {
-      id: String(s.id ?? "").trim(),
-      name: String(s.name ?? ""),
-      avatar: typeof s.avatar === "string" ? s.avatar : null,
-      alias: typeof s.alias === "string" ? s.alias : null,
+      id: String(u.id ?? "").trim(),
+      name: String(u.name ?? ""),
+      avatar: typeof u.avatar === "string" ? u.avatar : null,
+      alias: null,
     };
   } else if (raw.senderId != null) {
     const senderId = String(raw.senderId).trim();
@@ -41,12 +43,20 @@ export function NormalizeMessage(
       avatar: fromCache?.avatar ?? null,
       alias: fromCache?.alias ?? null,
     };
+  } else if (typeof raw.sender === "string") {
+    const senderId = raw.sender.trim();
+    const fromCache = peerLookup?.(senderId);
+
+    sender = {
+      id: senderId,
+      name: fromCache?.name || "",
+      avatar: fromCache?.avatar ?? null,
+      alias: fromCache?.alias ?? null,
+    };
   }
 
-  // Nếu không có thông tin người gửi thì bỏ qua
   if (!sender || !sender.id) return null;
 
-  // Chuẩn hóa tệp đính kèm
   let attachment: ChatMessage["attachment"] = null;
 
   if (raw.attachment && typeof raw.attachment === "object") {
@@ -54,25 +64,27 @@ export function NormalizeMessage(
 
     attachment = {
       id: String(a.id ?? "").trim(),
-      originalName: String(a.originalName ?? ""),
-      mimeType: String(a.mimeType ?? ""),
-      sizeBytes: Number(a.sizeBytes ?? 0),
+      originalName: String(a.originalName ?? a.name ?? ""),
+      mimeType: String(a.mimeType ?? a.mime ?? ""),
+      sizeBytes: Number(a.sizeBytes ?? a.size ?? 0),
       url: String(a.url ?? ""),
     };
   }
 
-  // Lấy loại tin nhắn
-  const type = (raw.type as ChatMessage["type"]) ?? "text";
+  const kindRaw = String(raw.type ?? raw.kind ?? "text").toLowerCase();
+  const type = (kindRaw as ChatMessage["type"]) || "text";
 
-  // Trả về dữ liệu đã chuẩn hóa
+  // REST dùng "created", socket dùng "createdAt"
+  const createdAt = String(raw.createdAt ?? raw.created ?? "");
+
   return {
     id,
-    conversationId: String(raw.conversationId ?? "").trim(),
+    conversationId,
     sender,
     type,
     content: typeof raw.content === "string" ? raw.content : null,
     attachment,
-    createdAt: String(raw.createdAt ?? ""),
+    createdAt,
   };
 }
 

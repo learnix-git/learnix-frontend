@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const HIDE_FOOTER_PATHS = ["/messages", "/exams"];
+const HIDE_FOOTER_PATHS = ["/messages", "/chat"];
 
 const links = {
   "Dành cho Học sinh": [

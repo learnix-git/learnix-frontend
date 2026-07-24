@@ -143,7 +143,7 @@ function NotificationBell() {
           )}
         </div>
         <div className="border-t border-border p-2">
-          <Link href="/thong-bao" className="block w-full rounded-lg px-3 py-2 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors">
+          <Link href="/notifications" className="block w-full rounded-lg px-3 py-2 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors">
             Xem tất cả thông báo
           </Link>
         </div>

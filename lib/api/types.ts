@@ -24,5 +24,20 @@ export interface RegisterRequest {
   password: string;
   name: string;
   gender: number;
-  role?: "STUDENT" | "TEACHER";
+  role?: "STUDENT" | "TUTOR";
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  alias: string | null;
+  dob: string | null;
+  role: "STUDENT" | "TUTOR" | "ADMIN";
+  gender: "MALE" | "FEMALE" | "OTHER";
+  avatar: string | null;
+  phone: string | null;
+  active: boolean;
+  created: string;
+  updated: string;
 }

@@ -97,7 +97,7 @@ export const useAuth = create<AuthState>((set) => ({
       if (res.code === 200 && res.data) {
         UpdateSession(res.data);
         set({ user: res.data, isAuthenticated: true });
-      } else if (res.success !== true) {
+      } else if (res.code !== 200) {
         throw new Error(res.message || "fetchUser failed");
       }
     } catch (err) {

@@ -7,13 +7,7 @@ import type {
   ChatUser,
 } from "@/lib/chat/types";
 
-export type UpsertConversation =
-  | { peerId: string } 
-  | { peerId: string; courseId: string }; 
-
-export type FilterConversation = {
-  type?: "direct" | "course";
-};
+export type UpsertConversation = { peerId: string };
 
 type ChatUserDTO = {
   id?: unknown;
@@ -24,10 +18,6 @@ type ChatUserDTO = {
 
 type ChatConversationDTO = {
   id?: unknown;
-  type?: unknown;
-  course?: unknown;
-  courseId?: unknown;
-  courseName?: unknown;
   peer?: unknown;
   lastMessageAt?: unknown;
   lastMessagePreview?: unknown;
@@ -71,24 +61,8 @@ export function NormalizeConversation(raw: unknown): ChatConversation | null {
   const id = ConvertToString(r.id);
   if (!id) return null;
 
-  const type: ChatConversation["type"] = ConvertToString(r.type) === "course" ? "course" : "direct";
-
-  let course = null;
-  if (r.course && typeof r.course === "object") {
-    const c = r.course as Record<string, unknown>;
-    course = {
-      id: ConvertToString(c.id) ?? "",
-      code: ConvertToString(c.code),
-      name: ConvertToString(c.name) ?? "",
-      thumbnail: ConvertToString(c.thumbnail),
-      price: ConvertToNumber(c.price)
-    };
-  }
-
   return {
     id,
-    type,
-    course,
     peer: NormalizePeer(r.peer),
     lastMessageAt: ConvertToString(r.lastMessageAt),
     lastMessagePreview: ConvertToString(r.lastMessagePreview),
@@ -111,10 +85,8 @@ export const ChatAPI = {
   },
 
   // ! Hàm lấy danh sách cuộc trò chuyện
-  FilterConversation: async (
-    filter: FilterConversation = {}
-  ): Promise<ApiResponse<{ total: number; items: ChatConversation[] }>> => {
-    const r = await client.post("/chat/list", filter);
+  FilterConversation: async (): Promise<ApiResponse<{ total: number; items: ChatConversation[] }>> => {
+    const r = await client.post("/chat/list", {});
     const raw = (r.data ?? {}) as Record<string, unknown>;
     const items = Array.isArray(raw.items)
       ? raw.items.map(NormalizeConversation).filter((c): c is ChatConversation => c !== null)
@@ -250,11 +222,11 @@ export const ChatAPI = {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
       data: {
-        attachmentId: String(raw.attachmentId ?? ""),
-        originalName: String(raw.originalName ?? ""),
-        fileName: String(raw.fileName ?? ""),
-        mimeType: String(raw.mimeType ?? ""),
-        sizeBytes: Number(raw.sizeBytes ?? 0),
+        attachmentId: String(raw.attachmentId ?? raw.id ?? ""),
+        originalName: String(raw.originalName ?? raw.name ?? ""),
+        fileName: String(raw.fileName ?? raw.name ?? ""),
+        mimeType: String(raw.mimeType ?? raw.mime ?? ""),
+        sizeBytes: Number(raw.sizeBytes ?? raw.size ?? 0),
         url: String(raw.url ?? ""),
       },
     };
@@ -278,7 +250,7 @@ export const ChatAPI = {
           ? raw.items.map((item: unknown) => {
               const i = item as Record<string, unknown>;
               return {
-                conversationId: String(i.conversationId ?? ""), // Ép kiểu chuỗi
+                conversationId: String(i.conversationId ?? ""),
                 count: Number(i.count ?? 0),
                 latestAt: String(i.latestAt ?? ""),
               };

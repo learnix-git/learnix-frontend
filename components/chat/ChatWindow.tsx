@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
-  BookOpen,
   ChevronLeft,
   FileArchive,
   FileImage,
@@ -27,10 +26,7 @@ import {
   ChatBubbleSkeleton 
 } from "./ChatBubble";
 import { Avatar } from "@/components/ui/Avatar";
-import type { 
-  ChatUser, 
-  ChatCourseRef 
-} from "@/lib/chat/types";
+import type { ChatUser } from "@/lib/chat/types";
 
 // Dung lượng tối đa
 const MAX_SIZE = 10 * 1024 * 1024;
@@ -162,13 +158,11 @@ export function ChatWindow({
   peer,
   userId,
   onBack,
-  course = null,
 }: {
   conversationId: string;
   peer: ChatUser;
   userId: string;
   onBack?: () => void;
-  course?: ChatCourseRef | null;
 }) {
   const {
     messages,
@@ -434,44 +428,6 @@ export function ChatWindow({
 
       {/* Header */}
       <div className="sticky top-0 z-20 flex-shrink-0">
-
-        {/* Thông tin lớp học */}
-        {course && (
-          <Link
-            href={`/classes/${course.slug || course.id}`}
-            className="flex items-center gap-2.5 px-4 md:px-6 py-2.5 bg-gradient-to-r from-primary/[0.10] via-primary/[0.04] to-transparent dark:from-primary/[0.18] dark:via-primary/[0.08] dark:to-transparent border-b border-primary/15 dark:border-primary/20 backdrop-blur-xl hover:from-primary/[0.16] hover:to-primary/[0.06] dark:hover:from-primary/[0.24] dark:hover:to-primary/[0.12] transition-colors"
-          >
-            {/* Biểu tượng lớp học */}
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 dark:bg-primary/30 text-primary flex-shrink-0 shadow-sm shadow-primary/10">
-              <BookOpen className="w-3.5 h-3.5" />
-            </div>
-
-            <div className="min-w-0 flex-1 flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/80 dark:text-primary/70 flex-shrink-0">
-                Lớp học
-              </span>
-
-              <span className="h-3 w-px bg-primary/30 flex-shrink-0" />
-
-              {/* Mã lớp học */}
-              {course.code && (
-                <span className="text-xs font-bold text-primary/95 dark:text-primary/85 bg-primary/10 px-1.5 py-0.5 rounded-md flex-shrink-0">
-                  {course.code}
-                </span>
-              )}
-
-              {/* Tên lớp học */}
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">
-                {course.name}
-              </span>
-            </div>
-
-            {/* Nút xem lớp học */}
-            <span className="hidden md:inline-flex text-[10px] font-black uppercase tracking-wider text-primary/80 dark:text-primary/70 flex-shrink-0">
-              Xem lớp học →
-            </span>
-          </Link>
-        )}
 
         {/* Thông tin cuộc trò chuyện */}
         <div className="h-16 px-4 md:px-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-white/60 dark:bg-zinc-950/40 backdrop-blur-xl">

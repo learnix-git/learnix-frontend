@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BookOpen,
   Search,
   MessageSquare,
 } from "lucide-react";
@@ -13,15 +12,12 @@ import { Avatar } from "@/components/ui/Avatar";
 import { NormalizeString } from "@/lib/utils";
 import type { 
   ChatConversation, 
-  ChatCourseRef, 
   ChatUser 
 } from "@/lib/chat/types";
 
 export interface ChatListProps {
   id: string;
   peer: ChatUser;
-  type: ChatConversation["type"]; // "direct" | "course"
-  course: ChatCourseRef | null;
 }
 
 function FormatTime(iso: string | null) {
@@ -81,11 +77,6 @@ function ChatListItem({
     peerId ? s.online.has(peerId) : false
   );
 
-  // Thông tin khóa học
-  const courseTitle = chat.course?.name ?? "Khóa học";
-  const courseThumb = chat.course?.thumbnail ?? null;
-  const showThumb = chat.type === "course" && !!courseThumb;
-
   return (
     <button
       onClick={onClick}
@@ -94,39 +85,25 @@ function ChatListItem({
           ? "bg-primary/5 dark:bg-primary/15 border-r-4 border-r-primary"
           : "hover:bg-slate-50/70 dark:hover:bg-zinc-800/40"
       } ${
-        chat.type === "course"
-          ? "border-l-2 border-l-blue-500/50 dark:border-l-blue-400/50"
-          : "border-l-2 border-l-transparent"
+          "border-l-2 border-l-transparent"
       }`}
     >
       {/* Ảnh khóa học */}
       <div className="relative flex-shrink-0 self-start">
-        {showThumb ? (
-          <div className="h-12 w-12 rounded-2xl overflow-hidden border border-white/40 dark:border-white/10 shadow-sm bg-slate-100 dark:bg-zinc-800">
-            <img
-              src={courseThumb!}
-              alt={courseTitle}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        ) : (
-          <>
-            {/* Avatar người dùng */}
-            <Avatar
-              src={chat.peer?.avatar ?? undefined}
-              alt={chat.peer?.name ?? ""}
-              size="md"
-              className="h-12 w-12 shadow-sm border border-white/40 dark:border-white/10"
-            />
+        {/* Avatar người dùng */}
+        <Avatar
+          src={chat.peer?.avatar ?? undefined}
+          alt={chat.peer?.name ?? ""}
+          size="md"
+          className="h-12 w-12 shadow-sm border border-white/40 dark:border-white/10"
+        />
 
-            {/* Trạng thái online */}
-            <span
-              className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#09090b] ${
-                online ? "bg-green-500" : "bg-slate-300"
-              }`}
-            />
-          </>
-        )}
+        {/* Trạng thái online */}
+        <span
+          className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#09090b] ${
+            online ? "bg-green-500" : "bg-slate-300"
+          }`}
+        />
       </div>
 
       {/* Nội dung cuộc trò chuyện */}
@@ -142,22 +119,6 @@ function ChatListItem({
             {FormatTime(chat.lastMessageAt)}
           </span>
         </div>
-
-        {/* Thông tin khóa học */}
-        {chat.type === "course" && chat.course ? (
-          <div className="flex items-center gap-1.5 min-w-0 text-[11px] leading-none">
-            <BookOpen
-              className={`w-3 h-3 flex-shrink-0 ${
-                showThumb ? "text-blue-500/80" : "text-primary/80"
-              }`}
-            />
-
-            {/* Tên khóa học */}
-            <span className="truncate font-semibold text-primary/90 dark:text-primary/80 min-w-0">
-              {courseTitle}
-            </span>
-          </div>
-        ) : null}
 
         <div className="flex justify-between items-center gap-2 min-w-0">
           {/* Tin nhắn gần nhất */}
@@ -184,16 +145,14 @@ export function ChatList({
   selectedId,
   onSelect,
   className,
-  typeFilter,
 }: {
   userId: string;
   selectedId: string | null;
   onSelect: (chat: ChatListProps) => void;
   className?: string;
-  typeFilter?: "direct" | "course";
 }) {
   // Danh sách cuộc trò chuyện và trạng thái tải
-  const { items, loading } = useChatConversations(userId, selectedId, typeFilter);
+  const { items, loading } = useChatConversations(userId, selectedId);
 
   // Trạng thái tìm kiếm và lọc
   const [search, setSearch] = useState("");
@@ -222,14 +181,9 @@ export function ChatList({
         if (!normalized) return true;
 
         const peerName = NormalizeString(chat.peer!.name || "");
-        const courseName = chat.course?.name
-          ? NormalizeString(chat.course.name)
-          : "";
 
         return (
-          peerName.includes(normalized) ||
-          (courseName.length > 0 &&
-            courseName.includes(normalized))
+          peerName.includes(normalized)
         );
       });
   }, [items, search, filter]);
@@ -317,8 +271,6 @@ export function ChatList({
                 onSelect({
                   id: chat.id,
                   peer: chat.peer!,
-                  type: chat.type,
-                  course: chat.course,
                 })
               }
             />

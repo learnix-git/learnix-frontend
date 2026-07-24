@@ -36,8 +36,6 @@ export interface ChatCourseRef {
 
 export interface ChatConversation {
   id: string;
-  type: "direct" | "course";
-  course: ChatCourseRef | null;
   peer: ChatUser | null;
   lastMessageAt: string | null;
   lastMessagePreview: string | null;
