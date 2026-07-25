@@ -39,6 +39,8 @@ export interface User {
   gender: "MALE" | "FEMALE" | "OTHER";
   avatar: string | null;
   phone: string | null;
+  token: string | null;
+  expire: string | null;
   active: boolean;
   created: string;
   updated: string;
