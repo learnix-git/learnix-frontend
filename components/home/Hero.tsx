@@ -1,19 +1,19 @@
 "use client";
 
-import { ArrowUpRight, BookOpen, GraduationCap, Search as SearchIcon, SearchX, Sparkles, Users } from "lucide-react";
+import { ArrowUpRight, BookOpen, GraduationCap, Search as SearchIcon, SearchX, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
-import type { User, Classroom } from "@/lib/api/types";
+// ! Claude: bỏ import type Classroom - không còn dùng dữ liệu lớp học trong Hero nữa
+import type { User } from "@/lib/api/types";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 
 type Mode = "student" | "teacher";
-type Result =
-  | { kind: "teacher"; data: User }       
-  | { kind: "classroom"; data: Classroom };
+// ! Claude: Result trước đây là union { teacher } | { classroom } - bỏ nhánh classroom, chỉ còn teacher
+type Result = { kind: "teacher"; data: User };
 
 const DEBOUNCE = 150;
 
@@ -21,14 +21,7 @@ const SUBJECTS = [
   "TOÁN", "NGỮ VĂN", "TIẾNG ANH", "VẬT LÝ", "HÓA HỌC", "SINH HỌC", "LỊCH SỬ", "ĐỊA LÝ", "TIN HỌC"
 ];
 
-const CLASSROOMS: Classroom[] = [
-  { id: "1", name: "Toán 12",      code: "TOAN12-A", description: "Lớp ôn tập môn Toán lớp 12",      capacity: 40, active: true, created: "", updated: "", teacherRef: { name: "Nguyễn Văn A" } } as any,
-  { id: "2", name: "Ngữ văn 12",   code: "VAN12-B",  description: "Lớp ôn tập môn Ngữ văn lớp 12",   capacity: 40, active: true, created: "", updated: "", teacherRef: { name: "Trần Thị B" } } as any,
-  { id: "3", name: "Tiếng Anh 12", code: "ANH12-C",  description: "Lớp ôn tập môn Tiếng Anh lớp 12", capacity: 40, active: true, created: "", updated: "", teacherRef: { name: "Lê Văn C" } } as any,
-  { id: "4", name: "Vật lý 12",    code: "LY12-D",   description: "Lớp ôn tập môn Vật lý lớp 12",    capacity: 40, active: true, created: "", updated: "", teacherRef: { name: "Phạm Thị D" } } as any,
-  { id: "5", name: "Hóa học 12",   code: "HOA12-E",  description: "Lớp ôn tập môn Hóa học lớp 12",   capacity: 40, active: true, created: "", updated: "", teacherRef: { name: "Hoàng Văn E" } } as any,
-  { id: "6", name: "Sinh học 12",  code: "SINH12-F", description: "Lớp ôn tập môn Sinh học lớp 12",  capacity: 40, active: true, created: "", updated: "", teacherRef: { name: "Vũ Thị F" } } as any,
-];
+// ! Claude: xoá mảng mock CLASSROOMS (Classroom[]) - không còn dùng để search lớp học trong Hero
 
 const TEACHERS: User[] = [
   { id: "t1", name: "Nguyễn Văn A", email: "nguyenvana@learnix.edu.vn", role: "TEACHER", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" } as any,
@@ -65,26 +58,13 @@ export function Hero() {
 
     const keyword = debouncedQuery.toLowerCase();
 
-    if (mode === "student") {
-      const filteredClassrooms = CLASSROOMS.filter(c =>
-        c.name.toLowerCase().includes(keyword) ||
-        c.code.toLowerCase().includes(keyword) ||
-        (c.description && c.description.toLowerCase().includes(keyword))
-      ).map(data => ({ kind: "classroom", data } as Result)); 
-
-      const filteredTeachers = TEACHERS.filter(t =>
-        t.name.toLowerCase().includes(keyword) ||
-        (t.email && t.email.toLowerCase().includes(keyword))
-      ).map(data => ({ kind: "teacher", data } as Result));
-      
-      setResults([...filteredClassrooms, ...filteredTeachers]);
-    } else {
-      const filtered = TEACHERS.filter(t =>
-        t.name.toLowerCase().includes(keyword) ||
-        (t.email && t.email.toLowerCase().includes(keyword))
-      );
-      setResults(filtered.map(data => ({ kind: "teacher", data })));
-    }
+    // ! Claude: trước đây mode "student" search cả CLASSROOMS lẫn TEACHERS - đã bỏ nhánh
+    // classroom (không còn dữ liệu/loại này), cả 2 mode giờ đều search giáo viên.
+    const filtered = TEACHERS.filter(t =>
+      t.name.toLowerCase().includes(keyword) ||
+      (t.email && t.email.toLowerCase().includes(keyword))
+    );
+    setResults(filtered.map(data => ({ kind: "teacher", data })));
   }, [debouncedQuery, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,17 +72,13 @@ export function Hero() {
     const trimmed = query.trim();
     if (!trimmed) return;
     const params = new URLSearchParams({ search: trimmed });
-    const target = mode === "student" ? "/classes" : "/teachers";
-    router.push(`${target}?${params.toString()}`);
+    // ! Claude: bỏ nhánh target "/classes" cho mode student - route "/classes" không còn liên quan
+    router.push(`/teachers?${params.toString()}`);
   };
 
   const handleResultClick = (result: Result) => {
     setOpen(false);
-    if (result.kind === "teacher") {
-      router.push(`/teachers/${result.data.id}`);
-    } else {
-      router.push(`/classes/${result.data.code}`);
-    }
+    router.push(`/teachers/${result.data.id}`);
   };
 
   const showPopover = open && debouncedQuery.length > 0;
@@ -111,9 +87,9 @@ export function Hero() {
   const viewAllHref = useMemo(() => {
     const params = new URLSearchParams();
     if (debouncedQuery) params.set("search", debouncedQuery);
-    const target = mode === "student" ? "/classes" : "/teachers";
-    return `${target}?${params.toString()}`;
-  }, [debouncedQuery, mode]);
+    // ! Claude: bỏ nhánh "/classes", luôn trỏ về "/teachers"
+    return `/teachers?${params.toString()}`;
+  }, [debouncedQuery]);
 
   return (
     <section className="relative overflow-hidden w-full">
@@ -251,11 +227,8 @@ export function Hero() {
                         <ul className="space-y-1">
                           {results.map((result) => (
                             <li key={`${result.kind}-${result.data.id}`}>
-                              {result.kind === "teacher" ? (
-                                <TeacherResultRow teacher={result.data} onClick={() => handleResultClick(result)} />
-                              ) : (
-                                <ClassroomResultRow classroom={result.data} onClick={() => handleResultClick(result)} />
-                              )}
+                              {/* ! Claude: bỏ nhánh ClassroomResultRow, results giờ chỉ còn kind "teacher" */}
+                              <TeacherResultRow teacher={result.data} onClick={() => handleResultClick(result)} />
                             </li>
                           ))}
                         </ul>
@@ -320,35 +293,6 @@ function TeacherResultRow({ teacher, onClick }: { teacher: User; onClick: () => 
           <Badge variant="secondary" className="text-[10px]">Giáo viên</Badge>
         </div>
         <p className="m-0 line-clamp-1 text-[11px] sm:text-[12px] font-medium text-muted-foreground">{teacher.email}</p>
-      </div>
-    </button>
-  );
-}
-
-function ClassroomResultRow({ classroom, onClick }: { classroom: Classroom; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex w-full cursor-pointer items-start gap-2.5 sm:gap-3 rounded-2xl border border-transparent px-2.5 py-2.5 sm:px-3 text-left transition-all hover:border-primary/20 hover:bg-white/60 dark:hover:bg-white/10"
-    >
-      <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
-      </div>
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="line-clamp-1 text-[13px] sm:text-[14px] font-bold text-foreground group-hover:text-primary">
-            {classroom.name}
-          </span>
-          <Badge variant="secondary" className="text-[10px]">{classroom.code}</Badge>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-[11px] sm:text-[12px] text-muted-foreground">
-          <span className="font-semibold text-primary truncate max-w-full">Sĩ số tối đa: {classroom.capacity}</span>
-          <span className="inline-flex items-center gap-1">
-            <Users className="h-3 w-3 shrink-0" />
-            <span className="truncate">{classroom.active ? "Đang mở" : "Đã đóng"}</span>
-          </span>
-        </div>
       </div>
     </button>
   );
