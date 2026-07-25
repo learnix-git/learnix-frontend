@@ -1,15 +1,41 @@
 "use client";
 
-import { IconMail, IconLock, IconEye, IconEyeOff, IconUser, IconGenderMale, IconGenderFemale, IconGenderHermaphrodite, IconSchool, IconChalkboard} from "@tabler/icons-react";
+import { IconMail, IconLock, IconEye, IconEyeOff, IconUser, IconGenderMale, IconGenderFemale, IconGenderHermaphrodite, IconSchool, IconChalkboard, IconCalendar, IconPhone} from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
 
 import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/Popover";
+import { Calendar } from "@/components/ui/Calendar";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/stores/auth";
 import { sign } from "@/lib/auth/oauth";
+
+// ! yyyy-mm-dd (lưu trong formData) -> Date
+function parseDob(value?: string): Date | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? undefined : date;
+}
+
+// ! Date -> yyyy-mm-dd (lưu trong formData)
+function toIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// ! yyyy-mm-dd -> dd/mm/yyyy (hiển thị)
+function formatDobDisplay(value?: string): string {
+  const date = parseDob(value);
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${d}/${m}/${date.getFullYear()}`;
+}
 
 export default function SignupPage() {
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -17,6 +43,8 @@ export default function SignupPage() {
     email: "",
     role: "STUDENT",
     gender: 0,
+    dob: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -24,6 +52,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [dobOpen, setDobOpen] = useState(false);
   const register = useAuth((s) => s.register);
   const router = useRouter();
 
@@ -161,8 +190,8 @@ export default function SignupPage() {
                     inactiveClass: "border-white/40 dark:border-white/20 text-muted-foreground hover:border-primary/50",
                   },
                   {
-                    value: "TEACHER",
-                    label: "Giáo viên",
+                    value: "TUTOR",
+                    label: "Gia sư",
                     icon: <IconChalkboard size={18} />,
                     activeClass: "border-orange-500 bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 shadow-md shadow-orange-500/10",
                     inactiveClass: "border-white/40 dark:border-white/20 text-muted-foreground hover:border-purple-500/50",
@@ -236,6 +265,57 @@ export default function SignupPage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="dob" className="block text-sm font-medium text-foreground dark:text-white mb-1.5">
+                Ngày sinh
+              </label>
+              <Popover open={dobOpen} onOpenChange={setDobOpen}>
+                <PopoverTrigger
+                  type="button"
+                  id="dob"
+                  className={`relative w-full text-left ${inputClass("dob")} flex items-center`}
+                >
+                  <IconCalendar size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-white/80 z-10" />
+                  <span className={formData.dob ? "" : "text-muted-foreground/70"}>
+                    {formData.dob ? formatDobDisplay(formData.dob) : "dd/mm/yyyy"}
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-0">
+                  <Calendar
+                    mode="single"
+                    selected={parseDob(formData.dob)}
+                    defaultMonth={parseDob(formData.dob)}
+                    onSelect={(date) => {
+                      if (!date) return;
+                      updateField("dob", toIsoDate(date));
+                      setDobOpen(false);
+                    }}
+                    disabled={{ after: new Date() }}
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.dob && <p className="mt-1 text-xs text-destructive">{errors.dob}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-foreground dark:text-white mb-1.5">
+                Số điện thoại
+              </label>
+              <div className="relative">
+                <IconPhone size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-white/80 z-10" />
+                <input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone ?? ""}
+                  onChange={(e) => updateField("phone", e.target.value)}
+                  placeholder="0912345678"
+                  maxLength={12}
+                  className={inputClass("phone")}
+                />
+              </div>
+              {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
             </div>
 
             <div>

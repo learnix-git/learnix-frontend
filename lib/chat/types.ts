@@ -3,7 +3,7 @@ export interface ChatUser {
   name: string | null;
   avatar: string | null;
   alias: string | null;
-  role?: "STUDENT" | "TEACHER" | "ADMIN" | string;
+  role?: "STUDENT" | "TUTOR" | "ADMIN" | string;
 }
 
 export interface ChatAttachment {

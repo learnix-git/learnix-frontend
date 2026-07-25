@@ -25,6 +25,8 @@ export interface RegisterRequest {
   name: string;
   gender: number;
   role?: "STUDENT" | "TUTOR";
+  dob?: string;
+  phone?: string;
 }
 
 export interface User {

@@ -6,9 +6,8 @@ import { jwtDecode } from 'jwt-decode';
 
 // TODO: Làm xong nhớ kiểm tra lại
 
-const TEACHER_ROUTES = [
-  '/post-classrooms',  
-  '/dashboard-teacher'    
+const TUTOR_ROUTES = [ 
+  '/dashboard-tutor'    
 ];
 
 const STUDENT_ROUTES = [
@@ -19,11 +18,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Kiểm tra đường dẫn
-  const isTeacherRoute = TEACHER_ROUTES.some((route) => pathname.startsWith(route));
+  const isTutorRoute = TUTOR_ROUTES.some((route) => pathname.startsWith(route));
   const isStudentRoute = STUDENT_ROUTES.some((route) => pathname.startsWith(route));
 
   // Đường dẫn công khai thì cho qua
-  if (!isTeacherRoute && !isStudentRoute) {
+  if (!isTutorRoute && !isStudentRoute) {
     return NextResponse.next();
   }
 
@@ -40,7 +39,7 @@ export function middleware(request: NextRequest) {
     const decoded: any = jwtDecode(token);
     const userRole = decoded.role; 
 
-    if (isTeacherRoute && userRole !== 'TEACHER') {
+    if (isTutorRoute && userRole !== 'TUTOR') {
       return NextResponse.redirect(new URL('/', request.url));
     }
 

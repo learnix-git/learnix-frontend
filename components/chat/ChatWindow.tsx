@@ -180,7 +180,7 @@ export function ChatWindow({
   
   const { socketStatus, socketError } = useChatStatus();
 
-  const profileUrl = peer.role === "TEACHER" ? `/teachers/${peer.id}` : null;
+  const profileUrl = peer.role === "TUTOR" ? `/teachers/${peer.id}` : null;
 
   // Trạng thái nhập tin nhắn
   const [text, setText] = useState("");
