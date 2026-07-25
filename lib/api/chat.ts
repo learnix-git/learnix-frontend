@@ -7,8 +7,10 @@ import type {
   ChatUser,
 } from "@/lib/chat/types";
 
+// Dữ liệu tạo hoặc cập nhật cuộc trò chuyện
 export type UpsertConversation = { peerId: string };
 
+// Kiểu dữ liệu người dùng từ API
 type ChatUserDTO = {
   id?: unknown;
   name?: unknown;
@@ -16,6 +18,7 @@ type ChatUserDTO = {
   alias?: unknown;
 };
 
+// Kiểu dữ liệu cuộc trò chuyện từ API
 type ChatConversationDTO = {
   id?: unknown;
   peer?: unknown;
@@ -24,28 +27,36 @@ type ChatConversationDTO = {
   unreadCount?: unknown;
 };
 
+// Chuyển dữ liệu sang kiểu number
 function ConvertToNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
+
   if (typeof value === "string" && value.trim() !== "") {
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
   }
+
   return null;
 }
 
+// Chuyển dữ liệu sang kiểu string
 function ConvertToString(value: unknown): string | null {
   if (typeof value === "string") return value;
   if (value == null) return null;
+
   return String(value);
 }
 
+// Chuẩn hóa thông tin người dùng
 function NormalizePeer(raw: unknown): ChatUser | null {
   if (!raw || typeof raw !== "object") return null;
+
   const r = raw as ChatUserDTO;
-  
-  const id = ConvertToString(r.id); 
+
+  const id = ConvertToString(r.id);
+
   if (!id) return null;
-  
+
   return {
     id,
     name: ConvertToString(r.name) ?? "Người dùng",
@@ -54,11 +65,16 @@ function NormalizePeer(raw: unknown): ChatUser | null {
   };
 }
 
-export function NormalizeConversation(raw: unknown): ChatConversation | null {
+// Chuẩn hóa dữ liệu cuộc trò chuyện
+export function NormalizeConversation(
+  raw: unknown,
+): ChatConversation | null {
   if (!raw || typeof raw !== "object") return null;
+
   const r = raw as ChatConversationDTO;
 
   const id = ConvertToString(r.id);
+
   if (!id) return null;
 
   return {
@@ -70,59 +86,85 @@ export function NormalizeConversation(raw: unknown): ChatConversation | null {
   };
 }
 
+// API xử lý chức năng chat
 export const ChatAPI = {
-  // ! Hàm tạo cuộc trò chuyện hoặc cập nhật cuộc trò chuyện
+  // Tạo hoặc cập nhật cuộc trò chuyện
   UpsertConversation: async (
-    input: UpsertConversation
+    input: UpsertConversation,
   ): Promise<ApiResponse<ChatConversation>> => {
     const r = await client.post("/chat/upsert", input);
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
-      data: NormalizeConversation(raw.conversation ?? raw) as ChatConversation,
+      data: NormalizeConversation(
+        raw.conversation ?? raw,
+      ) as ChatConversation,
     };
   },
 
-  // ! Hàm lấy danh sách cuộc trò chuyện
-  FilterConversation: async (): Promise<ApiResponse<{ total: number; items: ChatConversation[] }>> => {
+  // Lấy danh sách cuộc trò chuyện
+  FilterConversation: async (): Promise<
+    ApiResponse<{ total: number; items: ChatConversation[] }>
+  > => {
     const r = await client.post("/chat/list", {});
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     const items = Array.isArray(raw.items)
-      ? raw.items.map(NormalizeConversation).filter((c): c is ChatConversation => c !== null)
+      ? raw.items
+          .map(NormalizeConversation)
+          .filter((c): c is ChatConversation => c !== null)
       : [];
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
-      data: { total: Number(raw.total ?? items.length), items },
+      data: {
+        total: Number(raw.total ?? items.length),
+        items,
+      },
     };
   },
 
-  // ! Hàm nhận tin nhắn
+  // Lấy danh sách tin nhắn
   RecvMessage: async (
     page = 1,
     limit = 30,
     conversationId: string,
   ): Promise<ApiResponse<{ total: number; items: ChatMessage[] }>> => {
-    const r = await client.post("/chat/messages", { conversationId, page, limit });
+    const r = await client.post("/chat/messages", {
+      conversationId,
+      page,
+      limit,
+    });
+
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
       data: {
         total: Number(raw.total ?? 0),
-        items: Array.isArray(raw.items) ? (raw.items as ChatMessage[]) : [],
+        items: Array.isArray(raw.items)
+          ? (raw.items as ChatMessage[])
+          : [],
       },
     };
   },
 
-  // ! Hàm gửi tin nhắn
+  // Gửi tin nhắn
   SendMessage: async (
     conversationId: string,
-    payload: MessagePayload
+    payload: MessagePayload,
   ): Promise<ApiResponse<ChatMessage>> => {
-    const r = await client.post("/chat/send", { conversationId, ...payload });
+    const r = await client.post("/chat/send", {
+      conversationId,
+      ...payload,
+    });
+
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
@@ -130,13 +172,18 @@ export const ChatAPI = {
     };
   },
 
-  // ! Hàm đánh dấu là đã đọc
+    // Đánh dấu tin nhắn đã đọc
   MarkAsRead: async (
-    conversationId: string, 
-    messageId: string 
+    conversationId: string,
+    messageId: string,
   ): Promise<ApiResponse<{ updated: number; messageId: string }>> => {
-    const r = await client.post("/chat/read", { conversationId, messageId });
+    const r = await client.post("/chat/read", {
+      conversationId,
+      messageId,
+    });
+
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
@@ -147,13 +194,18 @@ export const ChatAPI = {
     };
   },
 
-  // ! Hàm kiểm tra đang gõ
+  // Cập nhật trạng thái đang nhập
   CheckTyping: async (
     conversationId: string,
-    typing: boolean
+    typing: boolean,
   ): Promise<ApiResponse<{ conversationId: string; typing: boolean }>> => {
-    const r = await client.post("/chat/typing", { conversationId, typing });
+    const r = await client.post("/chat/typing", {
+      conversationId,
+      typing,
+    });
+
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
@@ -164,41 +216,61 @@ export const ChatAPI = {
     };
   },
 
-  // ! Hàm kiểm tra trạng thái hoạt động
+  // Kiểm tra người dùng đang trực tuyến
   CheckOnline: async (
-    userIds: string[]
+    userIds: string[],
   ): Promise<ApiResponse<{ online: string[] }>> => {
     const cleaned = Array.from(
       new Set(
-        (userIds ?? []).map((id) => String(id)).filter((id) => id.trim() !== "")
-      )
+        (userIds ?? [])
+          .map((id) => String(id))
+          .filter((id) => id.trim() !== ""),
+      ),
     ).slice(0, 200);
 
+    // Trả về rỗng nếu không có user cần kiểm tra
     if (cleaned.length === 0) {
-      return { code: 200, message: "", data: { online: [] } };
+      return {
+        code: 200,
+        message: "",
+        data: { online: [] },
+      };
     }
 
     try {
-      const r = await client.post("/chat/online", { userIds: cleaned });
+      // Gọi API kiểm tra trạng thái online
+      const r = await client.post("/chat/online", {
+        userIds: cleaned,
+      });
+
       const raw = (r.data ?? {}) as Record<string, unknown>;
+
       return {
         code: typeof raw.code === "number" ? raw.code : 0,
         message: typeof raw.message === "string" ? raw.message : "",
         data: {
-          online: Array.isArray(raw.online) ? (raw.online as string[]) : [],
+          online: Array.isArray(raw.online)
+            ? (raw.online as string[])
+            : [],
         },
       };
     } catch (err) {
-      console.warn("[chat] checkOnline error:", err);
-      return { code: 0, message: String(err), data: { online: [] } };
+      // Trả về danh sách rỗng khi API lỗi
+      console.warn(err);
+
+      return {
+        code: 0,
+        message: String(err),
+        data: { online: [] },
+      };
     }
   },
 
-  // ! Hàm tải lên file
+  // Tải lên tệp đính kèm
   UploadFile: async (
-    conversationId: string, 
+    conversationId: string,
     file: File,
-    onProgress?: (pct: number) => void
+    onProgress?: (pct: number) => void,
   ): Promise<
     ApiResponse<{
       attachmentId: string;
@@ -210,14 +282,22 @@ export const ChatAPI = {
     }>
   > => {
     const fd = new FormData();
+
     fd.append("conversationId", conversationId);
     fd.append("file", file);
+
     const r = await client.post("/chat/upload", fd, {
       onUploadProgress: (e) => {
-        if (e.total) onProgress?.(Math.round((e.loaded * 100) / e.total));
+        if (e.total) {
+          onProgress?.(
+            Math.round((e.loaded * 100) / e.total),
+          );
+        }
       },
     });
+
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
@@ -232,15 +312,21 @@ export const ChatAPI = {
     };
   },
 
-  // ! Hàm đếm tin nhắn chưa đọc
+  // Lấy số lượng tin nhắn chưa đọc
   CountUnread: async (): Promise<
     ApiResponse<{
       total: number;
-      items: { conversationId: string; count: number; latestAt: string }[];
+      items: {
+        conversationId: string;
+        count: number;
+        latestAt: string;
+      }[];
     }>
   > => {
     const r = await client.post("/chat/unread-count", {});
+
     const raw = (r.data ?? {}) as Record<string, unknown>;
+
     return {
       code: typeof raw.code === "number" ? raw.code : 0,
       message: typeof raw.message === "string" ? raw.message : "",
@@ -249,14 +335,14 @@ export const ChatAPI = {
         items: Array.isArray(raw.items)
           ? raw.items.map((item: unknown) => {
               const i = item as Record<string, unknown>;
+
               return {
                 conversationId: String(i.conversationId ?? ""),
                 count: Number(i.count ?? 0),
                 latestAt: String(i.latestAt ?? ""),
               };
             })
-          : 
-        [],
+          : [],
       },
     };
   },

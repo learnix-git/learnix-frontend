@@ -1,21 +1,12 @@
 import client from "./client";
-import type { ApiResponse } from "./types";
-import type { NotificationItem } from "@/lib/notifications/types";
-
-export interface NotificationListResponse extends ApiResponse<NotificationItem[]> {
-  unreadCount: number;
-}
-
-export interface NotificationActionResponse extends ApiResponse<unknown> {
-  updated: number;
-}
-
-export interface NotificationListParams {
-  page?: number | undefined;
-  limit?: number | undefined;
-}
+import type { 
+  NotificationActionResponse, 
+  NotificationListParams, 
+  NotificationListResponse 
+} from "@/lib/notifications/types";
 
 export const NotificationAPI = {
+  // POST api/v1/notifications
   list: async (
     params: NotificationListParams = {},
   ): Promise<NotificationListResponse> => {
@@ -26,6 +17,7 @@ export const NotificationAPI = {
     return res.data;
   },
 
+  // POST api/v1/notifications/read
   read: async (id: string): Promise<NotificationActionResponse> => {
     const res = await client.post<NotificationActionResponse>("/notifications/read", {
       id,
@@ -33,14 +25,7 @@ export const NotificationAPI = {
     return res.data;
   },
 
-  readGroup: async (groupKey: string): Promise<NotificationActionResponse> => {
-    const res = await client.post<NotificationActionResponse>(
-      "/notifications/read-group",
-      { groupKey },
-    );
-    return res.data;
-  },
-
+  // POST api/v1/notifications/read-all
   readAll: async (): Promise<NotificationActionResponse> => {
     const res = await client.post<NotificationActionResponse>(
       "/notifications/read-all",

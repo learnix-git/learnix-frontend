@@ -18,17 +18,17 @@ import { useChatStore } from "@/lib/stores/chat";
 import { CheckMessage, NormalizeMessage } from "@/lib/chat/normalize";
 import { useNotifications } from "@/lib/stores/notifications";
 import {
-  isSocketNotificationNew,
-  normalizeSocketNotification,
+  CheckSocketNotification,
+  NormalizeSocketNotification,
 } from "@/lib/notifications/normalize";
-import { emitInvalidate } from "@/lib/notifications/invalidate-bus";
+import { Emit } from "@/lib/notifications/invalidate-bus";
 import { toast } from "sonner";
 
 const OFFLINE_GRACE_MS = 10_000;
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   // Token của người dùng
-  const userToken = useAuth((state) => state.user?.token ?? null);
+  const userToken = GetToken();
   const logout = useAuth((state) => state.logout);
   const setOne = usePresenceStore((state) => state.setOne);
   const router = useRouter();
@@ -127,16 +127,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       // Xử lý thông báo mới
       const OnNewNotification = (raw: unknown) => {
-        if (!isSocketNotificationNew(raw)) {
+        if (!CheckSocketNotification(raw)) {
           console.warn("[chat] invalid notification:new payload", raw);
           return;
         }
-        const payload = normalizeSocketNotification(raw);
+        const payload = NormalizeSocketNotification(raw);
         if (!payload) return;
 
         void useNotifications.getState().forceRefresh();
 
-        emitInvalidate(payload);
+        Emit(payload);
 
         if (payload.title) {
           toast.info(payload.title, {

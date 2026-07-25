@@ -9,8 +9,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 import { useNotificationActions } from "@/hooks/notifications/useNotificationActions";
-import { resolveNotificationRoute } from "@/lib/notifications/router";
-import { formatTimeAgo } from "@/lib/notifications/format";
+import { ResolveNotificationRoute } from "@/lib/notifications/router";
+import { FormatDate } from "@/lib/notifications/format";
 import { useNotifications } from "@/lib/stores/notifications";
 import { IsGoogleUser, LOGIN_PATH } from "@/lib/auth/session";
 import { useChatStore } from "@/lib/stores/chat";
@@ -39,6 +39,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
+import { formatDate } from "date-fns";
 
 function NotificationBell() {
   const router = useRouter();
@@ -58,18 +59,18 @@ function NotificationBell() {
   }, [isAuthed, initialized, loading, fetchList]);
 
   const preview = useMemo(() => {
-    const unread = items.filter((n) => !n.isRead).slice(0, 5);
+    const unread = items.filter((n) => !n.read).slice(0, 5);
     if (unread.length === 5) return unread;
-    const fill = items.filter((n) => n.isRead).slice(0, 5 - unread.length);
+    const fill = items.filter((n) => n.read).slice(0, 5 - unread.length);
     return [...unread, ...fill];
   }, [items]);
 
   const { open: openNotification } = useNotificationActions();
 
   const handleItemClick = async (n: (typeof items)[number]) => {
-    if (n.isRead) {
-      const route = resolveNotificationRoute(n);
-      if (route?.href && route.href !== pathname) router.push(route.href);
+    if (n.read) {
+      const route = ResolveNotificationRoute(n);
+      if (route && route !== pathname) router.push(route);
       return;
     }
     await openNotification(n);
@@ -125,18 +126,18 @@ function NotificationBell() {
           ) : preview.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">Không có thông báo nào</div>
           ) : (
-            preview.map((n, index) => (
+            preview.map((n) => (
               <button
                 type="button"
-                key={n.groupKey || `notif-${index}`}
+                key={n.id}
                 onClick={() => handleItemClick(n)}
-                className={`group flex w-full gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer text-left border-none bg-transparent ${!n.isRead ? "bg-primary/5" : ""}`}
+                className={`group flex w-full gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer text-left border-none bg-transparent ${!n.read ? "bg-primary/5" : ""}`}
               >
-                <span className={Cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", !n.isRead ? "bg-primary animate-pulse" : "bg-transparent")} />
+                <span className={Cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", !n.read ? "bg-primary animate-pulse" : "bg-transparent")} />
                 <div className="min-w-0 flex-1">
-                  <p className={Cn("text-sm truncate m-0", !n.isRead ? "font-bold text-foreground" : "font-medium text-muted-foreground")}>{n.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 m-0">{n.summary || n.content}</p>
-                  <p className="mt-1 text-[10px] text-muted-foreground/80 font-semibold m-0">{formatTimeAgo(n.latestAt)}</p>
+                  <p className={Cn("text-sm truncate m-0", !n.read ? "font-bold text-foreground" : "font-medium text-muted-foreground")}>{n.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 m-0">{n.content}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground/80 font-semibold m-0">{FormatDate(n.created)}</p>
                 </div>
               </button>
             ))

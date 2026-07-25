@@ -24,16 +24,6 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-export interface ChatCourseRef {
-  id: string;
-  code: string | null;
-  name: string | null;
-  slug?: string | null;
-  grade?: string | null;
-  thumbnail: string | null;
-  price: number | null;
-}
-
 export interface ChatConversation {
   id: string;
   peer: ChatUser | null;
