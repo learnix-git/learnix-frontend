@@ -37,6 +37,25 @@ function Calendar({
         caption_label:
           "text-sm font-semibold",
 
+        // ! Dropdown chọn tháng/năm (khi dùng captionLayout="dropdown")
+        caption_dropdowns:
+          "flex items-center gap-1.5",
+
+        vhidden:
+          "hidden",
+
+        dropdown:
+          "cursor-pointer rounded-lg border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 px-2 py-1 text-sm font-semibold text-foreground dark:text-white outline-none appearance-none",
+
+        dropdown_month:
+          "relative",
+
+        dropdown_year:
+          "relative",
+
+        dropdown_icon:
+          "hidden",
+
         // ! Điều hướng tháng
         nav:
           "flex items-center",
