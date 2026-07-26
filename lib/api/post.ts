@@ -1,0 +1,44 @@
+import client from "./client";
+import type {
+  ApiResponse,
+  Post,
+  CreatePostRequest,
+  UpdatePostRequest,
+  PostListParams,
+  PostListResponse,
+} from "./types";
+
+// GET /posts
+export async function getPosts(
+  params?: PostListParams
+): Promise<ApiResponse<PostListResponse>> {
+  const res = await client.get<ApiResponse<PostListResponse>>("/posts", { params });
+  return res.data;
+}
+
+// GET /posts/:id 
+export async function getPost(id: string): Promise<ApiResponse<Post>> {
+  const res = await client.get<ApiResponse<Post>>(`/posts/${id}`);
+  return res.data;
+}
+
+// POST /posts
+export async function createPost(data: CreatePostRequest): Promise<ApiResponse<Post>> {
+  const res = await client.post<ApiResponse<Post>>("/posts", data);
+  return res.data;
+}
+
+// PATCH /posts/:id 
+export async function updatePost(
+  id: string,
+  data: UpdatePostRequest
+): Promise<ApiResponse<Post>> {
+  const res = await client.patch<ApiResponse<Post>>(`/posts/${id}`, data);
+  return res.data;
+}
+
+// DELETE /posts/:id 
+export async function deletePost(id: string): Promise<ApiResponse<null>> {
+  const res = await client.delete<ApiResponse<null>>(`/posts/${id}`);
+  return res.data;
+}

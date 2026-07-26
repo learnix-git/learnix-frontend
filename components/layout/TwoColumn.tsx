@@ -8,7 +8,7 @@ interface BreadcrumbItem {
   href: string;
 }
 
-interface TwoColumnLayoutProps {
+interface TwoColumnProps {
   title?: string;
   description?: string;
   breadcrumb?: BreadcrumbItem[];
@@ -18,7 +18,7 @@ interface TwoColumnLayoutProps {
   containerClassName?: string;
 }
 
-export function TwoColumnLayout({
+export function TwoColumn({
   title,
   description,
   breadcrumb,
@@ -26,7 +26,7 @@ export function TwoColumnLayout({
   sidebar,
   extraHeader,
   containerClassName = "",
-}: TwoColumnLayoutProps) {
+}: TwoColumnProps) {
   return (
     <div className="min-h-screen bg-transparent pb-24">
       {/* ═══ BREADCRUMB ═══ */}
