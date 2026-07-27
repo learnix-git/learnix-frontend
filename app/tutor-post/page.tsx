@@ -11,6 +11,7 @@ import { Subject, Slot, CreatePostRequest, PostTime, Level, Mode, Venue, Unit } 
 import { TwoColumn } from "@/components/layout/TwoColumn";
 import { Card } from "@/components/ui/Card";
 import { Cn } from "@/lib/utils";
+import { validatePostForm } from "@/lib/validations/post";
 import {
   Select,
   SelectContent,
@@ -405,79 +406,14 @@ export default function TutorPostPage() {
     handleUpdate("ward", ward ? ward.name : "");
   };
 
-  // Hàm kiểm tra tính hợp lệ của toàn bộ form trước khi submit
+  // Hàm kiểm tra tính hợp lệ của toàn bộ form, dùng validatePostForm từ lib/validations/post.ts
   const validateForm = () => {
-    const next: Partial<Record<keyof PostFormData, string>> = {};
-
-    // Kiểm tra tiêu đề
-    if (!form.title.trim()) {
-      next.title = "Vui lòng nhập tiêu đề bài đăng.";
-    } else if (form.title.length > 150) {
-      next.title = "Tiêu đề tối đa 150 ký tự.";
-    }
-
-    // Kiểm tra nội dung mô tả
-    if (!form.content.trim()) {
-      next.content = "Vui lòng mô tả nội dung dạy.";
-    } else if (form.content.length > 5000) {
-      next.content = "Nội dung tối đa 5000 ký tự.";
-    }
-
-    // Kiểm tra danh sách môn học
-    if (form.topics.length === 0) {
-      next.topics = "Chọn hoặc thêm ít nhất 1 môn dạy.";
-    }
-
-    // Kiểm tra khối lớp
-    if (form.grades.length === 0) {
-      next.grades = "Vui lòng chọn ít nhất 1 khối lớp.";
-    }
-
-    // Kiểm tra địa chỉ dạy nếu hình thức là Offline và dạy tại nhà gia sư
-    if (form.mode === "OFFLINE" && form.venue === "TUTOR" && !form.city.trim()) {
-      next.city = "Nhập khu vực dạy khi chọn hình thức Offline.";
-    }
-
-    // Kiểm tra học phí tối thiểu
-    if (!form.from || form.from < 1000) {
-      next.from = "Học phí tối thiểu từ 1.000đ.";
-    }
-
-    // Kiểm tra học phí tối đa
-    if (!form.to || form.to < 1000) {
-      next.to = "Học phí tối đa từ 1.000đ.";
-    }
-
-    // Kiểm tra học phí tối thiểu và tối đa có hợp lệ không
-    if (form.from && form.to && form.from > form.to) {
-      next.to = "Học phí tối đa phải lớn hơn hoặc bằng tối thiểu.";
-    }
-
-    // Kiểm tra lịch dạy nếu không phải là lịch thỏa thuận
-    if (!form.flexible && !form.slot) {
-      next.slot = "Vui lòng chọn buổi học.";
-    }
-
-    // Kiểm tra ngày dạy nếu không phải là lịch thỏa thuận
-    if (!form.flexible && form.days.length === 0) {
-      next.days = "Vui lòng chọn ít nhất 1 ngày dạy trong tuần.";
-    }
-
-    // Kiểm tra giờ bắt đầu và kết thúc nếu không phải là lịch thỏa thuận
-    if (!form.flexible && (!form.startTime || !form.endTime || form.startTime >= form.endTime)) {
-      next.endTime = "Giờ kết thúc phải lớn hơn giờ bắt đầu.";
-    }
-
-    // Cập nhật trạng thái lỗi
+    const next = validatePostForm(form);
     setErrors(next);
-
-    // Nếu có lỗi, tự động cuộn trang đến trường bị lỗi đầu tiên
     const firstKey = Object.keys(next)[0];
     if (firstKey) {
       setTimeout(() => document.getElementById(firstKey)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     }
-
-    // Trả về true nếu không có lỗi nào
     return Object.keys(next).length === 0;
   };
 

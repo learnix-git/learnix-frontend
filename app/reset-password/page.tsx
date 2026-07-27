@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LOGIN_PATH } from "@/lib/auth/session";
@@ -153,11 +154,9 @@ export default function ResetPasswordPage() {
         <div className="absolute -top-1/2 -right-[10%] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(59,130,246,0.15)_0%,transparent_70%)] rounded-full pointer-events-none" />
         <div className="absolute -bottom-1/3 -left-[10%] w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(34,211,238,0.1)_0%,transparent_70%)] rounded-full pointer-events-none" />
         <div className="relative z-10 max-w-lg w-full text-center">
-          <img
-            src="/images/auth/reset-password-illustration.svg"
-            alt="Minh họa bảo mật tài khoản Learnix"
-            className="w-full max-w-sm mx-auto mb-8"
-          />
+          <div className="relative w-full max-w-sm mx-auto h-64 mb-8">
+            <Image src="/images/reset-password-illustration.svg" alt="Minh họa bảo mật tài khoản Learnix" fill className="object-contain" />
+          </div>
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
               <svg className="h-6 w-6 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

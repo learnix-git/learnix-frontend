@@ -3,6 +3,7 @@
 import { IconMail, IconLock, IconEye, IconEyeOff, IconUser, IconGenderMale, IconGenderFemale, IconGenderHermaphrodite, IconSchool, IconChalkboard, IconCalendar, IconPhone} from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -102,11 +103,9 @@ export default function SignupPage() {
         <div className="absolute -bottom-1/3 -left-[10%] w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(59,130,246,0.1)_0%,transparent_70%)] rounded-full animate-blob pointer-events-none" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-[radial-gradient(circle,rgba(236,72,153,0.08)_0%,transparent_70%)] rounded-full animate-blob pointer-events-none" style={{ animationDelay: "2s" }} />
         <div className="relative z-10 max-w-lg w-full text-center">
-          <img
-            src="/images/auth/signup-illustration.svg"
-            alt="Learnix Teaching & Learning Platform"
-            className="w-full max-w-sm mx-auto mb-8"
-          />
+          <div className="relative w-full max-w-sm mx-auto mb-8 aspect-[4/3]">
+             <Image src="/images/signup-illustration.svg" alt="Signup Illustration" fill className="object-contain" />
+          </div>
           <h2 className="text-xl font-bold text-foreground dark:text-white mb-2">Gia nhập cộng đồng dạy & học Learnix</h2>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">
             Nền tảng trực tuyến kết nối hàng ngàn giáo viên và học sinh. Khởi tạo lớp học của bạn hoặc tham gia học tập ngay hôm nay.

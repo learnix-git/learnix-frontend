@@ -15,7 +15,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface LoginRequest {
-  email: string; 
+  email: string;
   password: string;
 }
 
@@ -60,7 +60,7 @@ export interface Subject {
   slug: string;
 }
 
-/// !==========================================
+// !==========================================
 // ! POST
 // !==========================================
 
@@ -161,4 +161,56 @@ export interface PostListResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface CreateRequestRequest {
+  topics: { subject?: string; custom?: string }[];
+  title: string;
+  desc: string;
+  level?: Level;
+  grades: number[];
+  mode: Mode;
+  city?: string;
+  ward?: string;
+  street?: string;
+  lat?: number;
+  lng?: number;
+  from: number;
+  to: number;
+  unit: Unit;
+  count?: number;
+  venue?: Venue;
+  flexible?: boolean;
+  days?: number[];
+  slot?: Slot;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface RequestModel {
+  id: string;
+  learner: string;
+  topics: {
+    id: string;
+    subject: { name: string; slug: string } | null;
+    custom: string | null;
+  }[];
+  title: string;
+  desc: string;
+  level: Level;
+  grades: number[];
+  mode: Mode;
+  city: string | null;
+  ward: string | null;
+  street: string | null;
+  lat: number | null;
+  lng: number | null;
+  from: string | number;
+  to: string | number;
+  unit: Unit;
+  count: number;
+  schedule: string | null;
+  status: string;
+  created: string;
+  updated: string;
 }

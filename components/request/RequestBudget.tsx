@@ -1,9 +1,8 @@
 import React from "react";
-import { Banknote, Clock, Hourglass } from "lucide-react";
+import { Banknote, Clock } from "lucide-react";
 import { Cn } from "@/lib/utils";
 import { Unit } from "@/lib/api/types";
-import { PostFormData } from "@/app/tutor-post/page";
-import { GetInputCls, FieldError } from "@/app/tutor-post/page";
+import { RequestFormData, GetInputCls, FieldError } from "@/app/client-post/page";
 import {
   Select,
   SelectContent,
@@ -12,30 +11,20 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 
-// Danh sách các lựa chọn thời lượng buổi học
-const DURATIONS = [
-  { value: 1, label: "1 giờ (60 phút)" },
-  { value: 1.5, label: "1.5 giờ (90 phút)" },
-  { value: 2, label: "2 giờ (120 phút)" },
-  { value: 2.5, label: "2.5 giờ (150 phút)" },
-  { value: 3, label: "3 giờ (180 phút)" },
-  { value: 0, label: "Thỏa thuận" },
-];
-
-interface PostPriceProps {
-  form: PostFormData;
-  errors: Partial<Record<keyof PostFormData, string>>;
-  handleUpdate: <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => void;
+interface RequestBudgetProps {
+  form: RequestFormData;
+  errors: Partial<Record<keyof RequestFormData, string>>;
+  handleUpdate: <K extends keyof RequestFormData>(field: K, value: RequestFormData[K]) => void;
 }
 
-export function PostPrice({ form, errors, handleUpdate }: PostPriceProps) {
+export function RequestBudget({ form, errors, handleUpdate }: RequestBudgetProps) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Nhập học phí tối thiểu */}
+        {/* Nhập mức giá tối thiểu */}
         <div id="from">
           <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-            <Banknote className="h-3.5 w-3.5 text-primary" /> Học phí tối thiểu <span className="text-rose-500">*</span>
+            <Banknote className="h-3.5 w-3.5 text-primary" /> Mức giá tối thiểu <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -52,10 +41,10 @@ export function PostPrice({ form, errors, handleUpdate }: PostPriceProps) {
           <FieldError message={errors.from} />
         </div>
 
-        {/* Nhập học phí tối đa */}
+        {/* Nhập mức giá tối đa */}
         <div id="to">
           <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-            <Banknote className="h-3.5 w-3.5 text-primary" /> Học phí tối đa <span className="text-rose-500">*</span>
+            <Banknote className="h-3.5 w-3.5 text-primary" /> Mức giá tối đa <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -73,8 +62,8 @@ export function PostPrice({ form, errors, handleUpdate }: PostPriceProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-        {/* Chọn đơn vị tính học phí */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+        {/* Chọn đơn vị tính */}
         <div id="unit">
           <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5 text-primary" /> Đơn vị tính <span className="text-rose-500">*</span>
@@ -97,30 +86,31 @@ export function PostPrice({ form, errors, handleUpdate }: PostPriceProps) {
           </Select>
         </div>
 
-        {/* Chọn thời lượng chỉ hiện khi chọn tính theo buổi */}
-        {form.unit === "PER_SESSION" && (
-          <div id="duration" className="animate-in fade-in zoom-in-95 duration-200">
-            <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Hourglass className="h-3.5 w-3.5 text-primary" /> Thời lượng
-            </label>
-            <Select
-              value={form.duration.toString()}
-              onValueChange={(v) => handleUpdate("duration", parseFloat(v || "0"))}
-              items={DURATIONS.map((d) => ({ value: d.value.toString(), label: d.label }))}
+        {/* Số buổi/tuần */}
+        <div id="count">
+          <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            Số buổi học / tuần
+          </label>
+          <div className="flex items-center gap-3 h-12">
+            <button
+              type="button"
+              onClick={() => handleUpdate("count", Math.max(1, form.count - 1))}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 hover:bg-white/40 dark:hover:bg-white/10 font-bold text-lg transition-all"
             >
-              <SelectTrigger className="w-full h-12 rounded-2xl border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3">
-                <SelectValue placeholder="Chọn thời lượng buổi học" />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl border border-white/50 dark:border-white/10 bg-white/80 dark:bg-slate-900/80">
-                {DURATIONS.map((d) => (
-                  <SelectItem key={d.value} value={d.value.toString()}>
-                    {d.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              −
+            </button>
+            <div className="flex-1 h-12 flex items-center justify-center rounded-2xl border border-primary/30 bg-primary/5 text-primary font-bold text-base">
+              {form.count} <span className="text-[13px] font-medium ml-1.5 text-muted-foreground">buổi</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUpdate("count", Math.min(14, form.count + 1))}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 hover:bg-white/40 dark:hover:bg-white/10 font-bold text-lg transition-all"
+            >
+              +
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </>
   );

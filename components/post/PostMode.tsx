@@ -74,7 +74,7 @@ export function PostMode({
 }: PostModeProps) {
   return (
     <>
-      {/* Chọn hình thức dạy (Online/Offline) */}
+      {/* Chọn hình thức dạy Online hay Offline */}
       <div id="mode">
         <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-3">
           Bạn nhận dạy <span className="text-rose-500">*</span>

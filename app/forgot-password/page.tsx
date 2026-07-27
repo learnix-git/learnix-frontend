@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -87,11 +88,9 @@ export default function ForgotPasswordPage() {
         <div className="absolute -bottom-1/3 -left-[10%] w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(34,211,238,0.1)_0%,transparent_70%)] rounded-full animate-blob pointer-events-none" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-[radial-gradient(circle,rgba(14,165,233,0.08)_0%,transparent_70%)] rounded-full animate-blob pointer-events-none" style={{ animationDelay: "2s" }} />
         <div className="relative z-10 max-w-lg w-full text-center">
-          <img
-            src="/images/auth/forgot-password-illustration.svg"
-            alt="Minh họa khôi phục mật khẩu Learnix"
-            className="w-full max-w-sm mx-auto mb-8"
-          />
+          <div className="relative w-full max-w-sm mx-auto mb-8 aspect-square">
+            <Image src="/images/forgot-password-illustration.svg" alt="Minh họa khôi phục mật khẩu Learnix" fill className="object-contain" />
+          </div>
           <h2 className="text-xl font-bold text-foreground dark:text-white mb-2">Khôi phục mật khẩu</h2>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">
             Đừng lo lắng, chúng tôi sẽ gửi link đặt lại mật khẩu đến email của bạn.

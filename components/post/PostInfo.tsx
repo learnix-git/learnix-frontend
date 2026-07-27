@@ -67,7 +67,7 @@ export function PostInfo({
         {/* Khung chứa các môn đã chọn và ô tìm kiếm */}
         <div className={Cn("min-h-[52px] p-2.5 rounded-2xl border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 transition-all duration-300 mb-3 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary", errors.topics && "border-rose-500/50")}>
           <div className="flex flex-wrap items-center gap-2">
-            
+
             {/* Hiển thị các môn đã chọn */}
             {form.topics.map((t: TopicEntry) => (
               <div
@@ -84,7 +84,7 @@ export function PostInfo({
               </div>
             ))}
 
-            {/* Ô input tìm kiếm (chỉ hiện khi chưa có môn nào, có thể chỉnh sửa lại logic này nếu muốn) */}
+            {/* Ô input tìm kiếm chỉ hiện khi chưa có môn nào */}
             {form.topics.length === 0 && (
               <input
                 type="text"
@@ -148,17 +148,17 @@ export function PostInfo({
         <FieldError message={errors.topics} />
       </div>
 
-      {/* Phần chọn khối lớp (chia thành 3 cấp) */}
+      {/* Phần chọn khối lớp chia thành 3 cấp */}
       <div className="space-y-6">
         <div id="grades">
           <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
             Khối lớp <span className="text-rose-500">*</span>
           </label>
           <div className="flex flex-col gap-5">
-            
+
             {/* Khối Cấp 1 */}
             <div className="space-y-2">
-              <p className="text-[13px] font-bold text-muted-foreground flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Cấp 1 (Tiểu học)</p>
+              <p className="text-[13px] font-bold text-muted-foreground flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Tiểu học</p>
               <div className="flex flex-wrap gap-2">
                 {[1, 2, 3, 4, 5].map((g) => {
                   const isSelected = form.grades.includes(g);
@@ -180,10 +180,10 @@ export function PostInfo({
                 })}
               </div>
             </div>
-            
+
             {/* Khối Cấp 2 */}
             <div className="space-y-2">
-              <p className="text-[13px] font-bold text-muted-foreground flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Cấp 2 (THCS)</p>
+              <p className="text-[13px] font-bold text-muted-foreground flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Trung học cơ sở</p>
               <div className="flex flex-wrap gap-2">
                 {[6, 7, 8, 9].map((g) => {
                   const isSelected = form.grades.includes(g);
@@ -208,7 +208,7 @@ export function PostInfo({
 
             {/* Khối Cấp 3 */}
             <div className="space-y-2">
-              <p className="text-[13px] font-bold text-muted-foreground flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Cấp 3 (THPT)</p>
+              <p className="text-[13px] font-bold text-muted-foreground flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Trung học phổ thông</p>
               <div className="flex flex-wrap gap-2">
                 {[10, 11, 12].map((g) => {
                   const isSelected = form.grades.includes(g);

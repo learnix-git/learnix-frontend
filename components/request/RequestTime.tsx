@@ -2,8 +2,9 @@ import React from "react";
 import { Clock, Shuffle, Calendar } from "lucide-react";
 import { Cn } from "@/lib/utils";
 import { Slot } from "@/lib/api/types";
-import { PostFormData } from "@/app/tutor-post/page";
-import { FieldError, TimeScrollPicker } from "@/app/tutor-post/page";
+import { RequestFormData } from "@/app/client-post/page";
+import { FieldError } from "@/app/client-post/page";
+import { TimeScrollPicker } from "@/app/tutor-post/page";
 
 // Danh sách các ngày trong tuần
 const DAYS = [
@@ -23,19 +24,19 @@ const SLOTS: { value: Slot; label: string; desc: string; defaultStart: string; d
   { value: "EVENING", label: "Buổi Tối", desc: "Từ 17:30 đến 21:30", defaultStart: "18:00", defaultEnd: "20:00" },
 ];
 
-interface PostTimeProps {
-  form: PostFormData;
-  errors: Partial<Record<keyof PostFormData, string>>;
-  handleUpdate: <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => void;
+interface RequestTimeProps {
+  form: RequestFormData;
+  errors: Partial<Record<keyof RequestFormData, string>>;
+  handleUpdate: <K extends keyof RequestFormData>(field: K, value: RequestFormData[K]) => void;
   handleSlotChange: (slot: Slot) => void;
   toggleDay: (day: number) => void;
 }
 
-export function PostTime({ form, errors, handleUpdate, handleSlotChange, toggleDay }: PostTimeProps) {
+export function RequestTime({ form, errors, handleUpdate, handleSlotChange, toggleDay }: RequestTimeProps) {
   return (
     <>
       <p className="text-[13px] text-muted-foreground -mt-2">
-        Thiết lập lịch dạy để học sinh / phụ huynh tiện theo dõi và sắp xếp
+        Thiết lập lịch học để gia sư tiện theo dõi và sắp xếp
       </p>
 
       {/* Nút chọn lịch dạy thỏa thuận */}
@@ -70,7 +71,7 @@ export function PostTime({ form, errors, handleUpdate, handleSlotChange, toggleD
               "text-[14px] font-bold transition-colors",
               form.flexible ? "text-primary dark:text-primary" : "text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white"
             )}>
-              Lịch dạy thỏa thuận
+              Lịch học thỏa thuận
             </p>
             <p className={Cn(
               "text-[12px] mt-0.5 transition-colors leading-tight",
@@ -160,7 +161,7 @@ export function PostTime({ form, errors, handleUpdate, handleSlotChange, toggleD
           {/* 3. Chọn Giờ học cụ thể */}
           <div id="endTime" className="pt-2 border-t border-white/20 dark:border-white/10">
             <label className="flex items-center gap-1.5 text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-3">
-              <Clock className="h-4 w-4 text-primary" /> 3. Giờ dạy:
+              <Clock className="h-4 w-4 text-primary" /> 3. Giờ học:
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <TimeScrollPicker
@@ -182,7 +183,7 @@ export function PostTime({ form, errors, handleUpdate, handleSlotChange, toggleD
             <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-bold text-sm">
               <Calendar className="h-5 w-5 shrink-0" />
               <div className="min-w-0">
-                <span>Lịch dạy: </span>
+                <span>Lịch học: </span>
                 <span className="font-black">
                   {form.slot ? SLOTS.find((s) => s.value === form.slot)?.label : "Chưa chọn buổi"}
                 </span>
