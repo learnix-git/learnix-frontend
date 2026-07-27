@@ -39,7 +39,6 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-import { formatDate } from "date-fns";
 
 function NotificationBell() {
   const router = useRouter();

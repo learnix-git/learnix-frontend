@@ -68,7 +68,7 @@ function SelectTrigger({
   );
 }
 
-// ! Popup chứa danh sách các lựa chọn.
+// ! Popup chứa danh sách các lựa chọn
 function SelectContent({
   className,
   children,
@@ -98,7 +98,7 @@ function SelectContent({
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={Cn(
-            "w-full max-h-[var(--available-height)] overflow-hidden rounded-2xl border border-white/40 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 text-foreground shadow-2xl shadow-primary/5 outline-none",
+            "w-full max-h-[var(--available-height)] overflow-hidden rounded-2xl border border-white/40 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 text-foreground shadow-2xl shadow-primary/5 outline-none flex flex-col",
             "data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 data-[open]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
             className
           )}
@@ -108,14 +108,9 @@ function SelectContent({
           }}
           {...props}
         >
-          <SelectScrollUpButton />
-
-          {/* Danh sách các lựa chọn. */}
-          <SelectPrimitive.List className="p-1 outline-none">
+          <SelectPrimitive.List className="p-1 pr-1.5 outline-none overflow-y-auto max-h-60">
             {children}
           </SelectPrimitive.List>
-
-          <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
     </SelectPrimitive.Portal>
@@ -192,7 +187,8 @@ function SelectScrollUpButton({
     <SelectPrimitive.ScrollUpArrow
       data-slot="select-scroll-up-button"
       className={Cn(
-        "flex w-full cursor-default items-center justify-center bg-white py-1 text-muted-foreground",
+        "flex w-full cursor-default items-center justify-center py-1.5 text-muted-foreground rounded-t-2xl",
+        "bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl",
         className
       )}
       {...props}
@@ -211,7 +207,8 @@ function SelectScrollDownButton({
     <SelectPrimitive.ScrollDownArrow
       data-slot="select-scroll-down-button"
       className={Cn(
-        "flex w-full cursor-default items-center justify-center bg-white py-1 text-muted-foreground",
+        "flex w-full cursor-default items-center justify-center py-1.5 text-muted-foreground rounded-b-2xl",
+        "bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl",
         className
       )}
       {...props}

@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { AlertCircle, Hourglass, FileText, Laptop2, Wallet, Clock } from "lucide-react";
+import { useAuth } from "@/lib/stores/auth";
+import { createPost } from "@/lib/api/post";
+import { getSubjects } from "@/lib/api/subject";
+import { Subject, Slot, CreatePostRequest, PostTime, Level, Mode, Venue, Unit } from "@/lib/api/types";
 import { TwoColumn } from "@/components/layout/TwoColumn";
+import { Card } from "@/components/ui/Card";
+import { Cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -13,138 +18,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { useAuth } from "@/lib/stores/auth";
-import { Cn } from "@/lib/utils";
-import {
-  GraduationCap,
-  Laptop2,
-  MapPin,
-  Banknote,
-  AlertCircle,
-  Plus,
-  X,
-  Loader2,
-  FileText,
-  Wallet,
-  Lightbulb,
-  HelpCircle,
-  Home,
-  Shuffle,
-  PhoneCall,
-} from "lucide-react";
 
-import { getSubjects } from "@/lib/api/subject";
-import { createPost } from "@/lib/api/post";
-import type { Subject, CreatePostRequest } from "@/lib/api/types";
+// Component con
+import { PostInfo } from "@/components/post/PostInfo";
+import { PostDesc } from "@/components/post/PostDesc";
+import { PostMode } from "@/components/post/PostMode";
+import { PostPrice } from "@/components/post/PostPrice";
+import { PostTime as PostTimeSection } from "@/components/post/PostTime";
+import { PostTips } from "@/components/post/PostTips";
+import { PostActions } from "@/components/post/PostActions";
 
-type LevelOption = "PRIMARY" | "MIDDLE" | "HIGH" | "ALL";
-type ModeOption = "ONLINE" | "OFFLINE";
-type VenueOption = "TUTOR" | "STUDENT" | "BOTH";
+// === KIỂU DỮ LIỆU ===
 
-interface TopicEntry {
+// Kiểu dữ liệu cho môn học đã chọn
+export interface TopicEntry {
   key: string;
   subjectId: string | null;
   label: string;
 }
 
-interface PostFormData {
+// Kiểu dữ liệu cho toàn bộ form đăng bài
+export interface PostFormData {
   title: string;
   content: string;
   topics: TopicEntry[];
-  level: LevelOption;
-  grade: number | null;
-  mode: ModeOption;
-  venue: VenueOption;
+  level: Level;
+  grades: number[];
+  mode: Mode;
+  venue: Venue;
   city: string;
-  district: string;
   ward: string;
   street: string;
   from: number;
   to: number;
+  unit: Unit;
+  duration: number;
+  slot: Slot | null;
+  days: number[];
+  startTime: string;
+  endTime: string;
+  flexible: boolean;
 }
 
-const MAX_TOPICS = Infinity;
-
-const VENUES: {
-  value: VenueOption;
-  label: string;
-  desc: string;
-  icon: React.ReactNode;
-  selected: string;
-  hover: string;
-}[] = [
-  {
-    value: "TUTOR",
-    label: "Tại nhà gia sư",
-    desc: "Học sinh đến nhà bạn để học",
-    icon: <Home className="h-5 w-5 shrink-0" />,
-    selected: "border-sky-500 bg-sky-500/5 text-sky-600 dark:text-sky-400",
-    hover: "hover:border-sky-500/30",
-  },
-  {
-    value: "STUDENT",
-    label: "Tại nhà học sinh",
-    desc: "Bạn đến nhà học sinh để dạy",
-    icon: <MapPin className="h-5 w-5 shrink-0" />,
-    selected: "border-violet-500 bg-violet-500/5 text-violet-600 dark:text-violet-400",
-    hover: "hover:border-violet-500/30",
-  },
-  {
-    value: "BOTH",
-    label: "Tùy ý",
-    desc: "Địa điểm khác",
-    icon: <Shuffle className="h-5 w-5 shrink-0" />,
-    selected: "border-amber-500 bg-amber-500/5 text-amber-600 dark:text-amber-400",
-    hover: "hover:border-amber-500/30",
-  },
-];
-
-const LEVELS: { value: LevelOption; label: string; desc: string }[] = [
-  { value: "PRIMARY", label: "Tiểu học", desc: "Lớp 1 - 5" },
-  { value: "MIDDLE", label: "THCS", desc: "Lớp 6 - 9" },
-  { value: "HIGH", label: "THPT", desc: "Lớp 10 - 12" },
-  { value: "ALL", label: "Tất cả", desc: "Mọi lớp học" },
-];
-
-const GRADE_RANGE: Record<LevelOption, number[]> = {
-  PRIMARY: [1, 2, 3, 4, 5],
-  MIDDLE: [6, 7, 8, 9],
-  HIGH: [10, 11, 12],
-  ALL: Array.from({ length: 12 }, (_, i) => i + 1),
-};
-
-const POST_TIPS = [
-  {
-    title: "Tiêu đề rõ ràng",
-    desc: "Nêu rõ môn dạy và cấp học để phụ huynh hiểu ngay bài đăng của bạn.",
-  },
-  {
-    title: "Mô tả chi tiết",
-    desc: "Nói rõ phương pháp dạy, kinh nghiệm và cam kết đầu ra bạn có thể mang lại.",
-  },
-  {
-    title: "Học phí hợp lý",
-    desc: "Khoảng học phí phù hợp với thị trường sẽ thu hút nhiều học sinh liên hệ hơn.",
-  },
-];
-
-function extractSubjects(raw: unknown): Subject[] {
-  if (Array.isArray(raw)) return raw as Subject[];
-  if (raw && typeof raw === "object" && Array.isArray((raw as any).items)) {
-    return (raw as any).items as Subject[];
-  }
-  return [];
+// Kiểu dữ liệu cho khu vực hành chính (Tỉnh/Thành, Quận/Huyện)
+export interface AdminUnit {
+  code: number;
+  name: string;
 }
 
-function getInputCls(hasError?: boolean, isTextarea = false) {
+
+// === TIỆN ÍCH UI ===
+
+// Hàm định dạng class name cho input, hỗ trợ trạng thái lỗi
+export function GetInputCls(hasError?: boolean, isTextarea = false) {
   return Cn(
-    "w-full rounded-2xl border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 px-4 py-3 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all backdrop-blur-xl shadow-xs shadow-slate-200/50 dark:shadow-none",
+    "w-full rounded-2xl border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 px-4 py-3 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-xs shadow-slate-200/50 dark:shadow-none",
     isTextarea ? "min-h-[140px] resize-y py-4" : "h-12",
     hasError ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/10" : ""
   );
 }
 
-function FieldError({ message }: { message?: string }) {
+// Hàm hiển thị dòng thông báo lỗi dưới mỗi trường nhập liệu
+export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
     <p className="mt-1.5 flex items-center gap-1 text-[13px] text-rose-500">
@@ -153,9 +88,8 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
-// Card đánh số cho từng phần của form — dùng chung để 1 form dài
-// được chia thành nhiều khối rõ ràng thay vì gộp vào 1-2 tab.
-function SectionCard({
+// Component thẻ chứa từng phần thông tin của form
+export function SectionCard({
   index,
   icon,
   title,
@@ -184,211 +118,442 @@ function SectionCard({
   );
 }
 
+// Component chọn thời gian (giờ:phút)
+export function TimeScrollPicker({
+  label,
+  value,
+  onChange,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  error?: string;
+}) {
+  // Tách giờ và phút từ giá trị (vd: "18:00")
+  const [hour, min] = value ? value.split(":") : ["18", "00"];
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"));
+
+  return (
+    <div>
+      <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+        <Hourglass className="h-3.5 w-3.5 text-primary" /> {label}
+      </label>
+      <div className="flex items-center gap-2">
+        {/* Dropdown chọn giờ */}
+        <div className="flex-1 min-w-0">
+          <Select
+            value={hour}
+            onValueChange={(h) => onChange(`${h || "06"}:${min}`)}
+            items={hours.map((h) => ({ value: h, label: `${h} giờ` }))}
+          >
+            <SelectTrigger className="w-full h-12 rounded-2xl border border-white/50 dark:border-white/10 bg-white/40 dark:bg-white/5 font-bold text-base px-3">
+              <SelectValue placeholder="Giờ" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border border-white/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90">
+              {hours.map((h) => (
+                <SelectItem key={`h-${h}`} value={h}>
+                  {h} giờ
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <span className="font-black text-foreground text-lg pb-0.5">:</span>
+
+        {/* Dropdown chọn phút */}
+        <div className="flex-1 min-w-0">
+          <Select
+            value={min}
+            onValueChange={(m) => onChange(`${hour}:${m || "00"}`)}
+            items={minutes.map((m) => ({ value: m, label: `${m} phút` }))}
+          >
+            <SelectTrigger className="w-full h-12 rounded-2xl border border-white/50 dark:border-white/10 bg-white/40 dark:bg-white/5 font-bold text-base px-3">
+              <SelectValue placeholder="Phút" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border border-white/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90">
+              {minutes.map((m) => (
+                <SelectItem key={`m-${m}`} value={m}>
+                  {m} phút
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {error && <FieldError message={error} />}
+    </div>
+  );
+}
+
+// === TRANG CHÍNH ===
+
 export default function TutorPostPage() {
-  const { isAuthenticated, loading: authLoading, user } = useAuth();
   const router = useRouter();
+  
+  // Trạng thái xác thực người dùng
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [subjectsLoading, setSubjectsLoading] = useState(true);
-  const [subjectSearch, setSubjectSearch] = useState("");
-  const [customTopic, setCustomTopic] = useState("");
-
+  // Trạng thái dữ liệu form đăng bài
   const [form, setForm] = useState<PostFormData>({
     title: "",
     content: "",
     topics: [],
     level: "ALL",
-    grade: null,
+    grades: [],
     mode: "ONLINE",
     venue: "TUTOR",
     city: "",
-    district: "",
     ward: "",
     street: "",
     from: 0,
     to: 0,
+    unit: "PER_SESSION",
+    duration: 1.5,
+    slot: null,
+    days: [],
+    startTime: "18:00",
+    endTime: "20:00",
+    flexible: false,
   });
+
+  // Trạng thái lưu trữ các lỗi validation của form
   const [errors, setErrors] = useState<Partial<Record<keyof PostFormData, string>>>({});
+  
+  // Trạng thái đang gửi dữ liệu
   const [submitting, setSubmitting] = useState(false);
 
+  // Trạng thái danh sách môn học từ hệ thống
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [customTopic, setCustomTopic] = useState("");
+
+  // Trạng thái danh sách khu vực hành chính (Tỉnh/Thành phố)
+  const [provinces, setProvinces] = useState<AdminUnit[]>([]);
+  const [provincesLoading, setProvincesLoading] = useState(true);
+  const [provinceCode, setProvinceCode] = useState<number | null>(null);
+
+  // Trạng thái danh sách khu vực hành chính (Phường/Xã)
+  const [wards, setWards] = useState<AdminUnit[]>([]);
+  const [wardsLoading, setWardsLoading] = useState(false);
+
+  // Hàm cập nhật một trường dữ liệu trong form và xóa lỗi của trường đó nếu có
+  const handleUpdate = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
+    setForm((prev: PostFormData) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev: Partial<Record<keyof PostFormData, string>>) => ({ ...prev, [field]: undefined }));
+  };
+
+  // Kiểm tra quyền truy cập khi trang được load
   useEffect(() => {
+    // Nếu chưa đăng nhập thì chuyển hướng về trang đăng nhập
     if (!authLoading && !isAuthenticated) {
-      router.push("/signin");
-      return;
-    }
-    if (!authLoading && user && user.role !== "TUTOR") {
-      toast.error("Chỉ tài khoản gia sư mới đăng được bài tuyển sinh.");
+      toast.error("Vui lòng đăng nhập để đăng bài.");
+      router.push("/auth/login");
+    } 
+    // Nếu không phải gia sư thì không cho phép đăng bài
+    else if (user && user.role !== "TUTOR") {
+      toast.error("Chỉ gia sư mới có thể đăng bài tuyển sinh.");
       router.push("/");
     }
   }, [authLoading, isAuthenticated, user, router]);
 
+  // Gọi API lấy danh sách Tỉnh/Thành phố khi trang load
   useEffect(() => {
-    (async () => {
+    const fetchProvinces = async () => {
+      try {
+        const res = await fetch("https://provinces.open-api.vn/api/p/");
+        const data = await res.json();
+        setProvinces(data);
+      } catch (error) {
+        console.error("Failed to fetch provinces:", error);
+      } finally {
+        setProvincesLoading(false);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // Gọi API lấy danh sách Phường/Xã khi người dùng chọn Tỉnh/Thành phố
+  useEffect(() => {
+    // Nếu chưa chọn Tỉnh/Thành thì xóa danh sách Phường/Xã
+    if (!provinceCode) {
+      setWards([]);
+      return;
+    }
+    const fetchWards = async () => {
+      setWardsLoading(true);
+      try {
+        const res = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+        const data = await res.json();
+        setWards(data.districts || []);
+      } catch (error) {
+        console.error("Failed to fetch wards:", error);
+      } finally {
+        setWardsLoading(false);
+      }
+    };
+    fetchWards();
+  }, [provinceCode]);
+
+  // Gọi API lấy danh sách Môn học từ hệ thống khi trang load
+  useEffect(() => {
+    const fetchSubjects = async () => {
       try {
         const res = await getSubjects();
-        setSubjects(extractSubjects(res.data));
-      } catch {
-        toast.error("Không tải được danh sách môn học.");
-        setSubjects([]);
+        if (res.code === 200 && res.data) {
+          // Xử lý đảm bảo lấy đúng mảng môn học
+          const subjectsArr = Array.isArray(res.data) ? res.data : (res.data as any)?.items || [];
+          setSubjects(subjectsArr);
+        }
+      } catch (error) {
+        console.error("Failed to fetch subjects:", error);
       } finally {
         setSubjectsLoading(false);
       }
-    })();
+    };
+    fetchSubjects();
   }, []);
 
-  const update = <K extends keyof PostFormData>(field: K, value: PostFormData[K]) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  // Hàm xử lý khi người dùng chọn buổi học (Sáng, Chiều, Tối)
+  const handleSlotChange = (slot: Slot) => {
+    // Thiết lập giờ bắt đầu/kết thúc mặc định cho từng buổi
+    const defaultTimes: Record<Slot, { start: string; end: string }> = {
+      MORNING: { start: "08:00", end: "10:00" },
+      AFTERNOON: { start: "14:00", end: "16:00" },
+      EVENING: { start: "18:00", end: "20:00" },
+    };
+    setForm((prev: PostFormData) => ({
+      ...prev,
+      slot,
+      startTime: defaultTimes[slot].start,
+      endTime: defaultTimes[slot].end,
+    }));
+    // Xóa lỗi của trường slot nếu có
+    if (errors.slot) setErrors((prev: Partial<Record<keyof PostFormData, string>>) => ({ ...prev, slot: undefined }));
   };
 
-  useEffect(() => {
-    if (form.grade !== null && !GRADE_RANGE[form.level].includes(form.grade)) {
-      update("grade", null);
+  // Hàm xử lý chọn/hủy chọn ngày học trong tuần
+  const toggleDay = (day: number) => {
+    // Nếu đã chọn thì bỏ chọn, nếu chưa chọn thì thêm vào danh sách
+    if (form.days.includes(day)) {
+      handleUpdate("days", form.days.filter((d: number) => d !== day));
+    } else {
+      handleUpdate("days", [...form.days, day].sort((a, b) => a - b));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.level]);
+    // Xóa lỗi của trường days nếu có
+    if (errors.days) setErrors((prev: Partial<Record<keyof PostFormData, string>>) => ({ ...prev, days: undefined }));
+  };
 
+  // Hàm xử lý chọn/hủy chọn khối lớp
+  const toggleGrade = (grade: number) => {
+    // Nếu đã chọn thì bỏ chọn, nếu chưa chọn thì thêm vào danh sách
+    if (form.grades.includes(grade)) {
+      handleUpdate("grades", form.grades.filter((g: number) => g !== grade));
+    } else {
+      handleUpdate("grades", [...form.grades, grade].sort((a, b) => a - b));
+    }
+    // Xóa lỗi của trường grades nếu có
+    if (errors.grades) setErrors((prev: Partial<Record<keyof PostFormData, string>>) => ({ ...prev, grades: undefined }));
+  };
+
+  // Tính toán danh sách môn học hiển thị (Lọc theo tìm kiếm và bỏ đi các môn đã chọn)
   const filteredSubjects = useMemo(() => {
-    const chosenIds = form.topics.map((t) => t.subjectId).filter(Boolean);
+    const chosenIds = form.topics.map((t: TopicEntry) => t.subjectId).filter(Boolean);
     return (subjects ?? [])
-      .filter((s) => !chosenIds.includes(s.id))
-      .filter((s) => s.name.toLowerCase().includes(subjectSearch.toLowerCase()));
+      .filter((s: Subject) => !chosenIds.includes(s.id))
+      .filter((s: Subject) => s.name.toLowerCase().includes(subjectSearch.toLowerCase()));
   }, [subjects, form.topics, subjectSearch]);
 
+  // Hàm thêm một môn học từ danh sách hệ thống vào bài đăng
   const addSubjectTopic = (subject: Subject) => {
-    if (form.topics.length >= MAX_TOPICS) {
-      toast.error("Tối đa 5 môn học cho 1 bài đăng.");
-      return;
-    }
-    update("topics", [...form.topics, { key: subject.id, subjectId: subject.id, label: subject.name }]);
+    handleUpdate("topics", [...form.topics, { key: subject.id, subjectId: subject.id, label: subject.name }]);
+    // Reset tìm kiếm
     setSubjectSearch("");
   };
 
+  // Hàm thêm một môn học tự định nghĩa vào bài đăng
   const addCustomTopic = () => {
     const label = customTopic.trim();
+    // Nếu nội dung trống thì không xử lý
     if (!label) return;
-    if (form.topics.length >= MAX_TOPICS) {
-      toast.error("Tối đa 5 môn học cho 1 bài đăng.");
-      return;
-    }
-    update("topics", [...form.topics, { key: `custom-${Date.now()}`, subjectId: null, label }]);
+    
+    handleUpdate("topics", [...form.topics, { key: `custom-${Date.now()}`, subjectId: null, label }]);
+    // Reset ô nhập
     setCustomTopic("");
   };
 
+  // Hàm xóa một môn học khỏi bài đăng
   const removeTopic = (key: string) => {
-    update("topics", form.topics.filter((t) => t.key !== key));
+    handleUpdate("topics", form.topics.filter((t: TopicEntry) => t.key !== key));
   };
 
-  const validate = () => {
+  // Hàm xử lý khi thay đổi Tỉnh/Thành phố
+  const handleProvinceChange = (code: string | null) => {
+    const province = provinces.find((p: AdminUnit) => p.code.toString() === code);
+    setProvinceCode(province ? province.code : null);
+    handleUpdate("city", province ? province.name : "");
+    // Xóa Phường/Xã cũ
+    handleUpdate("ward", "");
+  };
+
+  // Hàm xử lý khi thay đổi Phường/Xã
+  const handleWardChange = (code: string | null) => {
+    const ward = wards.find((w: AdminUnit) => w.code.toString() === code);
+    handleUpdate("ward", ward ? ward.name : "");
+  };
+
+  // Hàm kiểm tra tính hợp lệ của toàn bộ form trước khi submit
+  const validateForm = () => {
     const next: Partial<Record<keyof PostFormData, string>> = {};
-    if (!form.title.trim()) next.title = "Vui lòng nhập tiêu đề bài đăng.";
-    else if (form.title.length > 150) next.title = "Tiêu đề tối đa 150 ký tự.";
 
-    if (!form.content.trim()) next.content = "Vui lòng mô tả nội dung dạy.";
-    else if (form.content.length > 5000) next.content = "Nội dung tối đa 5000 ký tự.";
+    // Kiểm tra tiêu đề
+    if (!form.title.trim()) {
+      next.title = "Vui lòng nhập tiêu đề bài đăng.";
+    } else if (form.title.length > 150) {
+      next.title = "Tiêu đề tối đa 150 ký tự.";
+    }
 
-    if (form.topics.length === 0) next.topics = "Chọn hoặc thêm ít nhất 1 môn dạy.";
-    if (!form.grade) next.grade = "Vui lòng chọn khối lớp.";
-    if (form.mode === "OFFLINE" && form.venue === "TUTOR" && !form.city.trim()) next.city = "Nhập khu vực dạy khi chọn hình thức Offline.";
-    if (!form.from || form.from < 1000) next.from = "Học phí tối thiểu từ 1.000đ.";
-    if (!form.to || form.to < 1000) next.to = "Học phí tối đa từ 1.000đ.";
-    if (form.from && form.to && form.from > form.to) next.to = "Học phí tối đa phải lớn hơn hoặc bằng tối thiểu.";
+    // Kiểm tra nội dung mô tả
+    if (!form.content.trim()) {
+      next.content = "Vui lòng mô tả nội dung dạy.";
+    } else if (form.content.length > 5000) {
+      next.content = "Nội dung tối đa 5000 ký tự.";
+    }
 
+    // Kiểm tra danh sách môn học
+    if (form.topics.length === 0) {
+      next.topics = "Chọn hoặc thêm ít nhất 1 môn dạy.";
+    }
+
+    // Kiểm tra khối lớp
+    if (form.grades.length === 0) {
+      next.grades = "Vui lòng chọn ít nhất 1 khối lớp.";
+    }
+
+    // Kiểm tra địa chỉ dạy nếu hình thức là Offline và dạy tại nhà gia sư
+    if (form.mode === "OFFLINE" && form.venue === "TUTOR" && !form.city.trim()) {
+      next.city = "Nhập khu vực dạy khi chọn hình thức Offline.";
+    }
+
+    // Kiểm tra học phí tối thiểu
+    if (!form.from || form.from < 1000) {
+      next.from = "Học phí tối thiểu từ 1.000đ.";
+    }
+
+    // Kiểm tra học phí tối đa
+    if (!form.to || form.to < 1000) {
+      next.to = "Học phí tối đa từ 1.000đ.";
+    }
+
+    // Kiểm tra học phí tối thiểu và tối đa có hợp lệ không
+    if (form.from && form.to && form.from > form.to) {
+      next.to = "Học phí tối đa phải lớn hơn hoặc bằng tối thiểu.";
+    }
+
+    // Kiểm tra lịch dạy nếu không phải là lịch thỏa thuận
+    if (!form.flexible && !form.slot) {
+      next.slot = "Vui lòng chọn buổi học.";
+    }
+
+    // Kiểm tra ngày dạy nếu không phải là lịch thỏa thuận
+    if (!form.flexible && form.days.length === 0) {
+      next.days = "Vui lòng chọn ít nhất 1 ngày dạy trong tuần.";
+    }
+
+    // Kiểm tra giờ bắt đầu và kết thúc nếu không phải là lịch thỏa thuận
+    if (!form.flexible && (!form.startTime || !form.endTime || form.startTime >= form.endTime)) {
+      next.endTime = "Giờ kết thúc phải lớn hơn giờ bắt đầu.";
+    }
+
+    // Cập nhật trạng thái lỗi
     setErrors(next);
 
-    // cuộn tới field lỗi đầu tiên — vì giờ tất cả section đều hiển thị cùng lúc
-    // nên không cần chuyển tab, chỉ cần scrollIntoView là đủ.
-    const firstKey = Object.keys(next)[0] as keyof PostFormData | undefined;
+    // Nếu có lỗi, tự động cuộn trang đến trường bị lỗi đầu tiên
+    const firstKey = Object.keys(next)[0];
     if (firstKey) {
       setTimeout(() => document.getElementById(firstKey)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     }
+
+    // Trả về true nếu không có lỗi nào
     return Object.keys(next).length === 0;
   };
 
+  // Hàm xử lý sự kiện submit form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    if (form.grade === null) return;
+    
+    // Nếu form không hợp lệ thì không xử lý tiếp
+    if (!validateForm()) return;
+    if (form.grades.length === 0) return;
 
+    // Bật trạng thái đang gửi
     setSubmitting(true);
+
     try {
+      // Format lại thời gian dạy thành mảng các object theo chuẩn API
+      const formattedTimes: PostTime[] = form.flexible
+        ? []
+        : form.days.map((day: number) => ({
+          day,
+          slot: form.slot as Slot,
+          start: form.startTime,
+          end: form.endTime,
+        }));
+
+      // Tạo payload gửi lên API
       const payload: CreatePostRequest = {
         title: form.title.trim(),
         content: form.content.trim(),
-        level: form.level,
-        grade: form.grade,
+        level: "ALL", // Luôn đặt level là ALL để hỗ trợ chọn nhiều khối lớp
+        grades: form.grades,
         mode: form.mode,
         venue: form.mode === "OFFLINE" ? form.venue : undefined,
         city: form.mode === "OFFLINE" && form.venue === "TUTOR" ? form.city || undefined : undefined,
-        district: form.mode === "OFFLINE" && form.venue === "TUTOR" ? form.district || undefined : undefined,
         ward: form.mode === "OFFLINE" && form.venue === "TUTOR" ? form.ward || undefined : undefined,
         street: form.mode === "OFFLINE" && form.venue === "TUTOR" ? form.street || undefined : undefined,
         from: form.from,
         to: form.to,
-        topics: form.topics.map((t) => (t.subjectId ? { subject: t.subjectId } : { custom: t.label })),
+        unit: form.unit,
+        hours: form.unit === "PER_SESSION" ? form.duration : undefined,
+        flexible: form.flexible,
+        times: form.flexible ? undefined : formattedTimes,
+        topics: form.topics.map((t: TopicEntry) => (t.subjectId ? { subject: t.subjectId } : { custom: t.label })),
       };
+
+      // Gọi API tạo bài đăng
       const res = await createPost(payload);
+
+      // Nếu tạo thành công, thông báo và chuyển hướng
       if (res.code === 201 || res.code === 200) {
         toast.success("Đăng bài tuyển sinh thành công!");
         router.push("/tutor-post");
       } else {
+        // Nếu API trả về lỗi
         toast.error(res.message || "Đăng bài thất bại, thử lại sau.");
       }
     } catch (err: unknown) {
+      // Nếu có lỗi hệ thống
       const message = err instanceof Error ? err.message : "Đăng bài thất bại, thử lại sau.";
       toast.error(message);
     } finally {
+      // Tắt trạng thái đang gửi
       setSubmitting(false);
     }
   };
 
-  if (authLoading || !isAuthenticated) return null;
+  // Tránh render nhấp nháy trong lúc load session auth
+  if (authLoading || !isAuthenticated) {
+    return null;
+  }
 
+  // Khai báo đường dẫn breadcrumb
   const breadcrumb = [
     { name: "Trang chủ", href: "/" },
     { name: "Đăng bài tuyển sinh", href: "/tutor-post" },
   ];
-
-  const sidebar = (
-    <>
-      <Card className="space-y-4">
-        <div className="flex items-center gap-2 text-foreground font-bold">
-          <Lightbulb className="h-5 w-5 text-primary" />
-          Mẹo đăng bài hiệu quả
-        </div>
-        <ul className="space-y-3">
-          {POST_TIPS.map((tip) => (
-            <li key={tip.title} className="flex gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              <div>
-                <p className="text-[13px] font-semibold text-foreground">{tip.title}</p>
-                <p className="text-[13px] text-muted-foreground">{tip.desc}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      <Card className="space-y-3">
-        <div className="flex items-center gap-2 text-foreground font-bold">
-          <HelpCircle className="h-5 w-5 text-primary" />
-          Cần hỗ trợ?
-        </div>
-        <p className="text-[13px] text-muted-foreground">
-          Gặp khó khăn khi đăng bài? Đội ngũ hỗ trợ luôn sẵn sàng giúp bạn.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/contact")}
-          className="w-full rounded-2xl h-11 border border-white/50 dark:border-white/10 bg-white/60 dark:bg-white/5 font-bold text-xs tracking-widest hover:scale-[1.02] active:scale-95 transition-transform"
-        >
-          <PhoneCall className="h-4 w-4 mr-1.5" />
-          Liên hệ hỗ trợ
-        </Button>
-      </Card>
-    </>
-  );
 
   return (
     <div className="pb-24">
@@ -396,385 +561,73 @@ export default function TutorPostPage() {
         title="Đăng bài tuyển sinh"
         description="Tạo bài đăng để bắt đầu làm gia sư ngay hôm nay"
         breadcrumb={breadcrumb}
-        sidebar={sidebar}
+        sidebar={<PostTips onContactSupport={() => router.push("/contact")} />}
       >
         <form id="tutor-post-form" onSubmit={handleSubmit} className="space-y-6">
+          {/* Mục 1: Thông tin chung */}
           <SectionCard index={1} icon={<FileText className="h-4 w-4 text-primary" />} title="Thông tin chung">
-            <div id="title">
-              <label htmlFor="title-input" className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Tiêu đề <span className="text-rose-500">*</span>
-              </label>
-              <input
-                id="title-input"
-                value={form.title}
-                onChange={(e) => update("title", e.target.value)}
-                placeholder="VD: Gia sư Learnix"
-                className={getInputCls(!!errors.title)}
-                maxLength={150}
-              />
-              <FieldError message={errors.title} />
-            </div>
-
-            <div id="topics">
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300">
-                  Môn dạy <span className="text-rose-500">*</span>
-                </label>
-                <span className="text-[13px] text-muted-foreground">{form.topics.length} đã chọn</span>
-              </div>
-
-              <div className={Cn(
-                "min-h-[52px] p-2.5 rounded-2xl border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 backdrop-blur-xl transition-all duration-300 mb-3 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary",
-                errors.topics && "border-rose-500/50"
-              )}>
-                <div className="flex flex-wrap items-center gap-2">
-                  {form.topics.map((t) => {
-                    return (
-                      <div
-                        key={t.key}
-                        role="button"
-                        tabIndex={0}
-                        title="Nhấp để xóa môn này"
-                        onClick={() => removeTopic(t.key)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            removeTopic(t.key);
-                          }
-                        }}
-                        className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold cursor-pointer select-none transition-all duration-200 bg-slate-100 dark:bg-white/10 text-primary hover:opacity-80 active:scale-95 animate-in fade-in zoom-in-95"
-                      >
-                        {t.label}
-                        {!t.subjectId && <span className="text-[10px] uppercase tracking-wide opacity-60">tự nhập</span>}
-                        <X className="h-3 w-3 opacity-60 group-hover:opacity-100 group-hover:rotate-90 transition-all duration-200" />
-                      </div>
-                    );
-                  })}
-                  {form.topics.length === 0 && (
-                    <input
-                      type="text"
-                      value={subjectSearch}
-                      placeholder={subjectsLoading ? "Đang tải môn học..." : "Tìm kiếm môn học..."}
-                      disabled={subjectsLoading}
-                      onChange={(e) => setSubjectSearch(e.target.value)}
-                      className="flex-1 min-w-[160px] bg-transparent outline-none text-[14px] px-2 py-1.5 animate-in fade-in duration-200"
-                    />
-                  )}
-                </div>
-              </div>
-
-              <p className="mb-1.5 text-[12px] text-muted-foreground">Gợi ý:</p>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
-                  {!subjectsLoading &&
-                    filteredSubjects.map((s) => (
-                      <span
-                        key={s.id}
-                        onClick={() => addSubjectTopic(s)}
-                        className="inline-flex items-center rounded-full border border-white/50 dark:border-white/10 bg-white/30 dark:bg-white/5 px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/10 hover:shadow-md hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer active:scale-95"
-                      >
-                        <Plus className="mr-1 h-3 w-3" /> {s.name}
-                      </span>
-                    ))}
-                  {!subjectsLoading && !subjectSearch && filteredSubjects.length === 0 && (
-                      <p className="text-[13px] text-muted-foreground py-2 italic">Không tìm thấy môn học nào phù hợp</p>
-                    )}
-                    {!subjectsLoading && subjectSearch && filteredSubjects.length === 0 && (
-                      <p className="text-[13px] text-muted-foreground py-2 italic">Không tìm thấy môn phù hợp.</p>
-                    )}
-                    {subjectsLoading && (
-                      <div className="flex items-center gap-2 py-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        <span className="text-[13px] text-muted-foreground">Đang tải môn học...</span>
-                      </div>
-                    )}
-                  </div>
-
-                <div className="mt-3 flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customTopic}
-                    onChange={(e) => setCustomTopic(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addCustomTopic();
-                      }
-                    }}
-                    placeholder="Môn học khác"
-                    className={Cn(getInputCls(false), "h-11 flex-1")}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addCustomTopic}
-                    className="h-11 shrink-0 rounded-2xl px-4 border border-white/50 dark:border-white/10 bg-white/60 dark:bg-white/5 font-bold text-xs tracking-widest hover:scale-[1.03] active:scale-95 transition-transform"
-                  >
-                    Thêm
-                  </Button>
-                </div>
-              <FieldError message={errors.topics} />
-            </div>
-
-            <div className="space-y-6">
-              <div id="level">
-                <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                  Cấp học <span className="text-rose-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {LEVELS.map((lv) => {
-                    const isSelected = form.level === lv.value;
-                    return (
-                      <div
-                        key={lv.value}
-                        onClick={() => update("level", lv.value)}
-                        className={Cn(
-                          "cursor-pointer rounded-2xl border-2 p-3 text-center transition-all backdrop-blur-xl",
-                          isSelected ? "border-primary bg-primary/5 text-primary" : "border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 text-foreground hover:border-primary/30"
-                        )}
-                      >
-                        <span className="font-semibold text-sm block">{lv.label}</span>
-                        <span className="text-[11px] opacity-70">{lv.desc}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div id="grade">
-                <label htmlFor="grade-select" className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Khối lớp <span className="text-rose-500">*</span>
-                </label>
-                <Select
-                  value={form.grade ? form.grade.toString() : ""}
-                  onValueChange={(val) => update("grade", val ? parseInt(val) : null)}
-                  items={GRADE_RANGE[form.level].map((g) => ({ value: g.toString(), label: `Lớp ${g}` }))}
-                >
-                  <SelectTrigger className="w-full h-12 rounded-2xl border border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 backdrop-blur-xl">
-                    <SelectValue placeholder="Chọn khối lớp" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto rounded-2xl border border-white/50 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
-                    {GRADE_RANGE[form.level].map((g) => (
-                      <SelectItem key={g} value={g.toString()}>
-                        Lớp {g}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError message={errors.grade} />
-              </div>
-            </div>
+            <PostInfo
+              form={form}
+              errors={errors}
+              handleUpdate={handleUpdate}
+              subjectsLoading={subjectsLoading}
+              subjectSearch={subjectSearch}
+              setSubjectSearch={setSubjectSearch}
+              filteredSubjects={filteredSubjects}
+              addSubjectTopic={addSubjectTopic}
+              removeTopic={removeTopic}
+              customTopic={customTopic}
+              setCustomTopic={setCustomTopic}
+              addCustomTopic={addCustomTopic}
+              toggleGrade={toggleGrade}
+            />
           </SectionCard>
-
+          
+          {/* Mục 2: Mô tả chi tiết */}
           <SectionCard index={2} icon={<FileText className="h-4 w-4 text-primary" />} title="Mô tả chi tiết">
-            <div id="content">
-              <label htmlFor="content-input" className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Nội dung <span className="text-rose-500">*</span>
-              </label>
-              <textarea
-                id="content-input"
-                value={form.content}
-                onChange={(e) => update("content", e.target.value)}
-                placeholder="Giới thiệu phương pháp dạy, kinh nghiệm, cam kết đầu ra,..."
-                className={getInputCls(!!errors.content, true)}
-                maxLength={5000}
-              />
-              <div className="mt-1.5 flex items-center justify-between">
-                <FieldError message={errors.content} />
-                <span className="text-[12px] text-muted-foreground ml-auto">{form.content.length}/5000</span>
-              </div>
-            </div>
+            <PostDesc form={form} errors={errors} handleUpdate={handleUpdate} />
           </SectionCard>
 
+          {/* Mục 3: Hình thức dạy */}
           <SectionCard index={3} icon={<Laptop2 className="h-4 w-4 text-primary" />} title="Hình thức dạy">
-            <div id="mode">
-              <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                Bạn nhận dạy <span className="text-rose-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                {(
-                  [
-                    {
-                      value: "ONLINE",
-                      label: "Online",
-                      desc: "Dạy qua nền tảng học online không cần địa điểm",
-                      icon: <Laptop2 className="h-5 w-5 shrink-0" />,
-                      selected: "border-emerald-500 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400",
-                      hover: "hover:border-emerald-500/30",
-                    },
-                    {
-                      value: "OFFLINE",
-                      label: "Offline",
-                      desc: "Dạy trực tiếp tại khu vực cụ thể",
-                      icon: <MapPin className="h-5 w-5 shrink-0" />,
-                      selected: "border-amber-500 bg-amber-500/5 text-amber-600 dark:text-amber-400",
-                      hover: "hover:border-amber-500/30",
-                    },
-                  ] as const
-                ).map((opt) => {
-                  const isSelected = form.mode === opt.value;
-                  return (
-                    <div
-                      key={opt.value}
-                      onClick={() => update("mode", opt.value)}
-                      className={Cn(
-                        "cursor-pointer rounded-2xl border-2 p-4 transition-all backdrop-blur-xl",
-                        isSelected
-                          ? opt.selected
-                          : Cn("border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 text-foreground", opt.hover)
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        {opt.icon}
-                        <span className="font-semibold text-sm">{opt.label}</span>
-                      </div>
-                      <p className="text-[12px] opacity-70 mt-1.5">{opt.desc}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {form.mode === "OFFLINE" && (
-              <div className="space-y-4" id="venue">
-                <div>
-                  <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                    Địa điểm dạy <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {VENUES.map((opt) => {
-                      const isSelected = form.venue === opt.value;
-                      return (
-                        <div
-                          key={opt.value}
-                          onClick={() => update("venue", opt.value)}
-                          className={Cn(
-                            "cursor-pointer rounded-2xl border-2 p-4 transition-all backdrop-blur-xl",
-                            isSelected
-                              ? opt.selected
-                              : Cn("border-white/50 dark:border-white/10 bg-white/20 dark:bg-white/3 text-foreground", opt.hover)
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            {opt.icon}
-                            <span className="font-semibold text-sm">{opt.label}</span>
-                          </div>
-                          <p className="text-[12px] opacity-70 mt-1.5">{opt.desc}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {form.venue === "TUTOR" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div id="city">
-                      <label htmlFor="city-input" className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                        Tỉnh/Thành phố <span className="text-rose-500">*</span>
-                      </label>
-                      <input id="city-input" value={form.city} onChange={(e) => update("city", e.target.value)} placeholder="Nhập tỉnh/thành phố của bạn" className={getInputCls(!!errors.city)} />
-                      <FieldError message={errors.city} />
-                    </div>
-                    <div id="district">
-                      <label htmlFor="district-input" className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Quận/Huyện</label>
-                      <input id="district-input" value={form.district} onChange={(e) => update("district", e.target.value)} placeholder="Nhập quận/huyện của bạn" className={getInputCls(false)} />
-                    </div>
-                    <div id="ward">
-                      <label htmlFor="ward-input" className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Phường/Xã</label>
-                      <input id="ward-input" value={form.ward} onChange={(e) => update("ward", e.target.value)} placeholder="Nhập phường/xã của bạn" className={getInputCls(false)} />
-                    </div>
-                    <div id="street">
-                      <label htmlFor="street-input" className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Số nhà, đường</label>
-                      <input
-                        id="street-input"
-                        value={form.street}
-                        onChange={(e) => update("street", e.target.value)}
-                        placeholder="Nhập số nhà, đường của bạn"
-                        className={getInputCls(false)}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <PostMode
+              form={form}
+              errors={errors}
+              handleUpdate={handleUpdate}
+              provinces={provinces}
+              provincesLoading={provincesLoading}
+              provinceCode={provinceCode}
+              handleProvinceChange={handleProvinceChange}
+              wards={wards}
+              wardsLoading={wardsLoading}
+              handleWardChange={handleWardChange}
+            />
           </SectionCard>
 
+          {/* Mục 4: Học phí */}
           <SectionCard index={4} icon={<Wallet className="h-4 w-4 text-primary" />} title="Học phí">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div id="from">
-                <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Học phí tối thiểu <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Banknote className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="VD: 100000"
-                    value={form.from > 0 ? form.from.toLocaleString("vi-VN") : ""}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-                      update("from", val ? parseInt(val) : 0);
-                    }}
-                    className={Cn(getInputCls(!!errors.from), "pl-10")}
-                  />
-                </div>
-                <FieldError message={errors.from} />
-              </div>
+            <PostPrice form={form} errors={errors} handleUpdate={handleUpdate} />
+          </SectionCard>
 
-              <div id="to">
-                <label className="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Học phí tối đa <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Banknote className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="VD: 200.000"
-                    value={form.to > 0 ? form.to.toLocaleString("vi-VN") : ""}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-                      update("to", val ? parseInt(val) : 0);
-                    }}
-                    className={Cn(getInputCls(!!errors.to), "pl-10")}
-                  />
-                </div>
-                <FieldError message={errors.to} />
-              </div>
-            </div>
+          {/* Mục 5: Lịch dạy */}
+          <SectionCard index={5} icon={<Clock className="h-4 w-4 text-primary" />} title="Lịch dạy">
+            <PostTimeSection
+              form={form}
+              errors={errors}
+              handleUpdate={handleUpdate}
+              handleSlotChange={handleSlotChange}
+              toggleDay={toggleDay}
+            />
           </SectionCard>
         </form>
       </TwoColumn>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-white/10 dark:border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.2)] p-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1280px] flex items-center justify-between">
-          <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-foreground">Sẵn sàng chưa?</p>
-            <p className="text-xs text-muted-foreground">Kiểm tra kỹ thông tin trước khi đăng</p>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              className="flex-1 sm:flex-none rounded-2xl h-12 px-6 border border-white/50 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur-md hover:bg-white/30 dark:hover:bg-white/10 transition-all font-bold text-xs tracking-widest shadow-sm"
-            >
-              Hủy bỏ
-            </Button>
-            <Button
-              size="lg"
-              type="submit"
-              form="tutor-post-form"
-              loading={submitting}
-              className="flex-1 sm:flex-none rounded-2xl h-12 px-8 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30 font-bold text-xs tracking-widest transition-all hover:scale-[1.02]"
-            >
-              Đăng bài ngay
-            </Button>
-          </div>
-        </div>
-      </div>
+      {/* Hành động Hủy/Đăng bài ở footer */}
+      <PostActions 
+        onCancel={() => router.back()} 
+        submitting={submitting} 
+        formId="tutor-post-form" 
+      />
     </div>
   );
 }

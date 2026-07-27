@@ -60,7 +60,7 @@ export interface Subject {
   slug: string;
 }
 
-// !==========================================
+/// !==========================================
 // ! POST
 // !==========================================
 
@@ -68,6 +68,8 @@ export type Level = "PRIMARY" | "MIDDLE" | "HIGH" | "ALL";
 export type Mode = "ONLINE" | "OFFLINE";
 export type Venue = "TUTOR" | "STUDENT" | "BOTH";
 export type PostStatus = "OPEN" | "DONE" | "CANCEL" | "HOLD";
+export type Unit = "PER_SESSION" | "PER_MONTH";
+export type Slot = "MORNING" | "AFTERNOON" | "EVENING";
 
 export interface PostTopic {
   id: string;
@@ -77,26 +79,36 @@ export interface PostTopic {
 
 export type PostTopicInput = { subject: string } | { custom: string };
 
+export interface PostTime {
+  day: number;
+  slot: Slot;
+  start: string;
+  end: string;
+}
+
 export interface Post {
   id: string;
   title: string;
   content: string;
   level: Level;
-  grade: number;
+  grades: number[];
   mode: Mode;
   venue: Venue | null;
   city: string | null;
-  district: string | null;
   ward: string | null;
   street: string | null;
   lat: number | null;
   lng: number | null;
   from: number;
   to: number;
+  unit: Unit;
+  hours?: number | null;
+  flexible: boolean;
   status: PostStatus;
   created: string;
   updated: string;
   topics: PostTopic[];
+  times: PostTime[];
   tutor?: {
     id: string;
     rating: number;
@@ -109,18 +121,21 @@ export interface CreatePostRequest {
   title: string;
   content: string;
   level?: Level;
-  grade: number;
+  grades: number[];
   mode: Mode;
   venue?: Venue;
   city?: string;
-  district?: string;
   ward?: string;
   street?: string;
   lat?: number;
   lng?: number;
   from: number;
   to: number;
+  unit?: Unit;
+  hours?: number;
+  flexible?: boolean;
   topics: PostTopicInput[];
+  times?: PostTime[];
 }
 
 export type UpdatePostRequest = Partial<CreatePostRequest> & {
@@ -135,9 +150,9 @@ export interface PostListParams {
   grade?: number;
   mode?: Mode;
   city?: string;
-  district?: string;
   minPrice?: number;
   maxPrice?: number;
+  unit?: Unit;
 }
 
 export interface PostListResponse {
