@@ -155,6 +155,7 @@ export interface PostListParams {
   minPrice?: number;
   maxPrice?: number;
   unit?: Unit;
+  minRating?: number;
 }
 
 export interface PostListResponse {
@@ -194,7 +195,7 @@ export interface RequestModel {
   learner: string;
   topics: {
     id: string;
-    subject: { name: string; slug: string } | null;
+    topic: { name: string; slug: string } | null;
     custom: string | null;
   }[];
   title: string;
@@ -211,8 +212,35 @@ export interface RequestModel {
   to: string | number;
   unit: Unit;
   count: number;
-  schedule: string | null;
+  flexible?: boolean;
+  days?: number[];
+  startTime?: string | null;
+  endTime?: string | null;
+  slot?: "MORNING" | "AFTERNOON" | "EVENING" | null;
   status: string;
   created: string;
   updated: string;
+  saved?: boolean;
+  student?: {
+    account: { name: string; alias: string | null; avatar: string | null };
+  };
+}
+
+export interface RequestListParams {
+  page?: number;
+  limit?: number;
+  topic?: string;
+  level?: Level;
+  mode?: Mode;
+  city?: string;
+  maxBudget?: number;
+  sort?: string;
+}
+
+export interface RequestListResponse {
+  items: RequestModel[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }

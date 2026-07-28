@@ -80,8 +80,8 @@ export function RequestBudget({ form, errors, handleUpdate }: RequestBudgetProps
               <SelectValue placeholder="Chọn đơn vị tính học phí" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border border-white/50 dark:border-white/10 bg-white/80 dark:bg-slate-900/80">
-              <SelectItem value="PER_SESSION">VNĐ / buổi (Theo từng buổi học)</SelectItem>
-              <SelectItem value="PER_MONTH">VNĐ / tháng (Trọn gói tháng)</SelectItem>
+              <SelectItem value="PER_SESSION">VNĐ / buổi</SelectItem>
+              <SelectItem value="PER_MONTH">VNĐ / tháng</SelectItem>
             </SelectContent>
           </Select>
         </div>

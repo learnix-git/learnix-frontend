@@ -51,8 +51,10 @@ export function validateRequestForm(
     errors.grades = "Vui lòng chọn khối lớp.";
   }
 
-  if (form.mode === "OFFLINE" && form.venue === "TUTOR" && !form.city.trim()) {
-    errors.city = "Vui lòng chọn Tỉnh/Thành phố.";
+  if (form.mode === "OFFLINE" && form.venue === "STUDENT") {
+    if (!form.city.trim()) errors.city = "Vui lòng chọn Tỉnh/Thành phố.";
+    if (!form.ward.trim()) errors.ward = "Vui lòng chọn Quận/Huyện.";
+    if (!form.street.trim()) errors.street = "Vui lòng nhập địa chỉ chi tiết.";
   }
 
   if (!form.from || form.from < 10000) {
@@ -74,6 +76,8 @@ export function validateRequestForm(
   if (!form.flexible) {
     if (form.days.length === 0) {
       errors.days = "Vui lòng chọn ít nhất 1 ngày học trong tuần.";
+    } else if (form.count > 0 && form.days.length !== form.count) {
+      errors.days = `Vui lòng chọn đủ ${form.count} ngày học tương ứng với ${form.count} buổi.`;
     }
     if (!form.slot) {
       errors.slot = "Vui lòng chọn buổi học.";

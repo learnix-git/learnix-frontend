@@ -83,6 +83,13 @@ export function validatePostForm(
 
   if (!form.flexible && (!form.startTime || !form.endTime || form.startTime >= form.endTime)) {
     errors.endTime = "Giờ kết thúc phải lớn hơn giờ bắt đầu.";
+  } else if (!form.flexible && form.startTime && form.endTime && form.unit === "PER_SESSION" && form.duration) {
+    const [sh, sm] = form.startTime.split(":").map(Number);
+    const [eh, em] = form.endTime.split(":").map(Number);
+    const diffHours = (eh + em / 60) - (sh + sm / 60);
+    if (Math.abs(diffHours - form.duration) > 0.05) {
+      errors.endTime = `Lịch dạy phải kéo dài đúng ${form.duration} giờ/buổi như đã thiết lập.`;
+    }
   }
 
   return errors;

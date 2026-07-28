@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, X, Filter, MapPin, SlidersHorizontal, Loader2, Star, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, X, Filter, MapPin, SlidersHorizontal, Loader2, Star, CheckCircle, ChevronDown, ChevronUp, BookOpen, FileQuestion } from "lucide-react";
 import { toast } from "sonner";
-import { getPosts } from "@/lib/api/post";
+import { getRequests } from "@/lib/api/request";
 import { getSubjects } from "@/lib/api/subject";
-import type { Subject, Level, Mode, Unit, PostListParams } from "@/lib/api/types";
+import type { Subject, Level, Mode, Unit, RequestListParams } from "@/lib/api/types";
 import { Cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -27,8 +27,8 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/Pagination";
-import { TutorCard, TutorCardSkeleton } from "@/components/tutor/TutorCard";
-import type { Post } from "@/lib/api/types";
+import { RequestCard, RequestCardSkeleton } from "@/components/request/RequestCard";
+import type { RequestModel } from "@/lib/api/types";
 
 // Hằng số
 const ITEMS_PER_PAGE = 12;
@@ -52,13 +52,9 @@ const UNIT_OPTIONS: { label: string; value: Unit }[] = [
     { label: "Theo tháng", value: "PER_MONTH" },
 ];
 
-
-
 const SORT_OPTIONS = [
     { label: "Mới nhất", value: "newest" },
     { label: "Cũ nhất", value: "oldest" },
-    { label: "Đánh giá cao nhất", value: "rating-high" },
-    { label: "Đánh giá thấp nhất", value: "rating-low" },
     { label: "Giá cao nhất", value: "price-high" },
     { label: "Giá thấp nhất", value: "price-low" },
 ];
@@ -130,7 +126,7 @@ function PriceFilter({
     );
 }
 
-export default function FindTutorsPage() {
+export default function FindPostsPage() {
     // Filter state
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([]);
@@ -145,14 +141,12 @@ export default function FindTutorsPage() {
     const [showFilters, setShowFilters] = useState(false);
     const [subjectSearch, setSubjectSearch] = useState("");
     const [showAllSubjects, setShowAllSubjects] = useState(false);
-    const [minRating, setMinRating] = useState<number>(0);
-    const hasRatingFilter = minRating > 0;
 
     // Data state
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [subjectsLoading, setSubjectsLoading] = useState(true);
     const [provinces, setProvinces] = useState<Province[]>([]);
-    const [posts, setPosts] = useState<Post[]>([]);
+    const [requests, setRequests] = useState<RequestModel[]>([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -165,7 +159,7 @@ export default function FindTutorsPage() {
         selectedUnit !== "" ||
         hasMaxPriceFilter ||
         selectedCity !== "" ||
-        hasRatingFilter ||
+
         searchQuery.trim() !== "";
 
     // Lấy danh sách môn học
@@ -188,10 +182,10 @@ export default function FindTutorsPage() {
     }, []);
 
     // Gọi API danh sách bài đăng gia sư
-    const fetchPosts = useCallback(async () => {
+    const fetchRequests = useCallback(async () => {
         setLoading(true);
         try {
-            const params: PostListParams & { sort?: string } = {
+            const params: RequestListParams & { sort?: string } = {
                 page: currentPage,
                 limit: ITEMS_PER_PAGE,
             };
@@ -199,30 +193,28 @@ export default function FindTutorsPage() {
             if (selectedLevels.length === 1) params.level = selectedLevels[0];
             if (selectedModes.length === 1) params.mode = selectedModes[0];
             if (selectedCity) params.city = selectedCity;
-            if (hasMaxPriceFilter) params.maxPrice = priceRange[1];
-            if (selectedUnit) params.unit = selectedUnit;
-            if (hasRatingFilter) params.minRating = minRating;
+            if (hasMaxPriceFilter) params.maxBudget = priceRange[1];
             if (sortBy !== "newest") params.sort = sortBy;
 
-            const res = await getPosts(params);
+            const res = await getRequests(params);
             if (res.code === 200 && res.data) {
                 const data = res.data as any;
-                setPosts(data.items ?? []);
+                setRequests(data.items ?? []);
                 setTotal(data.total ?? 0);
                 setTotalPages(data.totalPages ?? 0);
             }
         } catch {
-            toast.error("Không thể tải danh sách gia sư");
+            toast.error("Không thể tải danh sách yêu cầu");
         } finally {
             setLoading(false);
         }
-    }, [currentPage, selectedSubjects, selectedLevels, selectedModes, selectedCity, priceRange, selectedUnit, minRating, hasMaxPriceFilter, hasRatingFilter, sortBy]);
+    }, [currentPage, selectedSubjects, selectedLevels, selectedModes, selectedCity, priceRange, hasMaxPriceFilter, sortBy]);
 
     // Debounce khi search thay đổi
     useEffect(() => {
-        const t = setTimeout(fetchPosts, searchQuery ? 400 : 0);
+        const t = setTimeout(fetchRequests, searchQuery ? 400 : 0);
         return () => clearTimeout(t);
-    }, [fetchPosts, searchQuery]);
+    }, [fetchRequests, searchQuery]);
 
     const clearAllFilters = () => {
         setSearchQuery("");
@@ -234,7 +226,6 @@ export default function FindTutorsPage() {
         setPriceRange([PRICE_MIN, PRICE_MAX]);
         setSortBy("newest");
         setSelectedCity("");
-        setMinRating(0);
         setCurrentPage(1);
     };
 
@@ -307,10 +298,6 @@ export default function FindTutorsPage() {
             label: selectedCity,
             onRemove: () => { setSelectedCity(""); setCurrentPage(1); },
         },
-        hasRatingFilter && {
-            label: `Từ ${minRating} sao`,
-            onRemove: () => { setMinRating(0); setCurrentPage(1); },
-        },
     ].filter(Boolean) as { label: string; onRemove: () => void }[];
 
     // Nội dung sidebar bộ lọc
@@ -363,7 +350,7 @@ export default function FindTutorsPage() {
                             onClick={() => setShowAllSubjects(!showAllSubjects)}
                             className="flex items-center gap-1 text-[11px] font-bold text-primary tracking-wider uppercase underline underline-offset-4 hover:opacity-80 transition-opacity"
                         >
-                            {showAllSubjects ? "Thu gọn" : "Xem thêm"} 
+                            {showAllSubjects ? "Thu gọn" : "Xem thêm"}
                             {showAllSubjects ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                         </button>
                     </div>
@@ -486,47 +473,6 @@ export default function FindTutorsPage() {
                 </div>
             </div>
 
-            {/* Đánh giá */}
-            <div>
-                <h3 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-4 pl-3 select-none">
-                    <Star size={16} />
-                    Đánh giá
-                </h3>
-                <div className="space-y-1">
-                    {[5, 4, 3, 2, 1].map((star) => {
-                        const isSelected = minRating === star;
-                        return (
-                            <button
-                                key={star}
-                                type="button"
-                                onClick={() => { setMinRating(isSelected ? 0 : star); setCurrentPage(1); }}
-                                className={Cn(
-                                    "group flex items-center gap-2 w-full px-3 py-2.5 rounded-xl cursor-pointer transition-all",
-                                    isSelected
-                                        ? "bg-primary/10"
-                                        : "hover:bg-slate-50 dark:hover:bg-white/5"
-                                )}
-                            >
-                                <span className="flex items-center gap-0.5 shrink-0">
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                        <Star key={i} size={14} className={i < star ? "fill-amber-400 text-amber-400" : "fill-slate-300 text-slate-300 dark:fill-slate-600 dark:text-slate-600"} />
-                                    ))}
-                                </span>
-                                <span className={Cn(
-                                    "text-[13px] font-medium transition-colors",
-                                    isSelected
-                                        ? "text-primary font-semibold"
-                                        : "text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
-                                )}>
-                                    {star} sao
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-
         </div>
     );
 
@@ -539,7 +485,7 @@ export default function FindTutorsPage() {
                     <BreadcrumbComponent
                         pathList={[
                             { name: "Trang chủ", href: "/" },
-                            { name: "Tìm gia sư", href: "/find-tutors" },
+                            { name: "Tìm yêu cầu", href: "/find-posts" },
                         ]}
                     />
                 </div>
@@ -557,7 +503,7 @@ export default function FindTutorsPage() {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                placeholder="Tìm gia sư tại Learnix"
+                                placeholder="Tìm yêu cầu tại Learnix"
                                 className="flex-1 min-w-0 border-none outline-none bg-transparent text-[13px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400"
                             />
                             {searchQuery && (
@@ -591,6 +537,34 @@ export default function FindTutorsPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {/* Dropdown môn học trên search bar */}
+                        <Select
+                            value={selectedSubjects.length > 0 ? selectedSubjects[0].id : "all"}
+                            onValueChange={(v) => {
+                                if (v === "all") { setSelectedSubjects([]); }
+                                else {
+                                    const s = subjects.find(x => x.id === v);
+                                    if (s) setSelectedSubjects([s]);
+                                }
+                                setCurrentPage(1);
+                            }}
+                            items={[
+                                { value: "all", label: "Tất cả môn học" },
+                                ...subjects.map((s) => ({ value: s.id, label: s.name }))
+                            ]}
+                        >
+                            <SelectTrigger className="hidden sm:flex h-11 min-w-[160px] max-w-[200px] px-4 rounded-2xl bg-white dark:bg-white/8 border border-slate-200/70 dark:border-white/10 shadow-sm text-[13px] font-medium text-slate-700 dark:text-slate-300 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 gap-2">
+                                <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
+                                <SelectValue placeholder="Môn học" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border border-white/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl max-h-[280px] overflow-y-auto">
+                                <SelectItem value="all">Tất cả môn học</SelectItem>
+                                {subjects.map((s) => (
+                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             </div>
@@ -605,7 +579,7 @@ export default function FindTutorsPage() {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[15px] font-black text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
-                                Tìm thấy <span className="text-primary">{total}</span> gia sư tại Learnix
+                                Tìm thấy <span className="text-primary">{total}</span> yêu cầu tìm gia sư
                             </span>
 
                             {activeChips.map((chip, i) => (
@@ -728,13 +702,13 @@ export default function FindTutorsPage() {
                     <div className="flex-1 min-w-0">
                         {loading ? (
                             <div className="flex flex-col gap-4">
-                                {[...Array(4)].map((_, i) => <TutorCardSkeleton key={i} />)}
+                                {[...Array(4)].map((_, i) => <RequestCardSkeleton key={i} />)}
                             </div>
-                        ) : posts.length === 0 ? (
+                        ) : requests.length === 0 ? (
                             <Empty
                                 variant="search"
-                                icon={<Search className="w-8 h-8 text-primary" />}
-                                title="Không tìm thấy gia sư phù hợp"
+                                icon={<FileQuestion className="w-8 h-8 text-primary" />}
+                                title="Không tìm thấy yêu cầu phù hợp"
                                 description="Hãy thử điều chỉnh bộ lọc hoặc mở rộng tiêu chí tìm kiếm nhé!"
                                 action={
                                     hasActiveFilters ? (
@@ -750,7 +724,7 @@ export default function FindTutorsPage() {
                             />
                         ) : (
                             <div className="flex flex-col gap-4">
-                                {posts.map((post) => <TutorCard key={post.id} post={post} />)}
+                                {requests.map((req) => <RequestCard key={req.id} req={req} />)}
                             </div>
                         )}
 
