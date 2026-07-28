@@ -98,6 +98,7 @@ export interface Post {
   ward: string | null;
   street: string | null;
   lat: number | null;
+  saved?: boolean;
   lng: number | null;
   from: number;
   to: number;
@@ -150,6 +151,7 @@ export interface PostListParams {
   grade?: number;
   mode?: Mode;
   city?: string;
+  ward?: string;
   minPrice?: number;
   maxPrice?: number;
   unit?: Unit;

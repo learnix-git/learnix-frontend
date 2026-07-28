@@ -42,3 +42,15 @@ export async function deletePost(id: string): Promise<ApiResponse<null>> {
   const res = await client.delete<ApiResponse<null>>(`/posts/${id}`);
   return res.data;
 }
+
+// POST /bookmarks/posts/:id
+export async function bookmarkPost(postId: string) {
+  const res = await client.post(`/bookmarks`, { postId });
+  return res.data;
+}
+
+// Bỏ bookmark bài đăng
+export async function unbookmarkPost(postId: string) {
+  const res = await client.delete(`/bookmarks/${postId}?type=post`);
+  return res.data;
+}
