@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Bookmark, Star, StarHalf, MapPin, Monitor, Clock, GraduationCap, Banknote, CalendarDays, CheckCircle } from "lucide-react";
+import { Bookmark, MapPin, Monitor, Clock, GraduationCap, Banknote, CalendarDays, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Cn } from "@/lib/utils";
+import { Cn, generateTutorAlias } from "@/lib/utils";
 import type { Post } from "@/lib/api/types";
 import { bookmarkPost, unbookmarkPost } from "@/lib/api/post";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/Tooltip";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/Popover";
+
+import { Rating } from "@/components/ui/Rating";
 
 // Định dạng học phí
 function fmt(n: number) {
@@ -69,12 +69,11 @@ export function TutorCard({ post }: TutorCardProps) {
   }, [post.saved]);
 
   return (
-    <TooltipProvider delay={0}>
-      <Link
-        href={`/posts/${post.id}`}
-        className="block relative rounded-3xl bg-white dark:bg-slate-900/40 border border-slate-200/80 dark:border-white/5 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-300 p-4 sm:p-5 lg:p-6"
-      >
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+    <Link
+      href={`/tutor/${tutor?.account?.alias || generateTutorAlias(tutorName, tutor?.id || "")}`}
+      className="block relative rounded-3xl bg-white dark:bg-slate-900/40 border border-slate-200/80 dark:border-white/5 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-300 p-4 sm:p-5 lg:p-6"
+    >
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
 
           {/* Avatar bên trái */}
           <div className="shrink-0 flex justify-center">
@@ -103,41 +102,8 @@ export function TutorCard({ post }: TutorCardProps) {
                   </h3>
 
                   {/* Đánh giá */}
-                  <div className="flex items-center gap-1.5 text-[13px] font-bold text-slate-700 dark:text-slate-200 shrink-0">
-                    <div className="flex gap-0.5 mr-0.5">
-                      {[1, 2, 3, 4, 5].map((i) => {
-                        const rating = tutor?.rating || 0;
-                        const isFull = i <= Math.floor(rating);
-                        const isHalf = !isFull && i === Math.ceil(rating) && rating % 1 > 0;
-
-                        if (isHalf) {
-                          return (
-                            <StarHalf
-                              key={i}
-                              className="w-3.5 h-3.5 fill-amber-500 text-amber-500"
-                            />
-                          );
-                        }
-
-                        return (
-                          <Star
-                            key={i}
-                            className={Cn(
-                              "w-3.5 h-3.5",
-                              isFull ? "fill-amber-500 text-amber-500" :
-                                "fill-slate-200 text-slate-200 dark:fill-slate-700 dark:text-slate-700"
-                            )}
-                          />
-                        );
-                      })}
-                    </div>
-                    {hasRating ? (
-                      <>
-                        {tutor.rating.toFixed(1)} <span className="text-slate-400 font-medium">({tutor.reviews})</span>
-                      </>
-                    ) : (
-                      <span className="text-slate-400 font-medium">(Mới)</span>
-                    )}
+                  <div className="shrink-0 mt-0.5">
+                    <Rating rating={Number(tutor?.rating || 0)} reviews={Number(tutor?.reviews || 0)} showCount={hasRating} />
                   </div>
                 </div>
 
@@ -192,7 +158,7 @@ export function TutorCard({ post }: TutorCardProps) {
                     e.preventDefault();
                     e.stopPropagation();
                     if (tutor) {
-                      router.push(`/tutors/${tutor.id}`);
+                      router.push(`/tutor/${tutor.account?.alias || generateTutorAlias(tutorName, tutor.id)}`);
                     }
                   }}
                   className="min-w-0 flex-1 sm:flex-none px-4 sm:px-5 h-10 bg-slate-950 hover:bg-slate-900 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-950 text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md shadow-black/10 dark:shadow-none inline-flex items-center justify-center gap-1.5"
@@ -229,16 +195,9 @@ export function TutorCard({ post }: TutorCardProps) {
                   Online
                 </div>
               ) : (
-                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  <Tooltip>
-                    <TooltipTrigger className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-help">
-                      <MapPin className="w-3 h-3 text-primary" />
-                      Offline
-                    </TooltipTrigger>
-                    <TooltipContent hideArrow={true} side="top" sideOffset={8} className="px-3 py-1.5 bg-slate-800 dark:bg-slate-700 text-white border-none shadow-xl rounded-lg text-[11px] font-semibold">
-                      {post.venue === "BOTH" ? "Địa điểm tùy ý" : post.venue === "STUDENT" ? "Tại nhà học viên" : post.venue === "TUTOR" ? "Tại nhà gia sư" : "Offline"}
-                    </TooltipContent>
-                  </Tooltip>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                  <MapPin className="w-3 h-3 text-primary" />
+                  {post.venue === "BOTH" ? "Tùy ý" : post.venue === "STUDENT" ? "Tại nhà học viên" : post.venue === "TUTOR" ? "Tại nhà gia sư" : "Offline"}
                 </div>
               )}
 
@@ -265,30 +224,9 @@ export function TutorCard({ post }: TutorCardProps) {
                   Lịch dạy thỏa thuận
                 </div>
               ) : (post.times?.length ?? 0) > 0 ? (
-                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  <Tooltip>
-                    <TooltipTrigger className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors">
-                      <CalendarDays className="w-3 h-3 text-primary" />
-                      Lịch dạy
-                    </TooltipTrigger>
-                    <TooltipContent hideArrow={true} side="top" sideOffset={8} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl w-auto min-w-[150px]">
-                      <table className="w-full text-[13px] text-left">
-                        <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                          {post.times!.map((t, i) => {
-                            const dayStr = t.day === 8 ? "CN" : `Thứ ${t.day}`;
-                            return (
-                              <tr key={i}>
-                                <td className="py-1.5 pr-4 font-bold text-primary whitespace-nowrap">{dayStr}</td>
-                                <td className="py-1.5 font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                                  {t.start} - {t.end}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </TooltipContent>
-                  </Tooltip>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                  <CalendarDays className="w-3 h-3 text-primary" />
+                  Lịch dạy: {post.times?.length} buổi/tuần
                 </div>
               ) : null}
             </div>
@@ -305,65 +243,73 @@ export function TutorCard({ post }: TutorCardProps) {
               </span>
             ))}
             {hiddenTopics.length > 0 && (
-              <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                <Tooltip>
-                  <TooltipTrigger className="inline-flex items-center justify-center px-2 py-1 min-w-[28px] rounded-full text-[11px] font-bold bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 transition-colors">
-                    +{hiddenTopics.length}
-                  </TooltipTrigger>
-                  <TooltipContent hideArrow={true} side="top" sideOffset={8} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl">
-                    <div className="flex flex-wrap gap-2 max-w-[200px]">
-                      {hiddenTopics.map((t, i) => (
-                        <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              <span className="inline-flex items-center justify-center px-2 py-1 min-w-[28px] rounded-full text-[11px] font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                +{hiddenTopics.length} môn khác
+              </span>
             )}
           </div>
         )}
 
       </Link>
-    </TooltipProvider>
   );
 }
 
 // Skeleton card
 export function TutorCardSkeleton() {
   return (
-    <div className="block relative rounded-3xl bg-white dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/5 p-4 sm:p-5 lg:p-6 animate-pulse">
+    <div className="block relative rounded-3xl bg-white dark:bg-slate-900/40 border border-slate-200/80 dark:border-white/5 p-4 sm:p-5 lg:p-6 animate-pulse">
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+        
+        {/* Avatar bên trái */}
         <div className="shrink-0 flex justify-center">
-          <div className="w-[64px] h-[64px] rounded-full bg-slate-200 dark:bg-white/10" />
+          <div className="w-[64px] h-[64px] rounded-full bg-slate-200 dark:bg-white/10 ring-4 ring-slate-100 dark:ring-white/5" />
         </div>
-        <div className="flex-1 space-y-4 py-1">
-          <div className="flex justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <div className="h-5 w-40 bg-slate-200 dark:bg-white/10 rounded-full" />
-                <div className="h-5 w-16 bg-slate-200 dark:bg-white/10 rounded-full" />
+
+        {/* Nội dung chính */}
+        <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+          
+          {/* Hàng 1: Tên + Badge + Buttons */}
+          <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <div className="h-5 w-32 bg-slate-200 dark:bg-white/10 rounded-md" />
+                <div className="h-4 w-20 bg-slate-200 dark:bg-white/10 rounded-md mt-0.5" />
               </div>
-              <div className="h-3 w-60 bg-slate-200 dark:bg-white/10 rounded" />
-              <div className="h-3 w-32 bg-slate-200 dark:bg-white/10 rounded" />
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-48 bg-slate-200 dark:bg-white/10 rounded-md" />
+                <div className="h-3 w-24 bg-slate-200 dark:bg-white/10 rounded-md" />
+              </div>
             </div>
-            <div className="flex gap-2">
-              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10" />
-              <div className="w-20 h-8 rounded-full bg-slate-200 dark:bg-white/10" />
+
+            {/* Buttons: Bookmark + Liên hệ */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="h-10 w-10 rounded-2xl bg-slate-200 dark:bg-white/10" />
+              <div className="h-10 w-[84px] rounded-2xl bg-slate-200 dark:bg-white/10" />
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <div className="h-7 w-28 bg-slate-200 dark:bg-white/10 rounded-full" />
-            <div className="h-7 w-20 bg-slate-200 dark:bg-white/10 rounded-full" />
-            <div className="h-7 w-24 bg-slate-200 dark:bg-white/10 rounded-full" />
+
+          {/* Mô tả chi tiết */}
+          <div className="space-y-1.5 mt-1">
+            <div className="h-3 w-full bg-slate-200 dark:bg-white/10 rounded" />
+            <div className="h-3 w-4/5 bg-slate-200 dark:bg-white/10 rounded" />
           </div>
-          <div className="flex gap-2 mt-1">
-            <div className="h-6 w-16 bg-slate-200 dark:bg-white/10 rounded-full" />
-            <div className="h-6 w-16 bg-slate-200 dark:bg-white/10 rounded-full" />
-            <div className="h-6 w-20 bg-slate-200 dark:bg-white/10 rounded-full" />
+
+          {/* Hàng 2: Meta Chips */}
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <div className="h-[26px] w-[110px] bg-slate-200 dark:bg-white/10 rounded-full" />
+            <div className="h-[26px] w-[70px] bg-slate-200 dark:bg-white/10 rounded-full" />
+            <div className="h-[26px] w-[90px] bg-slate-200 dark:bg-white/10 rounded-full" />
+            <div className="h-[26px] w-[130px] bg-slate-200 dark:bg-white/10 rounded-full" />
           </div>
+
         </div>
+      </div>
+
+      {/* Hàng 3: Subjects Tags */}
+      <div className="flex flex-wrap items-center gap-2 mt-3 sm:ml-[84px]">
+        <div className="h-[26px] w-[60px] bg-slate-200 dark:bg-white/10 rounded-full" />
+        <div className="h-[26px] w-[80px] bg-slate-200 dark:bg-white/10 rounded-full" />
+        <div className="h-[26px] w-[70px] bg-slate-200 dark:bg-white/10 rounded-full" />
       </div>
     </div>
   );

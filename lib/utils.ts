@@ -85,6 +85,27 @@ export function FormatMoney(amount: number): string {
   }).format(amount);
 }
 
+export function FormatNumber(num: number): string { return num.toString(); }
+
+export function parseTutorAlias(slug: string): string {
+  if (!slug) return "";
+  const parts = slug.split("-");
+  return parts[parts.length - 1] || slug;
+}
+
+export function generateTutorAlias(name: string, id: string): string {
+  const safeName = name || "gia-su";
+  const slug = safeName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `${slug}-${id}`;
+}
+
 /**
  * Chuẩn hóa chuỗi tiếng Việt để hỗ trợ tìm kiếm bằng cách loại bỏ dấu
  * @param str Chuỗi cần chuẩn hóa
