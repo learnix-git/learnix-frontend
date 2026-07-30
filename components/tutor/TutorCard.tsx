@@ -49,9 +49,10 @@ function getInitials(name: string) {
 
 interface TutorCardProps {
   post: Post;
+  onBookmark?: () => void;
 }
 
-export function TutorCard({ post }: TutorCardProps) {
+export function TutorCard({ post, onBookmark }: TutorCardProps) {
   const router = useRouter();
   const tutor = post.tutor;
   const topics = post.topics.map((t) => (t as any).topic?.name || t.custom).filter(Boolean) as string[];
@@ -132,6 +133,8 @@ export function TutorCard({ post }: TutorCardProps) {
                     } else {
                       toast.success("Đã bỏ lưu gia sư");
                     }
+
+                    onBookmark?.();
 
                     try {
                       if (newState) {

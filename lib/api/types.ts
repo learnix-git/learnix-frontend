@@ -235,6 +235,7 @@ export interface RequestListParams {
   city?: string;
   maxBudget?: number;
   sort?: string;
+  type?: "match" | "all";
 }
 
 export interface RequestListResponse {

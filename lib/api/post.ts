@@ -43,6 +43,8 @@ export async function deletePost(id: string): Promise<ApiResponse<null>> {
   return res.data;
 }
 
+
+
 // POST /bookmarks/posts/:id
 export async function bookmarkPost(postId: string) {
   const res = await client.post(`/bookmarks`, { postId });
@@ -52,5 +54,22 @@ export async function bookmarkPost(postId: string) {
 // Bỏ bookmark bài đăng
 export async function unbookmarkPost(postId: string) {
   const res = await client.delete(`/bookmarks/${postId}?type=post`);
+  return res.data;
+}
+
+// GET /bookmarks?type=post 
+export async function getSavedPosts(
+  params?: PostListParams
+): Promise<ApiResponse<PostListResponse>> {
+  const res = await client.get<ApiResponse<any>>("/bookmarks", {
+    params: { ...params, type: "post" },
+  });
+
+  if (res.data?.data?.items) {
+    res.data.data.items = res.data.data.items.map((item: any) => {
+      return { ...item.post, saved: true };
+    });
+  }
+
   return res.data;
 }

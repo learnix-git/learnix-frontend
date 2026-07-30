@@ -26,6 +26,7 @@ import {
   ChevronDown,
   Bookmark,
   Sparkles,
+  PlusCircle,
   FileText,
   Settings,
   BookOpen,
@@ -38,6 +39,8 @@ import {
   User,
   Moon,
   Sun,
+  Search,
+  Briefcase,
 } from "lucide-react";
 
 function NotificationBell() {
@@ -156,7 +159,7 @@ function UserAvatar({ src, name, size = "sm" }: { src?: string | null; name: str
   const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const [error, setError] = useState(false);
   const s = size === "lg" ? "h-12 w-12 text-base" : "h-9 w-9 text-xs";
-  
+
   return src && !error ? (
     <img src={src} alt={name} className={`${s} rounded-full object-cover border border-border`} onError={() => setError(true)} />
   ) : (
@@ -198,29 +201,29 @@ function ThemeSection({ onClose }: { onClose: () => void }) {
       {open && (
         <div className="flex flex-col bg-transparent">
           {themeOptions.map((opt) => {
-              const IconComponent = opt["Icon"];
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => {
-                    setTheme(opt.value);
-                    onClose?.();
-                  }}
-                  className={Cn(
-                    "flex items-center gap-3 px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left cursor-pointer",
-                    theme === opt.value
-                      ? "bg-primary/10 text-primary font-semibold"
-                      : "text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5"
-                  )}
-                >
-                  <IconComponent size={18} className="text-primary" />
-                  <span>{opt.label}</span>
-                  {theme === opt.value && (
-                    <Check className="ml-auto h-4 w-4 text-primary" />
-                  )}
-                </button>
-              );
-            })}
+            const IconComponent = opt["Icon"];
+            return (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  setTheme(opt.value);
+                  onClose?.();
+                }}
+                className={Cn(
+                  "flex items-center gap-3 px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left cursor-pointer",
+                  theme === opt.value
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5"
+                )}
+              >
+                <IconComponent size={18} className="text-primary" />
+                <span>{opt.label}</span>
+                {theme === opt.value && (
+                  <Check className="ml-auto h-4 w-4 text-primary" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -244,7 +247,7 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
   return (
     <div ref={ref} className="absolute right-0 top-full mt-2 w-72 z-[60]">
       <div className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl">
-        
+
         {/* Profile Header */}
         <div className="flex flex-col items-center gap-2 border-b border-border px-4 py-5 bg-muted/30">
           <UserAvatar src={user.avatar} name={user.name} size="lg" />
@@ -262,11 +265,11 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
 
         {/* Menu Links */}
         <div className="p-2 space-y-0.5 max-h-[60vh] overflow-y-auto">
-          
+
           <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             {isTutor ? "Góc quản lý" : "Góc học tập"}
           </div>
-          
+
           <Link href="/my-classrooms" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
             <BookOpen className="h-4 w-4 text-primary" />
             <span>Lớp học của tôi</span>
@@ -329,7 +332,7 @@ export function Header() {
   const [examsDropdown, setExamsDropdown] = useState(false);
   const [desktopUserMenuOpen, setDesktopUserMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  
+
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const chatUnreadCount = useChatStore((s) => s.unreadCount);
@@ -364,7 +367,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full transition-colors bg-background/80 backdrop-blur-2xl border-b border-border">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        
+
         {/* Mobile: Hamburger Button */}
         <div className="flex items-center lg:hidden">
           <button
@@ -384,8 +387,8 @@ export function Header() {
 
         {/* Desktop Logo */}
         <Link href="/" className="hidden lg:flex items-center gap-2 font-black text-2xl tracking-tighter text-primary shrink-0">
-           <img src="/images/logo/logo-header-light.png" alt="Learnix Logo" className="h-[150px] w-auto block dark:hidden" />
-           <img src="/images/logo/logo-header-dark.png" alt="Learnix Logo" className="h-[150px] w-auto hidden dark:block" />
+          <img src="/images/logo/logo-header-light.png" alt="Learnix Logo" className="h-[150px] w-auto block dark:hidden" />
+          <img src="/images/logo/logo-header-dark.png" alt="Learnix Logo" className="h-[150px] w-auto hidden dark:block" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -397,13 +400,13 @@ export function Header() {
             onClick={() => setclassroomsDropdown(false)}
           >
             <Link
-              href="/find-classrooms"
+              href="/find-posts"
               className={Cn(
                 "flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-xl",
                 isclassroomsActive ? "text-primary font-bold bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"
               )}
             >
-              Lớp học
+              Tìm việc
               <ChevronDown className={Cn("h-4 w-4 text-muted-foreground transition-transform duration-200", classroomsDropdown && "rotate-180")} />
             </Link>
 
@@ -412,29 +415,29 @@ export function Header() {
                 <div className="w-fit mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="w-full rounded-3xl bg-card/95 backdrop-blur-2xl shadow-2xl border border-border p-8 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150">
                     <div className="grid grid-cols-[260px_300px_260px] gap-2 relative z-10">
-                      
+
                       {/* ACTION CHÍNH */}
                       <div className="space-y-8 pr-8 border-r border-border/50">
                         <div>
                           <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Khám phá</h3>
                           <div className="space-y-4">
-                            <Link href="/classrooms" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
-                              <BookOpen className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tất cả lớp học
+                            <Link href="/find-posts" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <Search className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tất cả việc làm
                             </Link>
-                            <Link href="/classrooms?type=live" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
-                              <Monitor className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Lớp trực tuyến
+                            <Link href="/recommended-posts" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <Sparkles className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Việc làm phù hợp
                             </Link>
                           </div>
                         </div>
 
                         <div>
-                          <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Lớp học</h3>
+                          <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Việc làm</h3>
                           <div className="space-y-4">
-                            <Link href="/dashboard/student" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
-                              <Users className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Lớp học của tôi
+                            <Link href="/jobs/my-jobs" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <Briefcase className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Việc làm của tôi
                             </Link>
-                            <Link href="/classrooms/stored" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
-                              <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Lớp học đã lưu
+                            <Link href="/favorite-posts" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Việc làm đã lưu
                             </Link>
                           </div>
                         </div>
@@ -483,37 +486,37 @@ export function Header() {
                 isTutorsActive ? "text-primary font-bold bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"
               )}
             >
-              Gia sư
+              Thuê gia sư
               <ChevronDown className={Cn("h-4 w-4 text-muted-foreground transition-transform duration-200", tutorsDropdown && "rotate-180")} />
             </Link>
 
             {tutorsDropdown && (
               <div className="fixed left-1/2 -translate-x-1/2 top-16 z-[60] cursor-default pointer-events-none">
                 <div className="w-fit mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="w-full rounded-3xl bg-card/95 backdrop-blur-2xl shadow-2xl border border-border p-8 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150"> 
+                  <div className="w-full rounded-3xl bg-card/95 backdrop-blur-2xl shadow-2xl border border-border p-8 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150">
                     <div className="grid grid-cols-[260px_300px_260px] gap-2 relative z-10">
-                      
+
                       <div className="space-y-8 pr-8 border-r border-border/50">
                         <div>
                           <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Khám phá</h3>
                           <div className="space-y-4">
-                            <Link href="/tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/find-tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Users className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tất cả gia sư
                             </Link>
-                            <Link href="/tutors?type=featured" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
-                              <GraduationCap className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Gia sư nổi bật
+                            <Link href="/favorite-tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Gia sư đã lưu
                             </Link>
                           </div>
                         </div>
 
                         <div>
-                          <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Gia sư</h3>
+                          <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Thuê gia sư</h3>
                           <div className="space-y-4">
-                            <Link href="/dashboard/student/tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
-                              <Users className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Gia sư của tôi
+                            <Link href="/client-post" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <PlusCircle className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tạo bài đăng mới
                             </Link>
-                            <Link href="/tutors/stored" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
-                              <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Gia sư đã lưu
+                            <Link href="/dashboard/student/requests" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <GraduationCap className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Bài đăng của tôi
                             </Link>
                           </div>
                         </div>
@@ -579,9 +582,9 @@ export function Header() {
             {examsDropdown && (
               <div className="absolute left-1/2 -translate-x-1/2 top-16 z-[60] cursor-default pointer-events-none">
                 <div className="w-[540px] px-4">
-                  <div className="w-full rounded-3xl bg-card/95 backdrop-blur-2xl shadow-2xl border border-border p-5 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150"> 
+                  <div className="w-full rounded-3xl bg-card/95 backdrop-blur-2xl shadow-2xl border border-border p-5 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150">
                     <div className="flex flex-col gap-3 relative z-10">
-                      
+
                       <Link href="/exams" className="group flex items-center justify-between p-4 rounded-2xl border border-border/40 bg-background/50 hover:border-primary/40 hover:bg-primary/5 transition-all">
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="h-12 w-12 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -625,7 +628,7 @@ export function Header() {
 
         {/* Right Actions: Notifications, Messages, Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
-          
+
           <Tooltip content="Thông báo" side="bottom">
             <NotificationBell />
           </Tooltip>
@@ -689,7 +692,7 @@ export function Header() {
       <Drawer open={mobileOpen} onOpenChange={setMobileOpen} direction="left">
         <DrawerContent className="flex flex-col w-4/5 max-w-sm h-full rounded-none">
           <DrawerTitle className="sr-only">Menu Learnix</DrawerTitle>
-          
+
           <div className="flex items-center justify-between p-4 border-b border-border">
             <Link href="/" onClick={() => setMobileOpen(false)} className="font-black text-xl tracking-tight text-primary flex items-center gap-2">
               <GraduationCap className="h-7 w-7" /> LEARNIX
@@ -705,16 +708,16 @@ export function Header() {
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {/* Lớp học */}
             <div>
-              <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2 px-2">Lớp học trực tuyến</p>
+              <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2 px-2">Tìm việc</p>
               <div className="space-y-1">
-                <Link href="/classrooms" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl font-bold text-primary bg-primary/10">
-                  Tất cả lớp học
+                <Link href="/find-posts" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl font-bold text-primary bg-primary/10">
+                  Tất cả việc làm
                 </Link>
-                <Link href="/classrooms?type=live" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
-                  Lớp học trực tuyến
+                <Link href="/find-posts?type=match" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
+                  Việc làm phù hợp
                 </Link>
-                <Link href="/classrooms/stored" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
-                  Lớp học yêu thích
+                <Link href="/favorite-posts" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
+                  Việc làm đã lưu
                 </Link>
               </div>
             </div>
