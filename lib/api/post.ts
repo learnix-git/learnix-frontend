@@ -16,6 +16,14 @@ export async function getPosts(
   return res.data;
 }
 
+// GET /posts/my
+export async function getMyPosts(
+  params?: PostListParams & { status?: string; search?: string }
+): Promise<ApiResponse<PostListResponse & { stats?: Record<string, number> }>> {
+  const res = await client.get<ApiResponse<PostListResponse & { stats?: Record<string, number> }>>("/posts/my", { params });
+  return res.data;
+}
+
 // GET /posts/:id 
 export async function getPost(id: string): Promise<ApiResponse<Post>> {
   const res = await client.get<ApiResponse<Post>>(`/posts/${id}`);

@@ -15,6 +15,14 @@ export async function getRequests(
   return res.data;
 }
 
+// GET /requests/my
+export async function getMyRequests(
+  params?: RequestListParams & { status?: string; search?: string }
+): Promise<ApiResponse<RequestListResponse & { stats?: Record<string, number> }>> {
+  const res = await client.get<ApiResponse<RequestListResponse & { stats?: Record<string, number> }>>("/requests/my", { params });
+  return res.data;
+}
+
 // GET /requests/:id
 export async function getRequest(id: string): Promise<ApiResponse<RequestModel>> {
   const res = await client.get<ApiResponse<RequestModel>>(`/requests/${id}`);

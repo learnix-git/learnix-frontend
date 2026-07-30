@@ -156,6 +156,7 @@ export interface PostListParams {
   maxPrice?: number;
   unit?: Unit;
   minRating?: number;
+  sort?: string;
 }
 
 export interface PostListResponse {

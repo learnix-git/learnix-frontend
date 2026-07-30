@@ -41,6 +41,7 @@ import {
   Sun,
   Search,
   Briefcase,
+  BriefcaseBusiness,
 } from "lucide-react";
 
 function NotificationBell() {
@@ -275,6 +276,13 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
             <span>Lớp học của tôi</span>
           </Link>
 
+          {isTutor && (
+            <Link href="/my-posts" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
+              <BriefcaseBusiness className="h-4 w-4 text-primary" />
+              <span>Bài đăng của tôi</span>
+            </Link>
+          )}
+
           {!isTutor && (
             <Link href="/classrooms/stored" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
               <Bookmark className="h-4 w-4 text-primary" />
@@ -436,6 +444,9 @@ export function Header() {
                             <Link href="/jobs/my-jobs" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Briefcase className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Việc làm của tôi
                             </Link>
+                            <Link href="/my-posts" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <BriefcaseBusiness className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Bài đăng của tôi
+                            </Link>
                             <Link href="/favorite-posts" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Việc làm đã lưu
                             </Link>
@@ -503,6 +514,9 @@ export function Header() {
                             <Link href="/find-tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Users className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tất cả gia sư
                             </Link>
+                            <Link href="/recommended-tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                              <Sparkles className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Gia sư phù hợp
+                            </Link>
                             <Link href="/favorite-tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Bookmark className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Gia sư đã lưu
                             </Link>
@@ -515,7 +529,7 @@ export function Header() {
                             <Link href="/client-post" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <PlusCircle className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tạo bài đăng mới
                             </Link>
-                            <Link href="/dashboard/student/requests" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/my-requests" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <GraduationCap className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Bài đăng của tôi
                             </Link>
                           </div>
@@ -715,6 +729,9 @@ export function Header() {
                 </Link>
                 <Link href="/find-posts?type=match" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
                   Việc làm phù hợp
+                </Link>
+                <Link href="/my-posts" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
+                  Bài đăng của tôi
                 </Link>
                 <Link href="/favorite-posts" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
                   Việc làm đã lưu
