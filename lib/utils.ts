@@ -106,6 +106,25 @@ export function generateTutorAlias(name: string, id: string): string {
   return `${slug}-${id}`;
 }
 
+export function parseRequestAlias(slug: string): string {
+  if (!slug) return "";
+  const parts = slug.split("-");
+  return parts[parts.length - 1] || slug;
+}
+
+export function generateRequestAlias(title: string, id: string): string {
+  const safeTitle = title || "yeu-cau";
+  const slug = safeTitle
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `${slug}-${id}`;
+}
+
 /**
  * Chuẩn hóa chuỗi tiếng Việt để hỗ trợ tìm kiếm bằng cách loại bỏ dấu
  * @param str Chuỗi cần chuẩn hóa

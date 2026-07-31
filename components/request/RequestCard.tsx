@@ -195,7 +195,11 @@ export function RequestCard({ req, onBookmark, showReviewOnHover = false, showAp
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  router.push(`/requests/${req.id}`);
+                  if (req.student?.account?.id) {
+                    router.push(`/chat?user=${req.student.account.id}`);
+                  } else {
+                    toast.error("Không thể tạo đoạn chat. Thiếu thông tin người dùng.");
+                  }
                 }}
                 className="min-w-0 flex-1 sm:flex-none px-5 h-10 bg-slate-950 hover:bg-slate-900 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-950 text-[12px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md shadow-black/10 dark:shadow-none inline-flex items-center justify-center gap-1.5"
               >

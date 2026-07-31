@@ -35,6 +35,18 @@ export async function createRequest(data: CreateRequestRequest): Promise<ApiResp
   return res.data;
 }
 
+// PATCH /requests/:id
+export async function updateRequest(id: string, data: Partial<CreateRequestRequest> & { status?: string }): Promise<ApiResponse<RequestModel>> {
+  const res = await client.patch<ApiResponse<RequestModel>>(`/requests/${id}`, data);
+  return res.data;
+}
+
+// DELETE /requests/:id
+export async function deleteRequest(id: string): Promise<ApiResponse<null>> {
+  const res = await client.delete<ApiResponse<null>>(`/requests/${id}`);
+  return res.data;
+}
+
 // POST /bookmarks (save request)
 export async function bookmarkRequest(requestId: string) {
   const res = await client.post(`/bookmarks`, { requestId });

@@ -105,7 +105,7 @@ export function RequestReview({
               ) : (
                 <MapPin className="w-3.5 h-3.5" />
               )}
-              {isOnline ? "Online" : (req.city || "Tận nơi")}
+              {isOnline ? "Online" : (req.city ? `Offline - ${req.city}` : "Offline")}
             </span>
             
             {/* Tag 2: Lớp học */}

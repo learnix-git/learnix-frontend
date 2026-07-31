@@ -494,10 +494,10 @@ export default function FindPostsPage() {
             {/* Search bar */}
             <div className="bg-transparent">
                 <div className="max-w-[1280px] mx-auto px-4 py-4">
-                    <div className="flex flex-col sm:flex-row gap-2.5">
+                    <div className="flex items-center gap-2.5 w-full">
 
                         {/* Từ khóa */}
-                        <div className="flex-1 flex items-center gap-3 px-4 h-11 bg-white dark:bg-white/8 border border-slate-200/70 dark:border-white/10 rounded-2xl shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary/40">
+                        <div className="flex-1 min-w-0 flex items-center gap-3 px-4 h-11 bg-white dark:bg-white/8 border border-slate-200/70 dark:border-white/10 rounded-2xl shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary/40">
                             <Search className="w-4 h-4 text-slate-400 shrink-0" />
                             <input
                                 type="text"

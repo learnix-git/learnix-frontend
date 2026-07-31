@@ -161,7 +161,11 @@ export function TutorCard({ post, onBookmark }: TutorCardProps) {
                     e.preventDefault();
                     e.stopPropagation();
                     if (tutor) {
-                      router.push(`/tutor/${tutor.account?.alias || generateTutorAlias(tutorName, tutor.id)}`);
+                      if (!tutor.account?.id) {
+                        toast.error("Không thể tạo đoạn chat. Thiếu thông tin người dùng.");
+                        return;
+                      }
+                      router.push(`/chat?user=${tutor.account.id}`);
                     }
                   }}
                   className="min-w-0 flex-1 sm:flex-none px-4 sm:px-5 h-10 bg-slate-950 hover:bg-slate-900 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-950 text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md shadow-black/10 dark:shadow-none inline-flex items-center justify-center gap-1.5"

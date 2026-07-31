@@ -456,7 +456,7 @@ export default function MyRequestsPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Link href={`/find-requests/${request.id}`} className="block w-fit max-w-full">
+                          <Link href={`/my-requests/${request.alias || request.id}`} className="block w-fit max-w-full">
                             <h3 className="m-0 line-clamp-2 text-lg font-black leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-xl">
                               {request.title}
                             </h3>
@@ -564,19 +564,17 @@ export default function MyRequestsPage() {
                         </div>
 
                         <div className="grid gap-2">
-                          <Link href={`/find-requests/${request.id}`}>
+                          <Link href={`/my-requests/${request.alias || request.id}`}>
                             <Button className="h-10 w-full rounded-xl text-[13px] font-bold">
                               Quản lý
-                              <ChevronRight className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Link href={`/find-requests/${request.id}`}>
+                          <Link href={`/requests/${request.id}`}>
                             <Button
                               variant="outline"
                               className="h-10 w-full rounded-xl border-slate-200 bg-white/70 text-[13px] font-bold hover:border-primary/30 dark:border-white/10 dark:bg-white/5"
                             >
-                              Xem tin
-                              <ArrowUpRight className="h-4 w-4" />
+                              Xem tin đăng
                             </Button>
                           </Link>
                         </div>

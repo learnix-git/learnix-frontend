@@ -236,7 +236,14 @@ export default function TutorProfilePage({
         <div className="p-5 space-y-2.5">
           <Button
             disabled={contacting}
-            onClick={() => { setContacting(true); setTimeout(() => setContacting(false), 1500); }}
+            onClick={() => {
+              if (!tutorData?.user) {
+                toast.error("Không thể mở chat. Thiếu thông tin người dùng.");
+                return;
+              }
+              setContacting(true);
+              router.push(`/chat?user=${tutorData.user}`);
+            }}
             className="w-full h-12 bg-primary text-white font-extrabold text-sm md:text-base rounded-full shadow-[0_4px_15px_rgba(168,85,247,0.3)] hover:bg-primary/90 hover:shadow-[0_6px_20px_rgba(168,85,247,0.4)] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {contacting && <Loader2 size={16} className="animate-spin" />}
@@ -322,7 +329,14 @@ export default function TutorProfilePage({
             <div className="flex gap-3">
               <Button
                 disabled={contacting}
-                onClick={() => { setContacting(true); setTimeout(() => setContacting(false), 1500); }}
+                onClick={() => {
+                  if (!tutorData?.user) {
+                    toast.error("Không thể mở chat. Thiếu thông tin người dùng.");
+                    return;
+                  }
+                  setContacting(true);
+                  router.push(`/chat?user=${tutorData.user}`);
+                }}
                 className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-extrabold text-sm rounded-xl shadow-[0_4px_15px_rgba(168,85,247,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {contacting && <Loader2 size={14} className="animate-spin" />}

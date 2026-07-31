@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,6 +30,7 @@ import { Card } from "@/components/ui/Card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { BreadcrumbComponent } from "@/components/ui/Breadcrumb";
+import { PostDialog } from "@/components/post/PostDialog";
 import {
   Pagination,
   PaginationContent,
@@ -55,13 +56,13 @@ const SORT_OPTIONS = [
 type SortKey = (typeof SORT_OPTIONS)[number]["id"];
 type StatusTab = "all" | "active" | "inactive";
 
-function TooltipHover({ content, children, side = "top" }: { content: string; children: React.ReactNode; side?: "top" | "bottom" | "left" | "right" }) {
+function TooltipHover({ content, children, side = "top" }: { content: string | React.ReactNode; children: React.ReactElement; side?: "top" | "bottom" | "left" | "right" }) {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger>{children}</TooltipTrigger>
-        <TooltipContent side={side} className="bg-slate-900 text-white font-medium text-[11px] px-2.5 py-1">
-          {content}
+        <TooltipTrigger render={children} />
+        <TooltipContent side={side} hideArrow className="bg-slate-900 text-white font-medium text-[11px] px-2.5 py-1 border-slate-700">
+          {typeof content === 'string' ? content : content}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -199,7 +200,7 @@ function PostRowSkeleton() {
       <div className="col-span-3 sm:col-span-2 min-w-0">
         <div className="aspect-[4/3] w-full max-w-[88px] rounded-xl bg-slate-200 dark:bg-white/10" />
       </div>
-      <div className="col-span-9 sm:col-span-5 space-y-2 min-w-0">
+      <div className="col-span-9 sm:col-span-7 md:col-span-6 lg:col-span-5 space-y-2 min-w-0">
         <div className="flex gap-2">
           <div className="h-4 w-12 rounded bg-slate-200 dark:bg-white/10" />
           <div className="h-4 w-16 rounded bg-slate-200 dark:bg-white/10" />
@@ -215,7 +216,7 @@ function PostRowSkeleton() {
         <div className="h-3 w-8 rounded bg-slate-200 dark:bg-white/10" />
         <div className="h-4 w-10 rounded bg-slate-200 dark:bg-white/10" />
       </div>
-      <div className="hidden md:flex col-span-1 items-center gap-1 min-w-0">
+      <div className="hidden md:flex col-span-1 items-center justify-end gap-1 min-w-0">
         <div className="h-3.5 w-16 rounded bg-slate-200 dark:bg-white/10" />
       </div>
       <div className="col-span-12 sm:col-span-1 flex items-center justify-end gap-1.5 min-w-0">
@@ -242,7 +243,6 @@ function PostRow({
 }) {
   const isActive = item.status === "OPEN";
   const code = item.id.substring(0, 8);
-  const topicsStr = item.topics?.map((t: any) => t.topic?.name || t.custom).join(", ") || "Chưa phân loại";
 
   return (
     <div
@@ -270,48 +270,75 @@ function PostRow({
       </div>
 
       {/* Title + code + category */}
-      <div className="col-span-9 sm:col-span-5 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="px-1.5 py-0.5 rounded-md bg-white/70 dark:bg-slate-900/70 backdrop-blur text-[9px] font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider border border-white/40 dark:border-white/10 font-mono">
-            {code}
-          </span>
-          <span
-            className={Cn(
-              "px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider border",
-              isActive
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+      <div className="col-span-7 sm:col-span-6 lg:col-span-5 flex flex-col justify-center min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-[9px] font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider border border-slate-200 dark:border-white/10 font-mono">
+              {code}
+            </span>
+            <span className={Cn("text-[9px] font-bold px-1.5 py-0.5 rounded-md", isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500")}>
+              {isActive ? "CÔNG KHAI" : "ĐANG ẨN"}
+            </span>
+          </div>
+          <h3 className="text-[14px] font-bold text-slate-900 dark:text-white leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+            {item.title}
+          </h3>
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+              {item.mode === "ONLINE" ? "Online" : "Offline"}
+            </span>
+            {item.level && item.level !== "ALL" && (
+              <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                {item.level === "PRIMARY" ? "Cấp 1" : item.level === "MIDDLE" ? "Cấp 2" : "Cấp 3"}
+              </span>
             )}
-          >
-            {isActive ? "Công khai" : "Đang ẩn"}
-          </span>
+            {item.grades && item.grades.length > 0 && (
+              <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                Lớp {item.grades.sort((a: number, b: number) => a - b).join(", ")}
+              </span>
+            )}
+            {item.topics?.slice(0, 3).map((t: any, i: number) => (
+              <span key={i} className="inline-flex items-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                {t.topic?.name || t.custom}
+              </span>
+            ))}
+            {item.topics && item.topics.length > 3 && (
+              <TooltipHover
+                content={
+                  <div className="flex flex-wrap gap-1 max-w-[220px] text-left py-1">
+                    {item.topics.slice(3).map((t: any, i: number) => (
+                      <span key={i} className="inline-flex items-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                        {t.topic?.name || t.custom}
+                      </span>
+                    ))}
+                  </div>
+                }
+              >
+                <span className="inline-flex items-center justify-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary cursor-help">
+                  +
+                </span>
+              </TooltipHover>
+            )}
+          </div>
         </div>
-        <h3 className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-          {item.title}
-        </h3>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-          {topicsStr}
-        </p>
-      </div>
 
       {/* Price */}
-      <div className="hidden sm:flex col-span-2 flex-col items-end min-w-0">
-        <span className="text-[9px] text-slate-500 font-medium tracking-wide">
-          {item.unit === "PER_MONTH" ? "Tháng" : "Buổi"}
-        </span>
-        <span className="text-[13px] font-black text-purple-500 dark:text-purple-400 tabular-nums">
-          {item.from === item.to ? FormatMoney(item.from) : `${FormatMoney(item.from)} - ${FormatMoney(item.to)}`}
-        </span>
-      </div>
+        <div className="hidden sm:flex col-span-2 flex-col items-end min-w-0">
+          <span className="text-[9px] text-slate-500 font-medium tracking-wide">
+            {item.unit === "PER_MONTH" ? "Tháng" : "Buổi"}
+          </span>
+          <span className="text-[13px] font-black text-emerald-500 tabular-nums">
+            {item.from === item.to ? FormatMoney(item.from) : `${FormatMoney(item.from)} - ${FormatMoney(item.to)}`}
+          </span>
+        </div>
 
       {/* Views */}
       <div className="hidden lg:flex col-span-1 flex-col items-end min-w-0">
-        <span className="text-[9px] text-slate-500 font-medium tracking-wide uppercase">Views</span>
+        <span className="text-[9px] text-slate-500 font-medium tracking-wide uppercase">Lượt xem</span>
         <span className="text-[12px] font-bold text-slate-700 dark:text-slate-300 tabular-nums">0</span>
       </div>
 
       {/* Updated */}
-      <div className="hidden md:flex col-span-1 items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 min-w-0">
+      <div className="hidden md:flex col-span-1 items-center justify-end gap-1 text-[11px] text-slate-500 dark:text-slate-400 min-w-0">
         <Calendar size={11} className="shrink-0" />
         <span className="truncate">
           {item.updated ? new Date(item.updated).toLocaleDateString("vi-VN") : "—"}
@@ -364,6 +391,7 @@ export default function MyPostsPage() {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [stats, setStats] = useState<{ total: number; OPEN: number; HOLD: number }>({ total: 0, OPEN: 0, HOLD: 0 });
 
@@ -569,10 +597,10 @@ export default function MyPostsPage() {
           <Card className="p-0 border-white/60 dark:border-white/5 bg-white/40 dark:bg-white/5 backdrop-blur-2xl overflow-hidden">
             <div className="hidden sm:grid grid-cols-12 gap-3 px-4 py-2.5 border-b border-white/60 dark:border-white/10 bg-white/30 dark:bg-white/[0.03] text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
               <div className="col-span-2">Ảnh</div>
-              <div className="col-span-5">Bài đăng</div>
+              <div className="col-span-7 md:col-span-6 lg:col-span-5">Bài đăng</div>
               <div className="col-span-2 text-right">Học phí</div>
               <div className="col-span-1 text-right hidden lg:block">Views</div>
-              <div className="col-span-1 hidden md:block">Cập nhật</div>
+              <div className="col-span-1 text-right hidden md:block">Cập nhật</div>
               <div className="col-span-1 text-right">Thao tác</div>
             </div>
             <div>
@@ -582,7 +610,10 @@ export default function MyPostsPage() {
                     <PostRow
                       key={item.id}
                       item={item}
-                      onEdit={(id) => router.push(`/tutor-post/${id}`)}
+                      onEdit={(id) => {
+                        const p = posts.find((x) => x.id === id);
+                        if (p) setEditingPost(p);
+                      }}
                       onDelete={handleDelete}
                       onToggleStatus={handleToggleStatus}
                       isTogglingStatus={togglingId === item.id}
@@ -621,6 +652,16 @@ export default function MyPostsPage() {
           </div>
         )}
       </div>
+
+      <PostDialog
+        open={!!editingPost}
+        onOpenChange={(open) => !open && setEditingPost(null)}
+        post={editingPost}
+        onSaved={() => {
+          setEditingPost(null);
+          fetchPosts();
+        }}
+      />
     </div>
   );
 }

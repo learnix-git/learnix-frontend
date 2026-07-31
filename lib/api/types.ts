@@ -88,6 +88,7 @@ export interface PostTime {
 
 export interface Post {
   id: string;
+  alias?: string;
   title: string;
   content: string;
   level: Level;
@@ -114,7 +115,7 @@ export interface Post {
     id: string;
     rating: number;
     reviews: number;
-    account: { name: string; alias: string | null; avatar: string | null };
+    account: { id: string; name: string; alias: string | null; avatar: string | null };
   };
 }
 
@@ -193,6 +194,7 @@ export interface CreateRequestRequest {
 
 export interface RequestModel {
   id: string;
+  alias?: string;
   learner: string;
   topics: {
     id: string;
@@ -223,7 +225,8 @@ export interface RequestModel {
   updated: string;
   saved?: boolean;
   student?: {
-    account: { name: string; alias: string | null; avatar: string | null };
+    id: string;
+    account: { id: string; name: string; alias: string | null; avatar: string | null };
   };
 }
 

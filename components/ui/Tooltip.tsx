@@ -66,7 +66,7 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
 
 type TooltipHoverProps = {
   children: React.ReactElement;
-  content: string;
+  content: string | React.ReactNode;
   side?: "top" | "right" | "bottom" | "left";
 };
 
@@ -76,7 +76,7 @@ export default function TooltipHover({ children, content, side = 'top' }: Toolti
       <Tooltip>
         <TooltipTrigger render={children} />
         <TooltipContent side={side} className="bg-card text-foreground" arrowClassName="bg-card fill-card">
-          <p>{content}</p>
+          {typeof content === 'string' ? <p>{content}</p> : content}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
