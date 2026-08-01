@@ -2,16 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { IconSearch } from "@tabler/icons-react";
-import { Search } from "lucide-react";
-
 import { TwoColumn } from "@/components/layout/TwoColumn";
 import { TutorsSidebar } from "@/components/tutor/TutorsSidebar";
 import { Empty } from "@/components/ui/Empty";
 import { TutorCard, TutorCardSkeleton } from "@/components/tutor/TutorCard";
 import { useAuth } from "@/lib/stores/auth";
-import { getSavedPosts, unbookmarkPost } from "@/lib/api/post";
+import { getSavedPosts } from "@/lib/api/post";
 import type { Post } from "@/lib/api/types";
 import {
   Pagination,
@@ -25,7 +22,8 @@ import {
 
 const PAGE_SIZE = 10;
 
-function getPaginationPages(currentPage: number, totalPages: number) {
+// Tính danh sách số trang hiển thị, rút gọn bằng dấu "..." khi quá nhiều trang
+function GetPaginationPages(currentPage: number, totalPages: number) {
   const pages: Array<number | "left-ellipsis" | "right-ellipsis"> = [];
 
   if (totalPages <= 7) {
@@ -33,18 +31,13 @@ function getPaginationPages(currentPage: number, totalPages: number) {
   }
 
   pages.push(1);
-
   if (currentPage > 4) pages.push("left-ellipsis");
 
   const start = Math.max(2, currentPage - 1);
   const end = Math.min(totalPages - 1, currentPage + 1);
-
-  for (let page = start; page <= end; page += 1) {
-    pages.push(page);
-  }
+  for (let page = start; page <= end; page += 1) pages.push(page);
 
   if (currentPage < totalPages - 3) pages.push("right-ellipsis");
-
   pages.push(totalPages);
 
   return pages;
@@ -52,11 +45,14 @@ function getPaginationPages(currentPage: number, totalPages: number) {
 
 export default function SavedTutorsPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
+
+  // Trạng thái danh sách gia sư đã lưu
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Gọi API lấy danh sách gia sư đã lưu theo trang
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -66,7 +62,7 @@ export default function SavedTutorsPage() {
 
     let active = true;
 
-    const fetchSavedPosts = async () => {
+    const FetchSavedPosts = async () => {
       setIsLoading(true);
       try {
         const res = await getSavedPosts({ limit: PAGE_SIZE, page: currentPage });
@@ -84,26 +80,22 @@ export default function SavedTutorsPage() {
       }
     };
 
-    fetchSavedPosts();
-
-    return () => {
-      active = false;
-    };
+    FetchSavedPosts();
+    return () => { active = false; };
   }, [authLoading, isAuthenticated, currentPage]);
 
-  const handleRemove = (postId: string) => {
+  // Xóa 1 gia sư khỏi danh sách hiện tại
+  const HandleRemove = (postId: string) => {
     const postIndex = savedPosts.findIndex((p) => p.id === postId);
     if (postIndex === -1) return;
 
-    // Xóa khỏi danh sách hiện tại để UI mượt mà
-    // Không cần gọi API ở đây nữa vì TutorCard đã đảm nhận việc gọi API unbookmarkPost
     setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
     setTotal((prev) => Math.max(0, prev - 1));
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const paginationPages = useMemo(
-    () => getPaginationPages(currentPage, totalPages),
+    () => GetPaginationPages(currentPage, totalPages),
     [currentPage, totalPages]
   );
 
@@ -114,17 +106,11 @@ export default function SavedTutorsPage() {
   ];
 
   return (
-    <TwoColumn
-      title="Gia sư đã lưu"
-      breadcrumb={breadcrumb}
-      sidebar={<TutorsSidebar />}
-    >
+    <TwoColumn title="Gia sư đã lưu" breadcrumb={breadcrumb} sidebar={<TutorsSidebar />}>
       <div className="space-y-6">
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(4)].map((_, idx) => (
-              <TutorCardSkeleton key={idx} />
-            ))}
+            {[...Array(4)].map((_, idx) => <TutorCardSkeleton key={idx} />)}
           </div>
         ) : savedPosts.length === 0 ? (
           <Empty
@@ -149,11 +135,7 @@ export default function SavedTutorsPage() {
 
             <div className="flex flex-col gap-4">
               {savedPosts.map((post) => (
-                <TutorCard
-                  key={post.id}
-                  post={{ ...post, saved: true }}
-                  onBookmark={() => handleRemove(post.id)}
-                />
+                <TutorCard key={post.id} post={{ ...post, saved: true }} onBookmark={() => HandleRemove(post.id)} />
               ))}
             </div>
 
@@ -180,7 +162,6 @@ export default function SavedTutorsPage() {
                           </PaginationItem>
                         );
                       }
-
                       return (
                         <PaginationItem key={item}>
                           <PaginationLink

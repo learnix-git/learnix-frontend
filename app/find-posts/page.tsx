@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, X, Filter, MapPin, SlidersHorizontal, Loader2, Star, CheckCircle, ChevronDown, ChevronUp, BookOpen, FileQuestion } from "lucide-react";
+import { Search, X, Filter, MapPin, ChevronDown, ChevronUp, BookOpen, FileQuestion } from "lucide-react";
 import { toast } from "sonner";
 import { getRequests } from "@/lib/api/request";
 import { getSubjects } from "@/lib/api/subject";
@@ -9,16 +9,9 @@ import type { Subject, Level, Mode, Unit, RequestListParams } from "@/lib/api/ty
 import { Cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Slider } from "@/components/ui/Slider";
 import { Empty } from "@/components/ui/Empty";
 import { BreadcrumbComponent } from "@/components/ui/Breadcrumb";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/Select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import {
     Pagination,
     PaginationContent,
@@ -77,13 +70,7 @@ function SubjectSkeleton() {
 }
 
 // Component độc lập cho thanh học phí để không re-render toàn trang khi kéo
-function PriceFilter({
-    initialValue,
-    onCommit
-}: {
-    initialValue: number;
-    onCommit: (val: number) => void;
-}) {
+function PriceFilter({ initialValue, onCommit }: { initialValue: number; onCommit: (val: number) => void }) {
     const [val, setVal] = useState(initialValue);
 
     useEffect(() => {
@@ -99,8 +86,8 @@ function PriceFilter({
                 step={PRICE_STEP}
                 value={val}
                 onChange={(e) => setVal(Number(e.target.value))}
-                onMouseUp={(e) => onCommit(val)}
-                onTouchEnd={(e) => onCommit(val)}
+                onMouseUp={() => onCommit(val)}
+                onTouchEnd={() => onCommit(val)}
                 className="w-full accent-primary h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
             />
             <div className="flex justify-between text-xs font-bold text-slate-400">
@@ -159,7 +146,6 @@ export default function FindPostsPage() {
         selectedUnit !== "" ||
         hasMaxPriceFilter ||
         selectedCity !== "" ||
-
         searchQuery.trim() !== "";
 
     // Lấy danh sách môn học
@@ -182,19 +168,31 @@ export default function FindPostsPage() {
     }, []);
 
     // Gọi API danh sách bài đăng gia sư
-    const fetchRequests = useCallback(async () => {
+    const FetchRequests = useCallback(async () => {
         setLoading(true);
         try {
             const params: RequestListParams & { sort?: string } = {
                 page: currentPage,
                 limit: ITEMS_PER_PAGE,
             };
-            if (selectedSubjects.length > 0) params.topic = selectedSubjects[0].id;
-            if (selectedLevels.length === 1) params.level = selectedLevels[0];
-            if (selectedModes.length === 1) params.mode = selectedModes[0];
-            if (selectedCity) params.city = selectedCity;
-            if (hasMaxPriceFilter) params.maxBudget = priceRange[1];
-            if (sortBy !== "newest") params.sort = sortBy;
+
+            if (selectedSubjects.length > 0)
+                params.topic = selectedSubjects[0].id;
+
+            if (selectedLevels.length === 1)
+                params.level = selectedLevels[0];
+
+            if (selectedModes.length === 1)
+                params.mode = selectedModes[0];
+
+            if (selectedCity)
+                params.city = selectedCity;
+
+            if (hasMaxPriceFilter)
+                params.maxBudget = priceRange[1];
+
+            if (sortBy !== "newest")
+                params.sort = sortBy;
 
             const res = await getRequests(params);
             if (res.code === 200 && res.data) {
@@ -212,11 +210,12 @@ export default function FindPostsPage() {
 
     // Debounce khi search thay đổi
     useEffect(() => {
-        const t = setTimeout(fetchRequests, searchQuery ? 400 : 0);
+        const t = setTimeout(FetchRequests, searchQuery ? 400 : 0);
         return () => clearTimeout(t);
-    }, [fetchRequests, searchQuery]);
+    }, [FetchRequests, searchQuery]);
 
-    const clearAllFilters = () => {
+    // Xóa toàn bộ bộ lọc, trả form về mặc định
+    const ClearAllFilters = () => {
         setSearchQuery("");
         setSelectedSubjects([]);
         setSelectedLevels([]);
@@ -230,31 +229,25 @@ export default function FindPostsPage() {
     };
 
     // Toggle môn học
-    const toggleSubject = (s: Subject) => {
-        setSelectedSubjects((prev) =>
-            prev.some((x) => x.id === s.id) ? prev.filter((x) => x.id !== s.id) : [...prev, s]
-        );
+    const ToggleSubject = (s: Subject) => {
+        setSelectedSubjects((prev) => (prev.some((x) => x.id === s.id) ? prev.filter((x) => x.id !== s.id) : [...prev, s]));
         setCurrentPage(1);
     };
 
     // Toggle cấp học
-    const toggleLevel = (l: Level) => {
-        setSelectedLevels((prev) =>
-            prev.includes(l) ? prev.filter((x) => x !== l) : [...prev, l]
-        );
+    const ToggleLevel = (l: Level) => {
+        setSelectedLevels((prev) => (prev.includes(l) ? prev.filter((x) => x !== l) : [...prev, l]));
         setCurrentPage(1);
     };
 
     // Toggle hình thức
-    const toggleMode = (m: Mode) => {
-        setSelectedModes((prev) =>
-            prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
-        );
+    const ToggleMode = (m: Mode) => {
+        setSelectedModes((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
         setCurrentPage(1);
     };
 
     // Commit giá tối đa
-    const commitMaxPrice = (value = localMaxPrice) => {
+    const CommitMaxPrice = (value = localMaxPrice) => {
         const next = Math.min(Math.max(value, PRICE_MIN), PRICE_MAX);
         setLocalMaxPrice(next);
         setPriceRange([PRICE_MIN, next]);
@@ -303,12 +296,9 @@ export default function FindPostsPage() {
     // Nội dung sidebar bộ lọc
     const FilterContent = () => (
         <div className="space-y-6">
-
             {/* Môn học */}
             <div className="pb-5 border-b border-slate-100 dark:border-white/5">
-                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">
-                    Môn học
-                </h3>
+                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">Môn học</h3>
                 <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
@@ -320,28 +310,24 @@ export default function FindPostsPage() {
                     />
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
-                    {subjectsLoading ? <SubjectSkeleton /> : (
-                        <>
-                            {displayedSubjects.map((s) => {
-                                const on = selectedSubjects.some((x) => x.id === s.id);
-                                return (
-                                    <button
-                                        key={s.id}
-                                        type="button"
-                                        onClick={() => toggleSubject(s)}
-                                        className={Cn(
-                                            "rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border",
-                                            on
-                                                ? "bg-primary text-white border-transparent shadow-sm"
-                                                : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/8 text-slate-600 dark:text-slate-400 hover:border-primary/40 hover:text-primary"
-                                        )}
-                                    >
-                                        {s.name}
-                                    </button>
-                                );
-                            })}
-                        </>
-                    )}
+                    {subjectsLoading ? <SubjectSkeleton /> : displayedSubjects.map((s) => {
+                        const on = selectedSubjects.some((x) => x.id === s.id);
+                        return (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => ToggleSubject(s)}
+                                className={Cn(
+                                    "rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border",
+                                    on
+                                        ? "bg-primary text-white border-transparent shadow-sm"
+                                        : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/8 text-slate-600 dark:text-slate-400 hover:border-primary/40 hover:text-primary"
+                                )}
+                            >
+                                {s.name}
+                            </button>
+                        );
+                    })}
                 </div>
                 {!subjectsLoading && !subjectSearch && filteredSubjects.length > 6 && (
                     <div className="mt-3 flex justify-start">
@@ -359,9 +345,7 @@ export default function FindPostsPage() {
 
             {/* Cấp học */}
             <div className="pb-5 border-b border-slate-100 dark:border-white/5">
-                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">
-                    Cấp học
-                </h3>
+                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">Cấp học</h3>
                 <div className="space-y-0.5">
                     {LEVEL_OPTIONS.map((opt) => {
                         const on = selectedLevels.includes(opt.value);
@@ -369,7 +353,7 @@ export default function FindPostsPage() {
                             <label key={opt.value} className={Cn("group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all", on ? "bg-primary/8" : "hover:bg-slate-50 dark:hover:bg-white/5")}>
                                 <Checkbox
                                     checked={on}
-                                    onCheckedChange={() => toggleLevel(opt.value)}
+                                    onCheckedChange={() => ToggleLevel(opt.value)}
                                     className={on ? "border-primary bg-primary" : "border-slate-300 dark:border-white/10"}
                                 />
                                 <span className={Cn("text-sm flex-1 font-medium transition-colors", on ? "text-primary font-semibold" : "text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white")}>
@@ -383,9 +367,7 @@ export default function FindPostsPage() {
 
             {/* Hình thức dạy */}
             <div className="pb-5 border-b border-slate-100 dark:border-white/5">
-                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">
-                    Hình thức
-                </h3>
+                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">Hình thức</h3>
                 <div className="flex gap-2">
                     {MODE_OPTIONS.map((opt) => {
                         const on = selectedModes.includes(opt.value);
@@ -393,7 +375,7 @@ export default function FindPostsPage() {
                             <button
                                 key={opt.value}
                                 type="button"
-                                onClick={() => toggleMode(opt.value)}
+                                onClick={() => ToggleMode(opt.value)}
                                 className={Cn(
                                     "flex-1 rounded-xl py-2 text-xs font-bold border transition-all",
                                     on
@@ -410,9 +392,7 @@ export default function FindPostsPage() {
 
             {/* Học phí */}
             <div className="pb-5 border-b border-slate-100 dark:border-white/5">
-                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">
-                    Học phí
-                </h3>
+                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">Học phí</h3>
                 <PriceFilter
                     initialValue={localMaxPrice}
                     onCommit={(val) => {
@@ -423,15 +403,13 @@ export default function FindPostsPage() {
                 />
 
                 {/* Đơn vị tính */}
-                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mt-5 mb-3 select-none">
-                    Đơn vị
-                </h3>
+                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mt-5 mb-3 select-none">Đơn vị</h3>
                 <div className="flex gap-2">
                     {UNIT_OPTIONS.map((opt) => (
                         <button
                             key={opt.value}
                             type="button"
-                            onClick={() => { setSelectedUnit((p) => p === opt.value ? "" : opt.value); setCurrentPage(1); }}
+                            onClick={() => { setSelectedUnit((p) => (p === opt.value ? "" : opt.value)); setCurrentPage(1); }}
                             className={Cn(
                                 "flex-1 rounded-xl py-2 text-xs font-bold border transition-all",
                                 selectedUnit === opt.value
@@ -447,17 +425,12 @@ export default function FindPostsPage() {
 
             {/* Sidebar: Dropdown địa điểm */}
             <div className="pb-5 border-b border-slate-100 dark:border-white/5">
-                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">
-                    Địa điểm
-                </h3>
+                <h3 className="text-xs uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-500 mb-3 select-none">Địa điểm</h3>
                 <div className="space-y-2.5">
                     <Select
                         value={selectedCity || "all"}
                         onValueChange={(v) => { setSelectedCity(v && v !== "all" ? v : ""); setCurrentPage(1); }}
-                        items={[
-                            { value: "all", label: "Tất cả tỉnh thành" },
-                            ...provinces.map((p) => ({ value: p.name, label: p.name }))
-                        ]}
+                        items={[{ value: "all", label: "Tất cả tỉnh thành" }, ...provinces.map((p) => ({ value: p.name, label: p.name }))]}
                     >
                         <SelectTrigger className="w-full h-10 rounded-xl border border-slate-200/50 dark:border-white/5 bg-white/50 dark:bg-white/5 text-[13px] text-slate-700 dark:text-slate-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/15">
                             <MapPin className="w-4 h-4 text-slate-400 shrink-0 mr-1.5" />
@@ -465,29 +438,20 @@ export default function FindPostsPage() {
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border border-white/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl max-h-[260px] overflow-y-auto">
                             <SelectItem value="all">Tất cả tỉnh thành</SelectItem>
-                            {provinces.map((p) => (
-                                <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>
-                            ))}
+                            {provinces.map((p) => <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
             </div>
-
         </div>
     );
 
     return (
         <div className="min-h-screen transition-colors duration-300">
-
             {/* Breadcrumb */}
             <div className="bg-white/40 dark:bg-slate-950/40 backdrop-blur-md border-b border-white/60 dark:border-white/5">
                 <div className="max-w-[1280px] mx-auto px-4 py-3.5">
-                    <BreadcrumbComponent
-                        pathList={[
-                            { name: "Trang chủ", href: "/" },
-                            { name: "Tìm yêu cầu", href: "/find-posts" },
-                        ]}
-                    />
+                    <BreadcrumbComponent pathList={[{ name: "Trang chủ", href: "/" }, { name: "Tìm yêu cầu", href: "/find-posts" }]} />
                 </div>
             </div>
 
@@ -495,7 +459,6 @@ export default function FindPostsPage() {
             <div className="bg-transparent">
                 <div className="max-w-[1280px] mx-auto px-4 py-4">
                     <div className="flex items-center gap-2.5 w-full">
-
                         {/* Từ khóa */}
                         <div className="flex-1 min-w-0 flex items-center gap-3 px-4 h-11 bg-white dark:bg-white/8 border border-slate-200/70 dark:border-white/10 rounded-2xl shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary/40">
                             <Search className="w-4 h-4 text-slate-400 shrink-0" />
@@ -521,10 +484,7 @@ export default function FindPostsPage() {
                         <Select
                             value={selectedCity || "all"}
                             onValueChange={(v) => { setSelectedCity(v && v !== "all" ? v : ""); setCurrentPage(1); }}
-                            items={[
-                                { value: "all", label: "Tất cả tỉnh thành" },
-                                ...provinces.map((p) => ({ value: p.name, label: p.name }))
-                            ]}
+                            items={[{ value: "all", label: "Tất cả tỉnh thành" }, ...provinces.map((p) => ({ value: p.name, label: p.name }))]}
                         >
                             <SelectTrigger className="hidden sm:flex h-11 min-w-[160px] max-w-[200px] px-4 rounded-2xl bg-white dark:bg-white/8 border border-slate-200/70 dark:border-white/10 shadow-sm text-[13px] font-medium text-slate-700 dark:text-slate-300 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 gap-2">
                                 <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
@@ -532,9 +492,7 @@ export default function FindPostsPage() {
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border border-white/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl max-h-[280px] overflow-y-auto">
                                 <SelectItem value="all">Tất cả tỉnh thành</SelectItem>
-                                {provinces.map((p) => (
-                                    <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>
-                                ))}
+                                {provinces.map((p) => <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
 
@@ -542,17 +500,14 @@ export default function FindPostsPage() {
                         <Select
                             value={selectedSubjects.length > 0 ? selectedSubjects[0].id : "all"}
                             onValueChange={(v) => {
-                                if (v === "all") { setSelectedSubjects([]); }
+                                if (v === "all") setSelectedSubjects([]);
                                 else {
-                                    const s = subjects.find(x => x.id === v);
+                                    const s = subjects.find((x) => x.id === v);
                                     if (s) setSelectedSubjects([s]);
                                 }
                                 setCurrentPage(1);
                             }}
-                            items={[
-                                { value: "all", label: "Tất cả môn học" },
-                                ...subjects.map((s) => ({ value: s.id, label: s.name }))
-                            ]}
+                            items={[{ value: "all", label: "Tất cả môn học" }, ...subjects.map((s) => ({ value: s.id, label: s.name }))]}
                         >
                             <SelectTrigger className="hidden sm:flex h-11 min-w-[160px] max-w-[200px] px-4 rounded-2xl bg-white dark:bg-white/8 border border-slate-200/70 dark:border-white/10 shadow-sm text-[13px] font-medium text-slate-700 dark:text-slate-300 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 gap-2">
                                 <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
@@ -560,9 +515,7 @@ export default function FindPostsPage() {
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border border-white/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl max-h-[280px] overflow-y-auto">
                                 <SelectItem value="all">Tất cả môn học</SelectItem>
-                                {subjects.map((s) => (
-                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                ))}
+                                {subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -571,10 +524,8 @@ export default function FindPostsPage() {
 
             {/* Main content */}
             <div className="max-w-[1280px] mx-auto px-4">
-
                 {/* Results bar */}
                 <div className="flex items-center justify-between gap-3 py-3 flex-wrap">
-
                     {/* Count + chips */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -593,7 +544,7 @@ export default function FindPostsPage() {
 
                             {activeChips.length > 1 && (
                                 <button
-                                    onClick={clearAllFilters}
+                                    onClick={ClearAllFilters}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-lg text-[11px] font-bold cursor-pointer transition-all hover:bg-rose-100"
                                 >
                                     Xóa tất cả <X className="w-2.5 h-2.5" />
@@ -617,11 +568,7 @@ export default function FindPostsPage() {
                             )}
                         </button>
 
-                        <Select
-                            value={sortBy}
-                            onValueChange={(v) => { if (v) { setSortBy(v); setCurrentPage(1); } }}
-                            items={SORT_OPTIONS}
-                        >
+                        <Select value={sortBy} onValueChange={(v) => { if (v) { setSortBy(v); setCurrentPage(1); } }} items={SORT_OPTIONS}>
                             <SelectTrigger className="w-[200px] h-9 px-3 rounded-xl bg-white dark:bg-slate-900/90 border-slate-200 dark:border-white/10 text-[12px] font-semibold text-slate-700 dark:text-slate-300 shadow-sm">
                                 <SelectValue placeholder="Sắp xếp theo">
                                     {SORT_OPTIONS.find((o) => o.value === sortBy)?.label || "Sắp xếp theo"}
@@ -640,7 +587,6 @@ export default function FindPostsPage() {
 
                 {/* Sidebar + listing layout */}
                 <div className="flex gap-5 pb-12">
-
                     {/* Desktop sidebar */}
                     <aside className="w-[300px] shrink-0 sticky top-[90px] h-[calc(100vh-110px)] max-h-[calc(100vh-110px)] p-5 bg-white/60 dark:bg-white/4 backdrop-blur-xl border border-slate-200/60 dark:border-white/8 rounded-[1.75rem] shadow-sm max-lg:hidden flex flex-col">
                         <div className="min-h-0 flex-1 overflow-y-auto pr-1 custom-scrollbar">
@@ -650,7 +596,7 @@ export default function FindPostsPage() {
                             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 shrink-0">
                                 <button
                                     type="button"
-                                    onClick={clearAllFilters}
+                                    onClick={ClearAllFilters}
                                     className="flex items-center justify-center gap-1.5 w-full py-2.5 px-4 border border-dashed border-rose-200 dark:border-rose-900/50 rounded-xl bg-rose-50/50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 text-[11px] font-bold tracking-wider cursor-pointer hover:bg-rose-100/60 transition-all"
                                 >
                                     <X className="w-3 h-3" />
@@ -662,14 +608,8 @@ export default function FindPostsPage() {
 
                     {/* Mobile filter drawer */}
                     {showFilters && (
-                        <div
-                            className="fixed inset-0 bg-black/50 z-[999] lg:hidden backdrop-blur-sm"
-                            onClick={() => setShowFilters(false)}
-                        >
-                            <div
-                                className="fixed right-0 top-0 bottom-0 w-[80vw] sm:w-[340px] bg-white dark:bg-slate-950 overflow-y-auto z-[1000] rounded-l-3xl shadow-2xl flex flex-col"
-                                onClick={(e) => e.stopPropagation()}
-                            >
+                        <div className="fixed inset-0 bg-black/50 z-[999] lg:hidden backdrop-blur-sm" onClick={() => setShowFilters(false)}>
+                            <div className="fixed right-0 top-0 bottom-0 w-[80vw] sm:w-[340px] bg-white dark:bg-slate-950 overflow-y-auto z-[1000] rounded-l-3xl shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
                                 {/* Drawer header */}
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5 sticky top-0 bg-white dark:bg-slate-950 z-[1]">
                                     <h2 className="text-sm font-black text-slate-900 dark:text-white">Bộ lọc</h2>
@@ -686,7 +626,7 @@ export default function FindPostsPage() {
                                 {hasActiveFilters && (
                                     <div className="p-4 border-t border-slate-100 dark:border-white/5 sticky bottom-0 bg-white dark:bg-slate-950">
                                         <button
-                                            onClick={() => { clearAllFilters(); setShowFilters(false); }}
+                                            onClick={() => { ClearAllFilters(); setShowFilters(false); }}
                                             className="flex items-center justify-center gap-1.5 w-full py-2.5 border border-dashed border-rose-200 dark:border-rose-900/50 rounded-xl bg-rose-50/50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 text-[11px] font-bold tracking-wider cursor-pointer transition-all"
                                         >
                                             <X className="w-3 h-3" />
@@ -713,7 +653,7 @@ export default function FindPostsPage() {
                                 action={
                                     hasActiveFilters ? (
                                         <button
-                                            onClick={clearAllFilters}
+                                            onClick={ClearAllFilters}
                                             className="inline-flex items-center gap-2 py-2.5 px-6 border border-dashed border-rose-300 dark:border-rose-900/50 rounded-2xl text-rose-600 dark:text-rose-400 text-[11px] font-bold tracking-widest cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
                                         >
                                             <X className="w-3.5 h-3.5" />

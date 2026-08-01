@@ -18,13 +18,11 @@ import {
   Search,
   Trash2,
   X,
-  FileText
+  FileText,
 } from "lucide-react";
-
 import { getMyPosts, deletePost, updatePost } from "@/lib/api/post";
 import type { Post } from "@/lib/api/types";
 import { Cn, FormatMoney } from "@/lib/utils";
-
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
@@ -56,19 +54,21 @@ const SORT_OPTIONS = [
 type SortKey = (typeof SORT_OPTIONS)[number]["id"];
 type StatusTab = "all" | "active" | "inactive";
 
+// Tooltip dùng chung, hiển thị khi hover vào 1 phần tử
 function TooltipHover({ content, children, side = "top" }: { content: string | React.ReactNode; children: React.ReactElement; side?: "top" | "bottom" | "left" | "right" }) {
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger render={children} />
         <TooltipContent side={side} hideArrow className="bg-slate-900 text-white font-medium text-[11px] px-2.5 py-1 border-slate-700">
-          {typeof content === 'string' ? content : content}
+          {typeof content === "string" ? content : content}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 }
 
+// Thẻ thống kê nhanh, có thanh tiến trình hoặc thanh phân bố tùy loại dữ liệu truyền vào
 function KpiCard({
   label,
   value,
@@ -97,12 +97,8 @@ function KpiCard({
     <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1 min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 truncate">
-            {label}
-          </p>
-          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums leading-none">
-            {value}
-          </p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 truncate">{label}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums leading-none">{value}</p>
           {hint && <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{hint}</p>}
         </div>
         <div className={Cn("flex h-9 w-9 items-center justify-center rounded-xl shrink-0", c.bg, c.text)}>
@@ -125,16 +121,14 @@ function KpiCard({
         </div>
       ) : fillRatio !== undefined ? (
         <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200/60 dark:bg-white/5 overflow-hidden">
-          <div
-            className={Cn("h-full rounded-full transition-all duration-500", c.bar)}
-            style={{ width: `${Math.max(0, Math.min(100, fillRatio * 100))}%` }}
-          />
+          <div className={Cn("h-full rounded-full transition-all duration-500", c.bar)} style={{ width: `${Math.max(0, Math.min(100, fillRatio * 100))}%` }} />
         </div>
       ) : null}
     </div>
   );
 }
 
+// Thanh phân bố trạng thái công khai và đang ẩn
 function StatusDistribution({ active, inactive }: { active: number; inactive: number }) {
   const total = active + inactive;
   if (total === 0) return null;
@@ -143,9 +137,7 @@ function StatusDistribution({ active, inactive }: { active: number; inactive: nu
   return (
     <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-2xl p-4">
       <div className="flex items-center justify-between gap-4 mb-2.5">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-          Phân bố trạng thái
-        </p>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Phân bố trạng thái</p>
         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">{total} bài đăng</p>
       </div>
       <div className="flex h-2.5 w-full rounded-full overflow-hidden bg-slate-200/60 dark:bg-white/5">
@@ -168,6 +160,7 @@ function StatusDistribution({ active, inactive }: { active: number; inactive: nu
   );
 }
 
+// Nút chip lọc theo trạng thái, có badge đếm số lượng
 function FilterChip({ active, onClick, count, children, accent }: { active: boolean; onClick: () => void; count?: number; children: React.ReactNode; accent?: "primary" | "emerald" | "amber" }) {
   const activeMap = {
     primary: "border-primary bg-primary text-white shadow-md shadow-primary/20",
@@ -194,6 +187,7 @@ function FilterChip({ active, onClick, count, children, accent }: { active: bool
   );
 }
 
+// Skeleton 1 dòng bài đăng khi đang tải
 function PostRowSkeleton() {
   return (
     <div className="grid grid-cols-12 gap-3 items-center px-4 py-3 border-b border-white/40 dark:border-white/5 last:border-b-0 animate-pulse">
@@ -228,6 +222,7 @@ function PostRowSkeleton() {
   );
 }
 
+// 1 dòng bài đăng trong bảng, gồm ảnh, thông tin, giá, lượt xem và các nút thao tác
 function PostRow({
   item,
   onEdit,
@@ -253,99 +248,90 @@ function PostRow({
         "hover:bg-primary/[0.04] dark:hover:bg-white/[0.04] transition-colors duration-200"
       )}
     >
-      {/* Thumbnail + status dot */}
+      {/* Ảnh đại diện và chấm trạng thái */}
       <div className="col-span-3 sm:col-span-2 min-w-0">
         <div className="relative aspect-[4/3] w-full max-w-[88px] rounded-xl overflow-hidden border border-white/50 dark:border-white/10 bg-black/5">
           <div className="flex h-full w-full items-center justify-center text-slate-400 bg-white/5">
             <FileText size={20} className="stroke-[1.2] opacity-60" />
           </div>
           <span
-            className={Cn(
-              "absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2 ring-white dark:ring-slate-900",
-              isActive ? "bg-emerald-500" : "bg-amber-500"
-            )}
+            className={Cn("absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2 ring-white dark:ring-slate-900", isActive ? "bg-emerald-500" : "bg-amber-500")}
             title={isActive ? "Công khai" : "Đang ẩn"}
           />
         </div>
       </div>
 
-      {/* Title + code + category */}
+      {/* Tiêu đề, mã bài đăng và các tag môn học */}
       <div className="col-span-7 sm:col-span-6 lg:col-span-5 flex flex-col justify-center min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-[9px] font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider border border-slate-200 dark:border-white/10 font-mono">
-              {code}
-            </span>
-            <span className={Cn("text-[9px] font-bold px-1.5 py-0.5 rounded-md", isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500")}>
-              {isActive ? "CÔNG KHAI" : "ĐANG ẨN"}
-            </span>
-          </div>
-          <h3 className="text-[14px] font-bold text-slate-900 dark:text-white leading-snug line-clamp-1 group-hover:text-primary transition-colors">
-            {item.title}
-          </h3>
-          <div className="flex flex-wrap gap-1 mt-1.5">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-[9px] font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider border border-slate-200 dark:border-white/10 font-mono">
+            {code}
+          </span>
+          <span className={Cn("text-[9px] font-bold px-1.5 py-0.5 rounded-md", isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500")}>
+            {isActive ? "CÔNG KHAI" : "ĐANG ẨN"}
+          </span>
+        </div>
+        <h3 className="text-[14px] font-bold text-slate-900 dark:text-white leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+          {item.title}
+        </h3>
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+            {item.mode === "ONLINE" ? "Online" : "Offline"}
+          </span>
+          {item.level && item.level !== "ALL" && (
             <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-              {item.mode === "ONLINE" ? "Online" : "Offline"}
+              {item.level === "PRIMARY" ? "Cấp 1" : item.level === "MIDDLE" ? "Cấp 2" : "Cấp 3"}
             </span>
-            {item.level && item.level !== "ALL" && (
-              <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                {item.level === "PRIMARY" ? "Cấp 1" : item.level === "MIDDLE" ? "Cấp 2" : "Cấp 3"}
-              </span>
-            )}
-            {item.grades && item.grades.length > 0 && (
-              <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                Lớp {item.grades.sort((a: number, b: number) => a - b).join(", ")}
-              </span>
-            )}
-            {item.topics?.slice(0, 3).map((t: any, i: number) => (
-              <span key={i} className="inline-flex items-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                {t.topic?.name || t.custom}
-              </span>
-            ))}
-            {item.topics && item.topics.length > 3 && (
-              <TooltipHover
-                content={
-                  <div className="flex flex-wrap gap-1 max-w-[220px] text-left py-1">
-                    {item.topics.slice(3).map((t: any, i: number) => (
-                      <span key={i} className="inline-flex items-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                        {t.topic?.name || t.custom}
-                      </span>
-                    ))}
-                  </div>
-                }
-              >
-                <span className="inline-flex items-center justify-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary cursor-help">
-                  +
-                </span>
-              </TooltipHover>
-            )}
-          </div>
+          )}
+          {item.grades && item.grades.length > 0 && (
+            <span className="inline-flex items-center rounded border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+              Lớp {item.grades.sort((a: number, b: number) => a - b).join(", ")}
+            </span>
+          )}
+          {item.topics?.slice(0, 3).map((t: any, i: number) => (
+            <span key={i} className="inline-flex items-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+              {t.topic?.name || t.custom}
+            </span>
+          ))}
+          {item.topics && item.topics.length > 3 && (
+            <TooltipHover
+              content={
+                <div className="flex flex-wrap gap-1 max-w-[220px] text-left py-1">
+                  {item.topics.slice(3).map((t: any, i: number) => (
+                    <span key={i} className="inline-flex items-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                      {t.topic?.name || t.custom}
+                    </span>
+                  ))}
+                </div>
+              }
+            >
+              <span className="inline-flex items-center justify-center rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary cursor-help">+</span>
+            </TooltipHover>
+          )}
         </div>
+      </div>
 
-      {/* Price */}
-        <div className="hidden sm:flex col-span-2 flex-col items-end min-w-0">
-          <span className="text-[9px] text-slate-500 font-medium tracking-wide">
-            {item.unit === "PER_MONTH" ? "Tháng" : "Buổi"}
-          </span>
-          <span className="text-[13px] font-black text-emerald-500 tabular-nums">
-            {item.from === item.to ? FormatMoney(item.from) : `${FormatMoney(item.from)} - ${FormatMoney(item.to)}`}
-          </span>
-        </div>
+      {/* Học phí */}
+      <div className="hidden sm:flex col-span-2 flex-col items-end min-w-0">
+        <span className="text-[9px] text-slate-500 font-medium tracking-wide">{item.unit === "PER_MONTH" ? "Tháng" : "Buổi"}</span>
+        <span className="text-[13px] font-black text-emerald-500 tabular-nums">
+          {item.from === item.to ? FormatMoney(item.from) : `${FormatMoney(item.from)} - ${FormatMoney(item.to)}`}
+        </span>
+      </div>
 
-      {/* Views */}
+      {/* Lượt xem */}
       <div className="hidden lg:flex col-span-1 flex-col items-end min-w-0">
         <span className="text-[9px] text-slate-500 font-medium tracking-wide uppercase">Lượt xem</span>
         <span className="text-[12px] font-bold text-slate-700 dark:text-slate-300 tabular-nums">0</span>
       </div>
 
-      {/* Updated */}
+      {/* Ngày cập nhật gần nhất */}
       <div className="hidden md:flex col-span-1 items-center justify-end gap-1 text-[11px] text-slate-500 dark:text-slate-400 min-w-0">
         <Calendar size={11} className="shrink-0" />
-        <span className="truncate">
-          {item.updated ? new Date(item.updated).toLocaleDateString("vi-VN") : "—"}
-        </span>
+        <span className="truncate">{item.updated ? new Date(item.updated).toLocaleDateString("vi-VN") : "—"}</span>
       </div>
 
-      {/* Actions */}
+      {/* Các nút thao tác: ẩn/hiện, sửa, xóa */}
       <div className="col-span-12 sm:col-span-1 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
         <TooltipHover content={isActive ? "Ẩn bài đăng" : "Hiện bài đăng"} side="top">
           <button
@@ -389,6 +375,7 @@ function PostRow({
 export default function MyPostsPage() {
   const router = useRouter();
 
+  // Trạng thái danh sách bài đăng và bộ đếm
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -400,11 +387,13 @@ export default function MyPostsPage() {
   const [total, setTotal] = useState(0);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // Trạng thái tìm kiếm, lọc và sắp xếp
   const [searchKeyword, setSearchKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
 
+  // Debounce từ khóa tìm kiếm, tránh gọi API liên tục khi gõ
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedKeyword(searchKeyword);
@@ -413,11 +402,13 @@ export default function MyPostsPage() {
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
+  // Về trang 1 mỗi khi đổi tab trạng thái hoặc kiểu sắp xếp
   useEffect(() => {
     setPage(1);
   }, [statusTab, sortKey]);
 
-  const fetchPosts = useCallback(async () => {
+  // Gọi API lấy danh sách bài đăng theo trang, từ khóa, trạng thái và sắp xếp hiện tại
+  const FetchPosts = useCallback(async () => {
     setLoading(true);
     try {
       const statusParam = statusTab === "all" ? undefined : statusTab === "active" ? "OPEN" : "HOLD";
@@ -434,7 +425,7 @@ export default function MyPostsPage() {
         setStats({
           total: (res.data.stats.OPEN || 0) + (res.data.stats.HOLD || 0),
           OPEN: res.data.stats.OPEN || 0,
-          HOLD: res.data.stats.HOLD || 0
+          HOLD: res.data.stats.HOLD || 0,
         });
       }
     } catch (err) {
@@ -445,34 +436,36 @@ export default function MyPostsPage() {
   }, [page, debouncedKeyword, statusTab, sortKey]);
 
   useEffect(() => {
-    void fetchPosts();
-  }, [fetchPosts]);
+    void FetchPosts();
+  }, [FetchPosts]);
 
-  const handleToggleStatus = useCallback(async (item: Post) => {
+  // Chuyển đổi trạng thái công khai / ẩn của 1 bài đăng
+  const HandleToggleStatus = useCallback(async (item: Post) => {
     const nextStatus = item.status === "OPEN" ? "HOLD" : "OPEN";
     setTogglingId(item.id);
     try {
       await updatePost(item.id, { status: nextStatus } as any);
       toast.success(nextStatus === "OPEN" ? "Đã hiện bài đăng" : "Đã ẩn bài đăng");
-      await fetchPosts();
+      await FetchPosts();
     } catch (err) {
       toast.error("Không thể cập nhật trạng thái");
     } finally {
       setTogglingId(null);
     }
-  }, [fetchPosts]);
+  }, [FetchPosts]);
 
-  const handleDelete = useCallback(async (id: string) => {
+  // Xóa 1 bài đăng sau khi người dùng xác nhận
+  const HandleDelete = useCallback(async (id: string) => {
     if (confirm("Hành động này không thể hoàn tác. Bạn chắc chắn muốn xoá bài đăng này?")) {
       try {
         await deletePost(id);
         toast.success("Xoá bài đăng thành công!");
-        await fetchPosts();
+        await FetchPosts();
       } catch (err) {
         toast.error("Không thể xoá bài đăng");
       }
     }
-  }, [fetchPosts]);
+  }, [FetchPosts]);
 
   const isEmpty = !loading && stats.total === 0;
   const isFilterEmpty = !loading && stats.total > 0 && posts.length === 0;
@@ -494,12 +487,8 @@ export default function MyPostsPage() {
                 <LayoutDashboard size={12} />
                 <span>Dashboard</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-                Quản lý bài đăng
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Theo dõi và tối ưu các bài đăng tìm học sinh của bạn.
-              </p>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">Quản lý bài đăng</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Theo dõi và tối ưu các bài đăng tìm học sinh của bạn.</p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => router.push("/profile")} className="rounded-xl h-10 px-4 border border-white/50 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur-md hover:bg-white dark:hover:bg-white/10 transition-all font-bold text-[11px] tracking-widest">
@@ -561,9 +550,7 @@ export default function MyPostsPage() {
                     <SelectValue placeholder="Sắp xếp theo">{SORT_OPTIONS.find((opt) => opt.id === sortKey)?.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent align="end" className="min-w-[200px]">
-                    {SORT_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.id} value={opt.id} className="whitespace-nowrap">{opt.label}</SelectItem>
-                    ))}
+                    {SORT_OPTIONS.map((opt) => <SelectItem key={opt.id} value={opt.id} className="whitespace-nowrap">{opt.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -607,18 +594,18 @@ export default function MyPostsPage() {
               {loading
                 ? Array.from({ length: Math.min(PAGE_SIZE, stats.total || 5) }).map((_, idx) => <PostRowSkeleton key={idx} />)
                 : posts.map((item) => (
-                    <PostRow
-                      key={item.id}
-                      item={item}
-                      onEdit={(id) => {
-                        const p = posts.find((x) => x.id === id);
-                        if (p) setEditingPost(p);
-                      }}
-                      onDelete={handleDelete}
-                      onToggleStatus={handleToggleStatus}
-                      isTogglingStatus={togglingId === item.id}
-                    />
-                  ))}
+                  <PostRow
+                    key={item.id}
+                    item={item}
+                    onEdit={(id) => {
+                      const p = posts.find((x) => x.id === id);
+                      if (p) setEditingPost(p);
+                    }}
+                    onDelete={HandleDelete}
+                    onToggleStatus={HandleToggleStatus}
+                    isTogglingStatus={togglingId === item.id}
+                  />
+                ))}
             </div>
           </Card>
         )}
@@ -659,7 +646,7 @@ export default function MyPostsPage() {
         post={editingPost}
         onSaved={() => {
           setEditingPost(null);
-          fetchPosts();
+          FetchPosts();
         }}
       />
     </div>

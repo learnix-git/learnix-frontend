@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, ArrowRight, MousePointerClick, Bookmark } from "lucide-react";
-
+import { Search } from "lucide-react";
 import { TwoColumn } from "@/components/layout/TwoColumn";
 import { RequestSidebar } from "@/components/request/RequestSidebar";
 import { Empty } from "@/components/ui/Empty";
 import { RequestCard } from "@/components/request/RequestCard";
 import { useAuth } from "@/lib/stores/auth";
-import { getSavedRequests, unbookmarkRequest } from "@/lib/api/request";
+import { getSavedRequests } from "@/lib/api/request";
 import type { RequestModel } from "@/lib/api/types";
 import {
   Pagination,
@@ -31,6 +30,7 @@ function SavedJobSkeleton() {
     <div className="bg-white/60 dark:bg-white/[0.03] border border-white/80 dark:border-white/10 rounded-[28px] p-6 animate-pulse">
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
+
         {/* Avatar */}
         <div className="shrink-0 w-[48px] h-[48px] rounded-full bg-slate-200/80 dark:bg-white/10" />
 
@@ -75,13 +75,14 @@ export default function FavoritePostsPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
+  // Trạng thái danh sách việc làm đã lưu
   const [jobs, setJobs] = useState<RequestModel[]>([]);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  // Việc làm đang được hover để hiển thị preview
   const [hoveredJob, setHoveredJob] = useState<RequestModel | null>(null);
-
 
   const breadcrumb = [
     { name: "Trang chủ", href: "/" },
@@ -89,31 +90,30 @@ export default function FavoritePostsPage() {
     { name: "Đã lưu", href: "/favorite-posts" },
   ];
 
+  // Chặn truy cập nếu chưa đăng nhập
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.replace(`${LOGIN_PATH}?callbackUrl=/favorite-posts`);
     }
   }, [authLoading, isAuthenticated, router]);
 
+  // Gọi API lấy danh sách việc làm đã lưu theo trang
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
     let active = true;
 
-    const fetchWishlist = async () => {
+    const FetchWishlist = async () => {
       setLoading(true);
       try {
         const res = await getSavedRequests({ limit: PAGE_SIZE, page: currentPage });
         if (!active) return;
 
-        // Backend trả về res = { code: 200, data: { items: [...], total: ... } }
         const items = res.data?.items || [];
         const totalCount = res.data?.total || 0;
 
         setJobs(items);
         setTotal(totalCount);
-        if (items.length > 0) {
-          setHoveredJob(items[0]);
-        }
+        if (items.length > 0) setHoveredJob(items[0]);
       } catch (error) {
         console.error("Lấy danh sách việc làm đã lưu thất bại", error);
         if (!active) return;
@@ -125,41 +125,27 @@ export default function FavoritePostsPage() {
       }
     };
 
-    fetchWishlist();
-
-    return () => {
-      active = false;
-    };
+    FetchWishlist();
+    return () => { active = false; };
   }, [authLoading, isAuthenticated, currentPage]);
 
-  const handleRemove = (jobId: string) => {
+  const HandleRemove = (jobId: string) => {
     const jobIndex = jobs.findIndex((j) => j.id === jobId);
     if (jobIndex === -1) return;
 
-    // Xóa khỏi danh sách hiện tại để UI mượt mà
-    // Không cần gọi API ở đây nữa vì RequestCard đã đảm nhận việc gọi API unbookmarkRequest rồi!
     setJobs((prev) => prev.filter((job) => job.id !== jobId));
     setTotal((prev) => Math.max(0, prev - 1));
-
-    if (hoveredJob?.id === jobId) {
-      setHoveredJob(null);
-    }
+    if (hoveredJob?.id === jobId) setHoveredJob(null);
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <TwoColumn
-      title="Danh sách việc làm đã lưu"
-      breadcrumb={breadcrumb}
-      sidebar={<RequestSidebar />}
-    >
+    <TwoColumn title="Danh sách việc làm đã lưu" breadcrumb={breadcrumb} sidebar={<RequestSidebar />}>
       <div className="space-y-6">
         {loading ? (
           <div className="space-y-4">
-            {[...Array(4)].map((_, idx) => (
-              <SavedJobSkeleton key={idx} />
-            ))}
+            {[...Array(4)].map((_, idx) => <SavedJobSkeleton key={idx} />)}
           </div>
         ) : jobs.length === 0 ? (
           <Empty
@@ -168,9 +154,7 @@ export default function FavoritePostsPage() {
             description="Hãy quay lại trang tìm việc và lưu những dự án bạn quan tâm."
             action={
               <Link href="/find-posts">
-                <Button className="rounded-xl shadow-lg mt-4">
-                  Tìm việc ngay
-                </Button>
+                <Button className="rounded-xl shadow-lg mt-4">Tìm việc ngay</Button>
               </Link>
             }
           />
@@ -180,7 +164,7 @@ export default function FavoritePostsPage() {
               <RequestCard
                 key={job.id}
                 req={{ ...job, saved: true }}
-                onBookmark={() => handleRemove(job.id)}
+                onBookmark={() => HandleRemove(job.id)}
                 showReviewOnHover={true}
                 showApplyOnHover={true}
               />
@@ -196,19 +180,13 @@ export default function FavoritePostsPage() {
                         className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
-
                     {[...Array(totalPages)].map((_, i) => (
                       <PaginationItem key={i}>
-                        <PaginationLink
-                          onClick={() => setCurrentPage(i + 1)}
-                          isActive={currentPage === i + 1}
-                          className="cursor-pointer"
-                        >
+                        <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1} className="cursor-pointer">
                           {i + 1}
                         </PaginationLink>
                       </PaginationItem>
                     ))}
-
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
