@@ -51,8 +51,6 @@ export async function deletePost(id: string): Promise<ApiResponse<null>> {
   return res.data;
 }
 
-
-
 // POST /bookmarks/posts/:id
 export async function bookmarkPost(postId: string) {
   const res = await client.post(`/bookmarks`, { postId });

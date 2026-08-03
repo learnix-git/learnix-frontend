@@ -646,7 +646,7 @@ export default function SignUpPage() {
     try {
       await register(result.data);
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
-      router.push("/signin");
+      router.push("/dang-nhap");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Đăng ký thất bại";
       toast.error(message);
@@ -756,7 +756,7 @@ export default function SignUpPage() {
           {/* Liên kết sang trang đăng nhập */}
           <p className="mt-6 text-center text-sm text-muted-foreground dark:text-slate-400">
             Đã có tài khoản?{" "}
-            <Link href="/signin" className="font-semibold text-primary hover:underline">
+            <Link href="/dang-nhap" className="font-semibold text-primary hover:underline">
               Đăng nhập
             </Link>
           </p>

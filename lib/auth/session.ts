@@ -9,7 +9,7 @@ const REQUEST_ID_KEY = "request_id";
 
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 ngày
 
-export const LOGIN_PATH = "/signin";
+export const LOGIN_PATH = "/dang-nhap";
 
 /**
  * Tạo đường dẫn đăng nhập kèm callback URL nếu có.

@@ -1,24 +1,23 @@
 import type { MetadataRoute } from "next";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "Deploy thì thay đổi thành URL thật";
+  process.env.NEXT_PUBLIC_APP_URL || "https://learnix.io.vn";
 
-// TODO: Làm xong nhớ kiểm tra lại
-
-// ! sitemap.ts — define static routes for the sitemap.xml file to help search engines index the site.
-const STATIC_ROUTES: MetadataRoute.Sitemap = [
-  { url: `${BASE_URL}/`, changeFrequency: "weekly", priority: 1.0 },
-  { url: `${BASE_URL}/contact`, changeFrequency: "monthly", priority: 0.5 },
-  { url: `${BASE_URL}/about-us`, changeFrequency: "monthly", priority: 0.6 },
-  { url: `${BASE_URL}/privacy-policy`, changeFrequency: "yearly", priority: 0.4 },
-  { url: `${BASE_URL}/terms-of-service`, changeFrequency: "yearly", priority: 0.4 },
-
-  { url: `${BASE_URL}/signin`, changeFrequency: "yearly", priority: 0.3 },
-  { url: `${BASE_URL}/signup`, changeFrequency: "yearly", priority: 0.3 },
-  { url: `${BASE_URL}/forgot-password`, changeFrequency: "yearly", priority: 0.3 },
-  { url: `${BASE_URL}/change-password`, changeFrequency: "yearly", priority: 0.3 },  
-];
-
+/**
+ * sitemap.ts — định nghĩa các route công khai cho sitemap.xml
+ * giúp Google bot index đúng các trang quan trọng.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  return STATIC_ROUTES;
+  return [
+    { url: `${BASE_URL}/`, changeFrequency: "weekly", priority: 1.0 },
+    { url: `${BASE_URL}/tim-gia-su`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE_URL}/tim-lop-hoc`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE_URL}/dang-tin-gia-su`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE_URL}/dang-tin-tim-gia-su`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE_URL}/gioi-thieu`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE_URL}/dieu-khoan-dich-vu`, changeFrequency: "yearly", priority: 0.4 },
+    { url: `${BASE_URL}/chinh-sach-bao-mat`, changeFrequency: "yearly", priority: 0.4 },
+    { url: `${BASE_URL}/dang-nhap`, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${BASE_URL}/dang-ky`, changeFrequency: "yearly", priority: 0.2 },
+  ];
 }

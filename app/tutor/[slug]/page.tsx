@@ -193,7 +193,7 @@ export default function TutorProfilePage({
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center mb-6">
               Tài khoản <span className="font-mono font-bold text-primary">{slugStr}</span> không tồn tại hoặc đã bị ẩn. Vui lòng kiểm tra lại đường dẫn.
             </p>
-            <Link href="/find-tutors">
+            <Link href="/tim-gia-su">
               <Button className="rounded-2xl px-6 py-5 font-bold shadow-lg">Khám phá danh sách gia sư</Button>
             </Link>
           </div>

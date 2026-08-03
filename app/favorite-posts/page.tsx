@@ -153,7 +153,7 @@ export default function FavoritePostsPage() {
             title="Bạn chưa lưu việc làm nào"
             description="Hãy quay lại trang tìm việc và lưu những dự án bạn quan tâm."
             action={
-              <Link href="/find-posts">
+              <Link href="/tim-lop-hoc">
                 <Button className="rounded-xl shadow-lg mt-4">Tìm việc ngay</Button>
               </Link>
             }

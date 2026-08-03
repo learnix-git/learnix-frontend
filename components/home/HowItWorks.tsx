@@ -78,7 +78,7 @@ export function HowItWorks() {
               {/* BUTTON */}
               <div className="mt-8 sm:mt-10">
                 <Link
-                  href="/signup"
+                  href="/dang-ky"
                   className="
                     inline-flex items-center justify-center
                     w-full sm:w-auto
@@ -185,7 +185,7 @@ export function HowItWorks() {
               {/* BUTTON */}
               <div className="mt-8 sm:mt-10">
                 <Link
-                  href="/signup?role=teacher"
+                  href="/dang-ky?role=teacher"
                   className="
                     inline-flex items-center justify-center
                     w-full sm:w-auto

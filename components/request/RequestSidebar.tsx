@@ -22,7 +22,7 @@ export function RequestSidebar() {
           <p className="text-white/90 text-[13px] leading-relaxed mb-5">
             Cập nhật các kinh nghiệm, kỹ năng nổi bật để thu hút học viên tốt hơn và gia tăng cơ hội nhận lớp mới.
           </p>
-          <Link href="/tutor/profile" className="w-full block">
+          <Link href="/gia-su/profile" className="w-full block">
             <button className="w-full px-4 py-2.5 rounded-lg font-semibold text-blue-600 hover:bg-white bg-white/95 transition-colors cursor-pointer border-none shadow-sm">
               Cập nhật ngay
             </button>

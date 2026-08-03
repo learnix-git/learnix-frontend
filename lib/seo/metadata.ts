@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
-  "https://learnix.edu.vn";
+  "https://learnix.io.vn";
 
 const SITE_NAME = "Learnix";
 const SITE_DESCRIPTION =
@@ -10,17 +10,11 @@ const SITE_DESCRIPTION =
 const DEFAULT_IMAGE = "/images/og-default.png";
 
 interface BuildMetadataOptions {
-  /** Page title — appended after SITE_NAME if provided. */
   title?: string | undefined;
-  /** Meta description override. Falls back to SITE_DESCRIPTION. */
   description?: string | undefined;
-  /** Absolute URL path (e.g. "/find-classrooms"). Used to build canonical + og:url. */
   path?: string | undefined;
-  /** Override og:image. Defaults to DEFAULT_IMAGE. */
   image?: string | undefined;
-  /** Additional Metadata type overrides (e.g. "website", "profile"). */
   type?: "website" | "article" | "profile";
-  /** Additional keywords for the <meta name="keywords"> tag. Appended to base keywords. */
   keywords?: string[] | undefined;
 }
 
@@ -34,19 +28,6 @@ const BASE_KEYWORDS = [
   "Learnix",
 ];
 
-/**
- * buildMetadata — helper for per-route `generateMetadata` calls.
- *
- * Usage:
- *   export function generateMetadata({ params }: Props) {
- *     return buildMetadata({ title: "Khám phá lớp học", path: "/find-classrooms" });
- *   }
- *
- * The function always returns the full Metadata object so callers don't
- * need to handle the "partial Metadata override" pattern — it merges with
- * the root layout metadata automatically through Next.js metadata
- * inheritance, but returns a complete object for type safety.
- */
 export function buildMetadata({
   title,
   description = SITE_DESCRIPTION,

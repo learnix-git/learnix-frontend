@@ -168,6 +168,10 @@ export interface PostListResponse {
   totalPages: number;
 }
 
+// !==========================================
+// ! REQUEST
+// !==========================================
+
 export interface CreateRequestRequest {
   topics: { subject?: string; custom?: string }[];
   title: string;

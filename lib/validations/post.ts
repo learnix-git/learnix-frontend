@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { PostFormData } from "@/app/tutor-post/page";
 
-// === SCHEMA VALIDATE FORM ĐĂNG BÀI GIA SƯ ===
-
 export const postSchema = z.object({
   title: z
     .string()
@@ -31,7 +29,6 @@ export const postSchema = z.object({
     .min(1000, "Học phí tối đa từ 1.000đ."),
 });
 
-// Hàm validate toàn bộ form và trả về object lỗi chuẩn hóa
 export function validatePostForm(
   form: PostFormData
 ): Partial<Record<keyof PostFormData, string>> {
@@ -57,7 +54,11 @@ export function validatePostForm(
     errors.grades = "Vui lòng chọn ít nhất 1 khối lớp.";
   }
 
-  if (form.mode === "OFFLINE" && form.venue === "TUTOR" && !form.city.trim()) {
+  if (
+    form.mode === "OFFLINE" &&
+    form.venue === "TUTOR" &&
+    !form.city.trim()
+  ) {
     errors.city = "Nhập khu vực dạy khi chọn hình thức Offline.";
   }
 
@@ -69,26 +70,61 @@ export function validatePostForm(
     errors.to = "Học phí tối đa từ 1.000đ.";
   }
 
-  if (form.from && form.to && form.from > form.to) {
+  if (
+    form.from &&
+    form.to &&
+    form.from > form.to
+  ) {
     errors.to = "Học phí tối đa phải lớn hơn hoặc bằng tối thiểu.";
   }
 
-  if (!form.flexible && !form.slot) {
+  if (
+    !form.flexible &&
+    !form.slot
+  ) {
     errors.slot = "Vui lòng chọn buổi học.";
   }
 
-  if (!form.flexible && form.days.length === 0) {
+  if (
+    !form.flexible &&
+    form.days.length === 0
+  ) {
     errors.days = "Vui lòng chọn ít nhất 1 ngày dạy trong tuần.";
   }
 
-  if (!form.flexible && (!form.startTime || !form.endTime || form.startTime >= form.endTime)) {
+  if (
+    !form.flexible &&
+    (
+      !form.startTime ||
+      !form.endTime ||
+      form.startTime >= form.endTime
+    )
+  ) {
     errors.endTime = "Giờ kết thúc phải lớn hơn giờ bắt đầu.";
-  } else if (!form.flexible && form.startTime && form.endTime && form.unit === "PER_SESSION" && form.duration) {
-    const [sh, sm] = form.startTime.split(":").map(Number);
-    const [eh, em] = form.endTime.split(":").map(Number);
-    const diffHours = (eh + em / 60) - (sh + sm / 60);
-    if (Math.abs(diffHours - form.duration) > 0.05) {
-      errors.endTime = `Lịch dạy phải kéo dài đúng ${form.duration} giờ/buổi như đã thiết lập.`;
+  } else if (
+    !form.flexible &&
+    form.startTime &&
+    form.endTime &&
+    form.unit === "PER_SESSION" &&
+    form.duration
+  ) {
+    const [sh, sm] = form.startTime
+      .split(":")
+      .map(Number);
+
+    const [eh, em] = form.endTime
+      .split(":")
+      .map(Number);
+
+    const diffHours =
+      (eh + em / 60) -
+      (sh + sm / 60);
+
+    if (
+      Math.abs(diffHours - form.duration) > 0.05
+    ) {
+      errors.endTime =
+        `Lịch dạy phải kéo dài đúng ${form.duration} giờ/buổi như đã thiết lập.`;
     }
   }
 

@@ -242,7 +242,7 @@ export default function MyRequestsPage() {
               </div>
 
               <Button
-                render={<Link href="/client-post" className="w-full sm:w-auto" />}
+                render={<Link href="/dang-tin-tim-gia-su" className="w-full sm:w-auto" />}
                 nativeButton={false}
                 className="h-11 w-full rounded-2xl px-5 text-[13px] font-bold shadow-lg shadow-primary/20 sm:w-auto"
               >
@@ -417,7 +417,7 @@ export default function MyRequestsPage() {
                 <h3 className="mb-2 text-lg font-bold text-foreground">Không tìm thấy bài đăng</h3>
                 <p className="mb-6 max-w-sm text-center text-[14px] text-muted-foreground">Bạn chưa có bài đăng nào khớp với trạng thái hiện tại.</p>
                 <Button
-                  render={<Link href="/client-post" />}
+                  render={<Link href="/dang-tin-tim-gia-su" />}
                   nativeButton={false}
                   className="h-11 rounded-2xl px-5 text-[13px] font-bold"
                 >

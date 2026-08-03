@@ -47,7 +47,7 @@ export function Pricing() {
 
             <div className="flex flex-wrap gap-4">
               <Link
-                href="/signup?role=organization"
+                href="/dang-ky?role=organization"
                 className="inline-flex items-center justify-center rounded-2xl bg-primary px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/30 transition-all hover:bg-primary/90 hover:scale-105 active:scale-95"
               >
                 Liên hệ hợp tác / Mua gói

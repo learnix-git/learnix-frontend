@@ -363,7 +363,7 @@ export default function SignInPage() {
           {/* Liên kết sang trang đăng ký */}
           <p className="mt-8 text-center text-sm text-muted-foreground dark:text-slate-400">
             Chưa có tài khoản?{" "}
-            <Link href="/signup" className="font-semibold text-primary hover:underline">
+            <Link href="/dang-ky" className="font-semibold text-primary hover:underline">
               Đăng ký
             </Link>
           </p>

@@ -7,7 +7,7 @@ import type {
   RequestListResponse,
 } from "./types";
 
-// GET /requests (danh sách)
+// GET /requests
 export async function getRequests(
   params?: RequestListParams
 ): Promise<ApiResponse<RequestListResponse>> {
@@ -47,7 +47,7 @@ export async function deleteRequest(id: string): Promise<ApiResponse<null>> {
   return res.data;
 }
 
-// POST /bookmarks (save request)
+// POST /bookmarks
 export async function bookmarkRequest(requestId: string) {
   const res = await client.post(`/bookmarks`, { requestId });
   return res.data;

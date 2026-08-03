@@ -10,7 +10,6 @@ import type {
 // Dữ liệu tạo hoặc cập nhật cuộc trò chuyện
 export type UpsertConversation = { peerId: string };
 
-// Kiểu dữ liệu người dùng từ API
 type ChatUserDTO = {
   id?: unknown;
   name?: unknown;
@@ -18,7 +17,6 @@ type ChatUserDTO = {
   alias?: unknown;
 };
 
-// Kiểu dữ liệu cuộc trò chuyện từ API
 type ChatConversationDTO = {
   id?: unknown;
   peer?: unknown;
@@ -27,7 +25,6 @@ type ChatConversationDTO = {
   unreadCount?: unknown;
 };
 
-// Chuyển dữ liệu sang kiểu number
 function ConvertToNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
 
@@ -39,7 +36,6 @@ function ConvertToNumber(value: unknown): number | null {
   return null;
 }
 
-// Chuyển dữ liệu sang kiểu string
 function ConvertToString(value: unknown): string | null {
   if (typeof value === "string") return value;
   if (value == null) return null;
@@ -47,7 +43,6 @@ function ConvertToString(value: unknown): string | null {
   return String(value);
 }
 
-// Chuẩn hóa thông tin người dùng
 function NormalizePeer(raw: unknown): ChatUser | null {
   if (!raw || typeof raw !== "object") return null;
 
@@ -65,7 +60,6 @@ function NormalizePeer(raw: unknown): ChatUser | null {
   };
 }
 
-// Chuẩn hóa dữ liệu cuộc trò chuyện
 export function NormalizeConversation(
   raw: unknown,
 ): ChatConversation | null {
@@ -86,9 +80,8 @@ export function NormalizeConversation(
   };
 }
 
-// API xử lý chức năng chat
 export const ChatAPI = {
-  // Tạo hoặc cập nhật cuộc trò chuyện
+  // POST /chat/upsert
   UpsertConversation: async (
     input: UpsertConversation,
   ): Promise<ApiResponse<ChatConversation>> => {
@@ -104,7 +97,7 @@ export const ChatAPI = {
     };
   },
 
-  // Lấy danh sách cuộc trò chuyện
+  // POST /chat/list
   FilterConversation: async (): Promise<
     ApiResponse<{ total: number; items: ChatConversation[] }>
   > => {
@@ -127,7 +120,7 @@ export const ChatAPI = {
     };
   },
 
-  // Lấy danh sách tin nhắn
+  // POST /chat/messages
   RecvMessage: async (
     page = 1,
     limit = 30,
@@ -153,7 +146,7 @@ export const ChatAPI = {
     };
   },
 
-  // Gửi tin nhắn
+  // POST /chat/send
   SendMessage: async (
     conversationId: string,
     payload: MessagePayload,
@@ -172,7 +165,7 @@ export const ChatAPI = {
     };
   },
 
-    // Đánh dấu tin nhắn đã đọc
+  // POST /chat/read
   MarkAsRead: async (
     conversationId: string,
     messageId: string,
@@ -194,7 +187,7 @@ export const ChatAPI = {
     };
   },
 
-  // Cập nhật trạng thái đang nhập
+  // POST /chat/typing
   CheckTyping: async (
     conversationId: string,
     typing: boolean,
@@ -216,7 +209,7 @@ export const ChatAPI = {
     };
   },
 
-  // Kiểm tra người dùng đang trực tuyến
+  // POST /chat/online
   CheckOnline: async (
     userIds: string[],
   ): Promise<ApiResponse<{ online: string[] }>> => {
@@ -228,7 +221,6 @@ export const ChatAPI = {
       ),
     ).slice(0, 200);
 
-    // Trả về rỗng nếu không có user cần kiểm tra
     if (cleaned.length === 0) {
       return {
         code: 200,
@@ -238,7 +230,6 @@ export const ChatAPI = {
     }
 
     try {
-      // Gọi API kiểm tra trạng thái online
       const r = await client.post("/chat/online", {
         userIds: cleaned,
       });
@@ -255,7 +246,6 @@ export const ChatAPI = {
         },
       };
     } catch (err) {
-      // Trả về danh sách rỗng khi API lỗi
       console.warn(err);
 
       return {
@@ -266,7 +256,7 @@ export const ChatAPI = {
     }
   },
 
-  // Tải lên tệp đính kèm
+  // POST /chat/upload
   UploadFile: async (
     conversationId: string,
     file: File,
@@ -312,7 +302,7 @@ export const ChatAPI = {
     };
   },
 
-  // Lấy số lượng tin nhắn chưa đọc
+  // POST /chat/unread-count
   CountUnread: async (): Promise<
     ApiResponse<{
       total: number;

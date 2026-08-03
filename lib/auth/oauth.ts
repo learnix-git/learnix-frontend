@@ -1,9 +1,8 @@
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!;
-
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-
 const SCOPES = ["email", "profile"].join(" ");
 
+// Tạo Google OAuth URL
 export function get() {
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
@@ -17,6 +16,7 @@ export function get() {
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }
 
+// Redirect trình duyệt sang trang đăng nhập Google
 export function sign() {
   window.location.href = get();
 }

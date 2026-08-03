@@ -22,7 +22,7 @@ export function TutorsSidebar() {
           <p className="text-white/90 text-[13px] leading-relaxed mb-5">
             Thay vì chờ đợi, hãy đăng yêu cầu tìm gia sư để các gia sư phù hợp chủ động liên hệ với bạn.
           </p>
-          <Link href="/client-post" className="w-full block">
+          <Link href="/dang-tin-tim-gia-su" className="w-full block">
             <button className="w-full px-4 py-2.5 rounded-lg font-semibold text-blue-600 hover:bg-white bg-white/95 transition-colors cursor-pointer border-none shadow-sm">
               Tạo bài đăng ngay
             </button>

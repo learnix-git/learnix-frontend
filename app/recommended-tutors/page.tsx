@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -113,7 +113,7 @@ export default function RecommendedTutorsPage() {
             title="Không tìm thấy gia sư phù hợp"
             description="Thử cập nhật thêm kỹ năng và địa điểm trong hồ sơ của bạn để xem nhiều công việc hơn."
             action={
-              <Link href="/client-post">
+              <Link href="/dang-tin-tim-gia-su">
                 <button className="rounded-2xl bg-primary px-6 py-3 mt-4 text-xs font-bold text-white tracking-wider shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all hover:scale-[1.02]">
                   CẬP NHẬT YÊU CẦU
                 </button>

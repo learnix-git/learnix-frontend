@@ -42,6 +42,9 @@ import {
   Search,
   Briefcase,
   BriefcaseBusiness,
+  ShoppingBag,
+  Award,
+  Building2,
 } from "lucide-react";
 
 function NotificationBell() {
@@ -235,6 +238,8 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
   const ref = useRef<HTMLDivElement>(null);
   const isGoogle = IsGoogleUser(user);
   const isTutor = user.role === "TUTOR";
+  const [tutorOpen, setTutorOpen] = useState(false);
+  const [clientOpen, setClientOpen] = useState(false);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -265,57 +270,94 @@ function UserMenu({ user, onLogout, onClose }: { user: any; onLogout: () => void
         </div>
 
         {/* Menu Links */}
-        <div className="p-2 space-y-0.5 max-h-[60vh] overflow-y-auto">
-
-          <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            {isTutor ? "Góc quản lý" : "Góc học tập"}
-          </div>
-
-          <Link href="/my-classrooms" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-            <BookOpen className="h-4 w-4 text-primary" />
-            <span>Lớp học của tôi</span>
-          </Link>
+        <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
 
           {isTutor && (
-            <Link href="/my-posts" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-              <BriefcaseBusiness className="h-4 w-4 text-primary" />
-              <span>Bài đăng của tôi</span>
-            </Link>
+            <div className="flex flex-col">
+              <button
+                onClick={() => setTutorOpen(!tutorOpen)}
+                className={Cn(
+                  "flex w-full items-center gap-3 px-4 py-4 text-[15px] font-semibold text-foreground dark:text-slate-200 hover:bg-muted dark:hover:bg-white/5 transition-colors cursor-pointer border-b border-border dark:border-white/10",
+                  tutorOpen && "bg-muted/30 dark:bg-white/10"
+                )}
+              >
+                <div className="text-primary">
+                  <Award className="h-4 w-4" strokeWidth={2.5} />
+                </div>
+                <span className="flex-1 text-left">Quản lý về Gia sư</span>
+                <svg className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${tutorOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {tutorOpen && (
+                <div className="flex flex-col bg-transparent animate-in fade-in slide-in-from-top-1">
+                  <Link href="/profile/tutor" onClick={onClose} className="block px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5">
+                    Hồ sơ Gia sư
+                  </Link>
+                  <Link href="/exams/manage" onClick={onClose} className="block px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5">
+                    Hồ sơ năng lực
+                  </Link>
+                  <Link href="/my-posts" onClick={onClose} className="block px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5">
+                    Dịch vụ của tôi
+                  </Link>
+                </div>
+              )}
+            </div>
           )}
 
-          {!isTutor && (
-            <Link href="/classrooms/stored" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-              <Bookmark className="h-4 w-4 text-primary" />
-              <span>Lớp học đã lưu</span>
-            </Link>
-          )}
-
-          <Link href={isTutor ? "/exams/manage" : "/exams/history"} onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-            <FileText className="h-4 w-4 text-primary" />
-            <span>{isTutor ? "Tài liệu của tôi" : "Bài tập của tôi"}</span>
-          </Link>
+          <div className="flex flex-col">
+            <button
+              onClick={() => setClientOpen(!clientOpen)}
+              className={Cn(
+                "flex w-full items-center gap-3 px-4 py-4 text-[15px] font-semibold text-foreground dark:text-slate-200 hover:bg-muted dark:hover:bg-white/5 transition-colors cursor-pointer border-b border-border dark:border-white/10",
+                clientOpen && "bg-muted/30 dark:bg-white/10"
+              )}
+            >
+              <div className="text-blue-500">
+                <Building2 className="h-4 w-4" strokeWidth={2.5} />
+              </div>
+              <span className="flex-1 text-left">Quản lý về Học sinh</span>
+              <svg className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${clientOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {clientOpen && (
+              <div className="flex flex-col bg-transparent animate-in fade-in slide-in-from-top-1">
+                <Link href="/profile/client" onClick={onClose} className="block px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5">
+                  Hồ sơ cá nhân
+                </Link>
+                <Link href="/classrooms/stored" onClick={onClose} className="block px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5">
+                  Gia sư đã lưu
+                </Link>
+                <Link href="/my-classrooms" onClick={onClose} className="block px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5">
+                  Đơn yêu cầu của tôi
+                </Link>
+                <Link href="/dang-tin-tim-gia-su" onClick={onClose} className="block px-4 py-3.5 text-[15px] transition-colors border-b border-border/60 dark:border-white/5 text-left text-foreground dark:text-slate-300 hover:bg-muted dark:hover:bg-white/5">
+                  Đăng yêu cầu mới
+                </Link>
+              </div>
+            )}
+          </div>
 
           <div className="border-t border-border/60 my-1 pt-1" />
-          <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Tài khoản</div>
-
-          <Link href="/profile" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span>Hồ sơ cá nhân</span>
-          </Link>
-
-          <Link href="/settings" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-            <Settings className="h-4 w-4 text-muted-foreground" />
-            <span>Cài đặt hệ thống</span>
-          </Link>
-
-          {!isGoogle && (
-            <Link href="/settings/password" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
-              <Shield className="h-4 w-4 text-muted-foreground" />
-              <span>Đổi mật khẩu</span>
+          
+          <div className="space-y-1">
+            <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Tài khoản</div>
+            
+            <Link href="/settings" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              <span>Cài đặt hệ thống</span>
             </Link>
-          )}
 
-          <ThemeSection onClose={onClose} />
+            {!isGoogle && (
+              <Link href="/settings/password" onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground rounded-xl hover:bg-muted transition-colors">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <span>Đổi mật khẩu</span>
+              </Link>
+            )}
+
+            <ThemeSection onClose={onClose} />
+          </div>
         </div>
 
         {/* Logout Button */}
@@ -408,7 +450,7 @@ export function Header() {
             onClick={() => setclassroomsDropdown(false)}
           >
             <Link
-              href="/find-posts"
+              href="/tim-lop-hoc"
               className={Cn(
                 "flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-xl",
                 isclassroomsActive ? "text-primary font-bold bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"
@@ -511,7 +553,7 @@ export function Header() {
                         <div>
                           <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Khám phá</h3>
                           <div className="space-y-4">
-                            <Link href="/find-tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/tim-gia-su" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <Users className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tất cả gia sư
                             </Link>
                             <Link href="/recommended-tutors" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
@@ -526,7 +568,7 @@ export function Header() {
                         <div>
                           <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-5">Thuê gia sư</h3>
                           <div className="space-y-4">
-                            <Link href="/client-post" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
+                            <Link href="/dang-tin-tim-gia-su" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
                               <PlusCircle className="h-5 w-5 text-primary/80" strokeWidth={1.5} /> Tạo bài đăng mới
                             </Link>
                             <Link href="/my-requests" className="flex items-center gap-3 text-[15px] text-foreground hover:text-primary transition-colors font-medium">
@@ -633,7 +675,7 @@ export function Header() {
           </div>
 
           <Link
-            href="/about-us"
+            href="/gioi-thieu"
             className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-xl hover:bg-muted"
           >
             Vì sao chọn Learnix
@@ -651,7 +693,7 @@ export function Header() {
             <>
               <Tooltip content="Tin nhắn" side="bottom">
                 <Link
-                  href="/chat"
+                  href="/tin-nhan"
                   className="relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-muted text-foreground hover:bg-muted transition-all duration-200"
                   aria-label="Tin nhắn"
                 >
@@ -666,6 +708,19 @@ export function Header() {
                       </span>
                     </span>
                   )}
+                </Link>
+              </Tooltip>
+
+              <Tooltip content="Đơn hàng" side="bottom">
+                <Link
+                  href="/order"
+                  className={Cn(
+                    "relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-muted text-foreground hover:bg-muted transition-all duration-200",
+                    pathname.startsWith("/order") && "bg-primary/10 text-primary"
+                  )}
+                  aria-label="Đơn hàng"
+                >
+                  <ShoppingBag className="h-[20px] w-[20px]" />
                 </Link>
               </Tooltip>
 
@@ -686,13 +741,13 @@ export function Header() {
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                href="/signin"
+                href="/dang-nhap"
                 className="hidden sm:inline-flex px-4 py-2 text-sm font-bold text-foreground hover:text-primary transition-colors"
               >
                 Đăng nhập
               </Link>
               <Link
-                href="/signup"
+                href="/dang-ky"
                 className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/25 hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 Đăng ký
@@ -724,10 +779,10 @@ export function Header() {
             <div>
               <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-2 px-2">Tìm việc</p>
               <div className="space-y-1">
-                <Link href="/find-posts" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl font-bold text-primary bg-primary/10">
+                <Link href="/tim-lop-hoc" onClick={() => setMobileOpen(false)} className="block px-3 py-2.5 rounded-xl font-bold text-primary bg-primary/10">
                   Tất cả việc làm
                 </Link>
-                <Link href="/find-posts?type=match" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
+                <Link href="/tim-lop-hoc?type=match" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
                   Việc làm phù hợp
                 </Link>
                 <Link href="/my-posts" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
@@ -735,6 +790,9 @@ export function Header() {
                 </Link>
                 <Link href="/favorite-posts" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
                   Việc làm đã lưu
+                </Link>
+                <Link href="/order" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-muted">
+                  Đơn hàng của tôi
                 </Link>
               </div>
             </div>
@@ -766,7 +824,7 @@ export function Header() {
             </div>
 
             <div className="border-t border-border pt-4">
-              <Link href="/about-us" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 font-bold text-sm text-foreground hover:text-primary">
+              <Link href="/gioi-thieu" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 font-bold text-sm text-foreground hover:text-primary">
                 <Sparkles className="h-4 w-4 text-primary" /> Vì sao chọn Learnix
               </Link>
             </div>
@@ -776,10 +834,10 @@ export function Header() {
           <div className="p-4 border-t border-border bg-muted/20">
             {!isAuthenticated ? (
               <div className="grid grid-cols-2 gap-3">
-                <Link href="/signin" onClick={() => setMobileOpen(false)} className="flex items-center justify-center h-11 rounded-xl border border-border font-bold text-sm bg-card hover:bg-muted">
+                <Link href="/dang-nhap" onClick={() => setMobileOpen(false)} className="flex items-center justify-center h-11 rounded-xl border border-border font-bold text-sm bg-card hover:bg-muted">
                   Đăng nhập
                 </Link>
-                <Link href="/signup" onClick={() => setMobileOpen(false)} className="flex items-center justify-center h-11 rounded-xl bg-primary text-white font-bold text-sm shadow-md">
+                <Link href="/dang-ky" onClick={() => setMobileOpen(false)} className="flex items-center justify-center h-11 rounded-xl bg-primary text-white font-bold text-sm shadow-md">
                   Đăng ký
                 </Link>
               </div>

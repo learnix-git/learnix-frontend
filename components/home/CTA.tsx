@@ -62,7 +62,7 @@ export function CTA() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
 
             <Link
-              href="/signup"
+              href="/dang-ky"
               className="
                 inline-flex items-center justify-center
                 rounded-2xl
@@ -81,7 +81,7 @@ export function CTA() {
             </Link>
 
             <Link
-              href="/signin"
+              href="/dang-nhap"
               className="
                 inline-flex items-center justify-center
                 rounded-2xl

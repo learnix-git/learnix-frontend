@@ -6,7 +6,7 @@ import type {
 } from "@/lib/notifications/types";
 
 export const NotificationAPI = {
-  // POST api/v1/notifications
+  // POST /notifications
   list: async (
     params: NotificationListParams = {},
   ): Promise<NotificationListResponse> => {
@@ -17,7 +17,7 @@ export const NotificationAPI = {
     return res.data;
   },
 
-  // POST api/v1/notifications/read
+  // POST /notifications/read
   read: async (id: string): Promise<NotificationActionResponse> => {
     const res = await client.post<NotificationActionResponse>("/notifications/read", {
       id,
@@ -25,7 +25,7 @@ export const NotificationAPI = {
     return res.data;
   },
 
-  // POST api/v1/notifications/read-all
+  // POST /notifications/read-all
   readAll: async (): Promise<NotificationActionResponse> => {
     const res = await client.post<NotificationActionResponse>(
       "/notifications/read-all",

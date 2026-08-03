@@ -17,7 +17,7 @@ function ParseDate(input: string): Date | null {
   return date;
 }
 
-// Định dạng thời gina
+// Định dạng thời gian
 export function FormatDate(input: string, now: Date = new Date()): string {
   const date = ParseDate(input);
   if (!date) 

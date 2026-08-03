@@ -118,7 +118,7 @@ export default function SavedTutorsPage() {
             title="Chưa có gia sư nào được lưu"
             description="Hãy khám phá và lưu lại những hồ sơ ấn tượng để dễ dàng mời họ dạy cho bạn."
             action={
-              <Link href="/find-tutors">
+              <Link href="/tim-gia-su">
                 <button className="rounded-2xl bg-primary px-6 py-3 mt-4 text-xs font-bold text-white tracking-wider shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all hover:scale-[1.02]">
                   TÌM KIẾM GIA SƯ
                 </button>

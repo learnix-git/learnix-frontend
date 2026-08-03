@@ -1,5 +1,5 @@
 import client from "./client";
-import type { ApiResponse, User, LoginRequest, RegisterRequest} from "./types";
+import type { ApiResponse, User, LoginRequest, RegisterRequest } from "./types";
 import { ClearSession, GetToken, SaveSession } from "@/lib/auth/session";
 
 export interface AuthResponse {
@@ -7,6 +7,7 @@ export interface AuthResponse {
   token: string;
 }
 
+// Helpers session
 export function getToken(): string | null {
   return GetToken();
 }
@@ -19,16 +20,19 @@ export function removeSession(): void {
   ClearSession();
 }
 
+// POST /auth/login
 export async function login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
   const res = await client.post<ApiResponse<AuthResponse>>("/auth/login", data);
   return res.data;
 }
 
+// POST /auth/register
 export async function register(data: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
   const res = await client.post<ApiResponse<AuthResponse>>("/auth/register", data);
   return res.data;
 }
 
+// POST /auth/google-login
 export async function loginViaGoogle(code: string): Promise<ApiResponse<AuthResponse>> {
   const uri = `${window.location.origin}/api/auth/callback/google`;
   const res = await client.post<ApiResponse<AuthResponse>>(
@@ -38,22 +42,26 @@ export async function loginViaGoogle(code: string): Promise<ApiResponse<AuthResp
   return res.data;
 }
 
+// GET /auth/info
 export async function getInfo(): Promise<ApiResponse<User>> {
   const res = await client.get<ApiResponse<User>>("/auth/info");
   return res.data;
 }
 
+// POST /auth/forgot-password
 export async function forgotPassword(email: string): Promise<ApiResponse<{ provider?: string | null }>> {
   const res = await client.post<ApiResponse<{ provider?: string | null }>>("/auth/forgot-password", { email });
   return res.data;
 }
 
-export async function resetPassword(token: string, password: string, confirmPassword: string ): Promise<ApiResponse<null>> {
+// POST /auth/reset-password
+export async function resetPassword(token: string, password: string, confirmPassword: string): Promise<ApiResponse<null>> {
   const res = await client.post<ApiResponse<null>>("/auth/reset-password", { token, password, confirmPassword });
   return res.data;
 }
 
+// PUT /auth/change-password
 export async function changePassword(newPassword: string, confirmPassword: string, oldPassword?: string): Promise<ApiResponse<null>> {
-  const res = await client.put<ApiResponse<null>>("/auth/change-password", { oldPassword, newPassword, confirmPassword }); 
+  const res = await client.put<ApiResponse<null>>("/auth/change-password", { oldPassword, newPassword, confirmPassword });
   return res.data;
 }
